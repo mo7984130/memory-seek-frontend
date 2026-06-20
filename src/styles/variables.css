@@ -1,0 +1,456 @@
+/* 寻忆设计系统 - CSS 变量 */
+
+/* ============================================
+   1. 品牌色
+   ============================================ */
+
+:root {
+    /* 主色调 - 浅色模式 */
+    --color-primary: #2DD4A8;
+    --color-primary-light: #5EEAD4;
+    --color-primary-dark: #14B8A6;
+    --color-primary-50: #F0FDFA;
+    --color-primary-100: #CCFBF1;
+    --color-primary-200: #99F6E4;
+    --color-primary-300: #5EEAD4;
+    --color-primary-400: #2DD4A8;
+    --color-primary-500: #14B8A6;
+    --color-primary-600: #0D9488;
+    --color-primary-700: #0F766E;
+    --color-primary-800: #115E59;
+    --color-primary-900: #134E4A;
+
+    /* 次要色 */
+    --color-secondary: #818CF8;
+    --color-secondary-light: #A5B4FC;
+    --color-secondary-dark: #6366F1;
+
+    /* 功能色 */
+    --color-success: #52C41A;
+    --color-warning: #FAAD14;
+    --color-danger: #E85D5D;
+    --color-info: #1890FF;
+    --color-like: #FF4D4F;
+}
+
+/* 深色模式主色调 */
+.dark {
+    --color-primary: #D4AF37;
+    --color-primary-light: #F0D060;
+    --color-primary-dark: #C5A028;
+    --color-primary-50: #FFF8E1;
+    --color-primary-100: #FFECB3;
+    --color-primary-200: #FFD54F;
+    --color-primary-300: #FFCA28;
+    --color-primary-400: #D4AF37;
+    --color-primary-500: #C5A028;
+    --color-primary-600: #B8941E;
+    --color-primary-700: #9A7B14;
+    --color-primary-800: #7D620A;
+    --color-primary-900: #604900;
+}
+
+/* ============================================
+   2. 背景色
+   ============================================ */
+
+:root {
+    /* 浅色模式 */
+    --color-bg-primary: #FFFEF8;
+    --color-bg-secondary: #FAFAF5;
+    --color-bg-card: #FFFFFF;
+    --color-bg-input: rgba(0, 0, 0, 0.03);
+    --color-bg-hover: rgba(0, 0, 0, 0.02);
+}
+
+.dark {
+    /* 深色模式 */
+    --color-bg-primary: #1A1A1A;
+    --color-bg-secondary: #1E1E1E;
+    --color-bg-card: #2D2D2D;
+    --color-bg-input: rgba(255, 255, 255, 0.05);
+    --color-bg-hover: rgba(255, 255, 255, 0.03);
+}
+
+/* ============================================
+   3. 文字色
+   ============================================ */
+
+:root {
+    /* 浅色模式 */
+    --color-text-primary: #2C2C2C;
+    --color-text-secondary: #6B7280;
+    --color-text-tertiary: #9CA3AF;
+    --color-text-placeholder: #D1D5DB;
+    --color-text-disabled: #E5E7EB;
+}
+
+.dark {
+    /* 深色模式 */
+    --color-text-primary: #F5F5F5;
+    --color-text-secondary: #9CA3AF;
+    --color-text-tertiary: #6B7280;
+    --color-text-placeholder: #4B5563;
+    --color-text-disabled: #374151;
+}
+
+/* ============================================
+   4. 边框色
+   ============================================ */
+
+:root {
+    --color-border: #E8E4D8;
+    --color-border-light: #F0EDE5;
+    --color-border-dark: #D1D5DB;
+    --color-border-focus: var(--color-primary);
+}
+
+.dark {
+    --color-border: #3D3D3D;
+    --color-border-light: #2D2D2D;
+    --color-border-dark: #4B5563;
+}
+
+/* ============================================
+   5. 字体系统
+   ============================================ */
+
+:root {
+    /* 字体家族 */
+    --font-sans: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-serif: 'Times New Roman', serif;
+    --font-mono: 'SF Mono', 'Fira Code', monospace;
+
+    /* 字号 */
+    --text-xs: 12px;
+    --text-sm: 14px;
+    --text-base: 16px;
+    --text-lg: 18px;
+    --text-xl: 20px;
+    --text-2xl: 24px;
+    --text-3xl: 30px;
+    --text-4xl: 36px;
+
+    /* 字重 */
+    --font-light: 300;
+    --font-regular: 400;
+    --font-medium: 500;
+    --font-semibold: 600;
+    --font-bold: 700;
+
+    /* 行高 */
+    --leading-tight: 1.2;
+    --leading-normal: 1.5;
+    --leading-relaxed: 1.75;
+
+    /* 字间距 */
+    --tracking-tight: -0.025em;
+    --tracking-normal: 0;
+    --tracking-wide: 0.025em;
+    --tracking-wider: 0.05em;
+    --tracking-widest: 0.1em;
+}
+
+/* ============================================
+   6. 间距系统
+   ============================================ */
+
+:root {
+    --spacing-0: 0;
+    --spacing-1: 4px;
+    --spacing-2: 8px;
+    --spacing-3: 12px;
+    --spacing-4: 16px;
+    --spacing-5: 20px;
+    --spacing-6: 24px;
+    --spacing-8: 32px;
+    --spacing-10: 40px;
+    --spacing-12: 48px;
+    --spacing-16: 64px;
+}
+
+/* ============================================
+   7. 圆角系统
+   ============================================ */
+
+:root {
+    --radius-none: 0;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-2xl: 24px;
+    --radius-full: 9999px;
+}
+
+/* ============================================
+   8. 阴影系统
+   ============================================ */
+
+:root {
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.10);
+    --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.12);
+    --shadow-2xl: 0 20px 60px rgba(0, 0, 0, 0.15);
+    --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.dark {
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.35);
+    --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.4);
+    --shadow-2xl: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================
+   9. 动画系统
+   ============================================ */
+
+:root {
+    /* 过渡速度 */
+    --transition-fast: 150ms;
+    --transition-normal: 200ms;
+    --transition-slow: 300ms;
+
+    /* 缓动函数 */
+    --ease-out: cubic-bezier(0, 0, 0.2, 1);
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* 过渡 */
+    --transition-fast-out: all var(--transition-fast) var(--ease-out);
+    --transition-normal-out: all var(--transition-normal) var(--ease-out);
+    --transition-slow-out: all var(--transition-slow) var(--ease-out);
+    --transition-fast-in-out: all var(--transition-fast) var(--ease-in-out);
+    --transition-normal-in-out: all var(--transition-normal) var(--ease-in-out);
+    --transition-slow-in-out: all var(--transition-slow) var(--ease-in-out);
+}
+
+/* ============================================
+   10. 组件变量
+   ============================================ */
+
+/* 按钮 */
+:root {
+    --btn-radius: var(--radius-md);
+    --btn-font-weight: var(--font-semibold);
+    --btn-transition: var(--transition-fast-out);
+    --btn-hover-transform: translateY(-2px);
+    --btn-active-transform: scale(0.95);
+    --btn-disabled-opacity: 0.5;
+}
+
+/* 输入框 */
+:root {
+    --input-radius: var(--radius-md);
+    --input-border: 2px solid var(--color-border);
+    --input-transition: var(--transition-normal-out);
+    --input-focus-shadow: 0 0 0 4px rgba(45, 212, 168, 0.1);
+}
+
+.dark {
+    --input-focus-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
+}
+
+/* 卡片 */
+:root {
+    --card-radius: var(--radius-lg);
+    --card-padding: var(--spacing-5);
+    --card-shadow: var(--shadow-md);
+    --card-border: 1px solid var(--color-border);
+    --card-bg: var(--color-bg-card);
+    --card-transition: var(--transition-slow-out);
+    --card-hover-transform: translateY(-4px);
+    --card-hover-shadow: var(--shadow-xl);
+    --card-active-transform: scale(0.98);
+}
+
+/* 模态框 */
+:root {
+    --modal-radius: var(--radius-xl);
+    --modal-padding: var(--spacing-8);
+    --modal-shadow: var(--shadow-2xl);
+    --modal-bg: var(--color-bg-card);
+    --modal-sm: 320px;
+    --modal-md: 480px;
+    --modal-lg: 640px;
+    --modal-xl: 800px;
+    --modal-overlay-bg: rgba(0, 0, 0, 0.5);
+    --modal-transition: var(--transition-slow-out);
+}
+
+/* 抽屉 */
+:root {
+    --drawer-bg: var(--color-bg-card);
+    --drawer-shadow: -4px 0 16px rgba(0, 0, 0, 0.1);
+    --drawer-sm: 240px;
+    --drawer-md: 280px;
+    --drawer-lg: 320px;
+    --drawer-xl: 400px;
+    --drawer-overlay-bg: rgba(0, 0, 0, 0.5);
+    --drawer-transition: transform var(--transition-slow) var(--ease-out);
+}
+
+.dark {
+    --drawer-shadow: -4px 0 16px rgba(0, 0, 0, 0.3);
+}
+
+/* 下拉菜单 */
+:root {
+    --dropdown-bg: var(--color-bg-card);
+    --dropdown-radius: var(--radius-md);
+    --dropdown-shadow: var(--shadow-md);
+    --dropdown-border: 1px solid var(--color-border);
+    --dropdown-item-hover-bg: var(--color-primary-50);
+    --dropdown-item-active-bg: var(--color-primary);
+    --dropdown-item-active-color: white;
+    --dropdown-offset: 8px;
+    --dropdown-transition: var(--transition-fast-out);
+}
+
+.dark {
+    --dropdown-item-hover-bg: rgba(212, 175, 55, 0.1);
+}
+
+/* 提示 */
+:root {
+    --toast-radius: var(--radius-md);
+    --toast-padding: var(--spacing-3) var(--spacing-4);
+    --toast-shadow: var(--shadow-md);
+    --toast-success-bg: #F0FFF4;
+    --toast-success-border: #C6F6D5;
+    --toast-success-icon: var(--color-success);
+    --toast-warning-bg: #FFFBEB;
+    --toast-warning-border: #FDE68A;
+    --toast-warning-icon: var(--color-warning);
+    --toast-error-bg: #FEF2F2;
+    --toast-error-border: #FECACA;
+    --toast-error-icon: var(--color-danger);
+    --toast-info-bg: #EFF6FF;
+    --toast-info-border: #BFDBFE;
+    --toast-info-icon: var(--color-info);
+}
+
+.dark {
+    --toast-success-bg: #1A2E1A;
+    --toast-success-border: #2D5A2D;
+    --toast-warning-bg: #2D2A1A;
+    --toast-warning-border: #5A4D2D;
+    --toast-error-bg: #2D1A1A;
+    --toast-error-border: #5A2D2D;
+    --toast-info-bg: #1A1A2D;
+    --toast-info-border: #2D2D5A;
+}
+
+/* 加载 */
+:root {
+    --loading-spinner-size: 24px;
+    --loading-spinner-width: 3px;
+    --loading-spinner-color: var(--color-primary);
+    --loading-spinner-track: var(--color-border);
+    --loading-dot-size: 8px;
+    --loading-dot-color: var(--color-primary);
+    --loading-progress-height: 8px;
+    --loading-progress-bg: var(--color-border);
+    --loading-progress-color: var(--color-primary);
+    --loading-skeleton-bg: var(--color-border);
+}
+
+/* ============================================
+   11. 响应式断点
+   ============================================ */
+
+:root {
+    --breakpoint-mobile: 768px;
+    --breakpoint-desktop: 769px;
+}
+
+/* ============================================
+   12. 容器宽度
+   ============================================ */
+
+:root {
+    --container-max-width: 1200px;
+    --container-padding-mobile: var(--spacing-4);
+    --container-padding-desktop: var(--spacing-6);
+}
+
+/* ============================================
+   13. Z-index 层级
+   ============================================ */
+
+:root {
+    --z-index-dropdown: 1000;
+    --z-index-sticky: 1020;
+    --z-index-fixed: 1030;
+    --z-index-modal-backdrop: 1040;
+    --z-index-modal: 1050;
+    --z-index-popover: 1060;
+    --z-index-tooltip: 1070;
+}
+
+/* ============================================
+   14. 动画关键帧
+   ============================================ */
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes dot {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+}
+
+@keyframes progress {
+    0% { width: 0%; }
+    50% { width: 60%; }
+    100% { width: 100%; }
+}
+
+@keyframes skeleton {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes slideInLeft {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+    from { transform: translateX(100%); }
+    to { transform: translateX(0); }
+}
+
+@keyframes slideInUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+}
+
+@keyframes slideInDown {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes scaleOut {
+    from { transform: scale(1); opacity: 1; }
+    to { transform: scale(0.95); opacity: 0; }
+}

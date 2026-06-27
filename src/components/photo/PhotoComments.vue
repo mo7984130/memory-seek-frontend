@@ -9,7 +9,6 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
 
 dayjs.extend(relativeTime)
-dayjs.locale('zh-cn')
 
 interface Props {
   photoId: string
@@ -99,7 +98,7 @@ async function handleToggleLike(comment: PhotoCommentResult) {
  * 格式化时间
  */
 function formatTime(time: string): string {
-  return dayjs(time).fromNow()
+  return dayjs(time).locale('zh-cn').fromNow()
 }
 
 /**

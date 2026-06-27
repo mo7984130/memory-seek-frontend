@@ -72,9 +72,28 @@ function rotate() {
 /**
  * 收藏切换
  */
-function toggleFavorite() {
+async function toggleFavorite() {
   if (!props.photo) return
-  emit('favorite', props.photo.id)
+  try {
+    // 获取收藏夹列表
+    const collectionRes = await photoApi.collection.getCollectionList()
+    const favoriteCollection = collectionRes.data.find((c) => c.isFavorite)
+    if (!favoriteCollection) {
+      console.error('未找到默认收藏夹')
+      return
+    }
+
+    if (isFavorited.value) {
+      await photoApi.collection.removePhotoFromCollection(favoriteCollection.id, props.photo.id)
+    } else {
+      await photoApi.collection.addPhotosToCollection(favoriteCollection.id, [props.photo.id])
+    }
+
+    // 通知父组件更新状态
+    emit('favorite', props.photo.id)
+  } catch (error) {
+    console.error('收藏操作失败:', error)
+  }
 }
 
 /**

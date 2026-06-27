@@ -1,10 +1,15 @@
 /* src/components/photo/photo-comments.css */
 
 .photo-comments {
+  --photo-comments-width: 360px;
+  --photo-comments-shadow: -4px 0 16px rgba(0, 0, 0, 0.15);
+  --photo-comments-close-size: 32px;
+  --photo-comments-send-size: 36px;
+
   position: absolute;
   top: 0;
   right: 0;
-  width: 360px;
+  width: var(--photo-comments-width);
   height: 100%;
   background: var(--color-bg-card);
   transform: translateX(100%);
@@ -12,7 +17,7 @@
   z-index: 10;
   display: flex;
   flex-direction: column;
-  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--photo-comments-shadow);
 }
 
 .photo-comments--visible {
@@ -40,8 +45,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: var(--photo-comments-close-size);
+  height: var(--photo-comments-close-size);
   border: none;
   background: transparent;
   border-radius: var(--radius-sm);
@@ -190,8 +195,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: var(--photo-comments-send-size);
+  height: var(--photo-comments-send-size);
   border: none;
   background: var(--color-primary);
   color: white;

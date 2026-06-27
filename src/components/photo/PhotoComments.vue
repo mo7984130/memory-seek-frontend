@@ -129,6 +129,9 @@ watch(
     cursor.value = undefined
     hasMore.value = true
     newComment.value = ''
+    if (props.visible) {
+      loadComments()
+    }
   },
 )
 </script>

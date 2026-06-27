@@ -72,15 +72,9 @@ function rotate() {
 /**
  * 收藏切换
  */
-async function toggleFavorite() {
+function toggleFavorite() {
   if (!props.photo) return
-  try {
-    // 使用默认收藏夹（isFavorite=true 的那个）
-    // TODO: 需要确认收藏 API 的具体调用方式
-    emit('favorite', props.photo.id)
-  } catch (error) {
-    console.error('收藏操作失败:', error)
-  }
+  emit('favorite', props.photo.id)
 }
 
 /**
@@ -106,6 +100,10 @@ function handleWheel(event: WheelEvent) {
  * 键盘快捷键
  */
 function handleKeydown(event: KeyboardEvent) {
+  const target = event.target as HTMLElement
+  if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable) {
+    return
+  }
   switch (event.key) {
     case 'Escape':
       close()
@@ -136,9 +134,6 @@ function close() {
  */
 function handleModalClose(value: boolean) {
   emit('update:modelValue', value)
-  if (!value) {
-    resetState()
-  }
 }
 
 /**

@@ -1,6 +1,10 @@
 /* src/components/photo/photo-toolbar.css */
 
 .photo-toolbar {
+  --photo-toolbar-btn-size: 36px;
+  --photo-toolbar-divider-height: 20px;
+  --photo-toolbar-zoom-min-width: 40px;
+
   position: absolute;
   bottom: var(--spacing-6);
   left: 50%;
@@ -13,7 +17,7 @@
   backdrop-filter: blur(12px);
   border-radius: var(--radius-full);
   color: white;
-  z-index: 10;
+  z-index: var(--z-index-tooltip);
   user-select: none;
 }
 
@@ -21,8 +25,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: var(--photo-toolbar-btn-size);
+  height: var(--photo-toolbar-btn-size);
   border: none;
   background: transparent;
   color: white;
@@ -45,14 +49,14 @@
 
 .photo-toolbar__zoom {
   font-size: var(--text-sm);
-  min-width: 40px;
+  min-width: var(--photo-toolbar-zoom-min-width);
   text-align: center;
   font-variant-numeric: tabular-nums;
 }
 
 .photo-toolbar__divider {
   width: 1px;
-  height: 20px;
+  height: var(--photo-toolbar-divider-height);
   background: rgba(255, 255, 255, 0.2);
   margin: 0 var(--spacing-1);
 }

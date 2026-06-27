@@ -1,0 +1,58 @@
+/* src/components/photo/photo-toolbar.css */
+
+.photo-toolbar {
+  position: absolute;
+  bottom: var(--spacing-6);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius-full);
+  color: white;
+  z-index: 10;
+  user-select: none;
+}
+
+.photo-toolbar__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  color: white;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: var(--transition-fast-out);
+}
+
+.photo-toolbar__btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.photo-toolbar__btn:active {
+  transform: scale(0.9);
+}
+
+.photo-toolbar__btn--active {
+  color: var(--color-like);
+}
+
+.photo-toolbar__zoom {
+  font-size: var(--text-sm);
+  min-width: 40px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.photo-toolbar__divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 0 var(--spacing-1);
+}

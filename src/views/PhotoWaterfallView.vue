@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useIntersectionObserver } from '@vueuse/core'
 import { photo } from 'memory-seek-api'
-import type { PhotoResult } from 'memory-seek-api'
-import VirtualWaterfall, { type WaterfallItem } from '@/components/photo/VirtualWaterfall.vue'
+import type { PhotoResult, MonthStat } from 'memory-seek-api'
+import VirtualWaterfall, { type WaterfallItem, type WaterfallGroup } from '@/components/photo/VirtualWaterfall.vue'
+import TimelineNav from '@/components/photo/TimelineNav.vue'
 import PhotoCard from '@/components/photo/PhotoCard.vue'
 import PhotoViewer from '@/components/photo/PhotoViewer.vue'
 import Spinner from '@/components/base/Spinner/Spinner.vue'
@@ -17,6 +18,11 @@ const containerWidth = ref(0)
 const loading = ref(false)
 const hasMore = ref(true)
 const cursor = ref<string | undefined>(undefined)
+
+// 时间线状态
+const monthStats = ref<MonthStat[]>([])
+const currentGroup = ref('')
+const waterfallRef = ref<InstanceType<typeof VirtualWaterfall> | null>(null)
 
 // 照片查看器状态
 const viewerVisible = ref(false)
@@ -43,6 +49,34 @@ function handleResize() {
     columnCount.value = 5
   }
 }
+
+/**
+ * 格式化月份标签
+ */
+function formatMonthLabel(key: string): string {
+  const [year, month] = key.split('-')
+  return `${year}年${parseInt(month)}月`
+}
+
+/**
+ * 按月分组
+ */
+const groups = computed<WaterfallGroup[]>(() => {
+  if (!allPhotos.value.length) return []
+
+  const map = new Map<string, typeof allPhotos.value>()
+  for (const photo of allPhotos.value) {
+    const key = photo.createdAt.substring(0, 7) // "2026-06"
+    if (!map.has(key)) map.set(key, [])
+    map.get(key)!.push(photo)
+  }
+
+  return Array.from(map.entries()).map(([key, photos]) => ({
+    key,
+    label: formatMonthLabel(key),
+    items: photos,
+  }))
+})
 
 /**
  * 获取照片列表
@@ -84,11 +118,63 @@ function handlePhotoClick(photoItem: PhotoResult) {
   viewerVisible.value = true
 }
 
-function handleFavoriteChange(photoId: string) {
+function handleLikeChange(photoId: string) {
   const target = allPhotos.value.find((p) => p.id === photoId)
   if (target) {
-    target.isFavorited = !target.isFavorited
+    target.isLiked = !target.isLiked
   }
+}
+
+async function handleLike(photoItem: PhotoResult) {
+  const photoId = photoItem.id as string
+  const wasLiked = photoItem.isLiked ?? false
+
+  // 乐观更新 UI
+  const target = allPhotos.value.find((p) => p.id === photoId)
+  if (target) {
+    target.isLiked = !wasLiked
+  }
+
+  try {
+    if (wasLiked) {
+      await photo.like.unlikePhoto(photoId)
+    } else {
+      await photo.like.likePhoto(photoId)
+    }
+  } catch (error) {
+    // 回滚
+    if (target) {
+      target.isLiked = wasLiked
+    }
+    console.error('点赞操作失败:', error)
+  }
+}
+
+/**
+ * 加载照片直到包含目标月份
+ */
+async function loadUntilGroup(targetKey: string) {
+  while (hasMore.value) {
+    await fetchPhotos()
+    const hasTarget = allPhotos.value.some(
+      (p) => p.createdAt.substring(0, 7) === targetKey,
+    )
+    if (hasTarget) break
+  }
+}
+
+/**
+ * 时间线导航跳转
+ */
+async function handleNavigate(groupKey: string) {
+  // 检查目标月份是否已加载
+  const hasTarget = groups.value.some((g) => g.key === groupKey)
+
+  if (!hasTarget) {
+    await loadUntilGroup(groupKey)
+  }
+
+  waterfallRef.value?.scrollToGroup(groupKey)
 }
 
 // 触底加载
@@ -99,10 +185,17 @@ useIntersectionObserver(sentinelRef, (entries) => {
   }
 })
 
-onMounted(() => {
+onMounted(async () => {
   handleResize()
   window.addEventListener('resize', handleResize)
-  fetchPhotos()
+
+  // 并行加载月份统计和首批照片
+  const [statsRes] = await Promise.all([
+    photo.timeline.getMonthlyStats(),
+    fetchPhotos(),
+  ])
+
+  monthStats.value = statsRes.data
 })
 
 onBeforeUnmount(() => {
@@ -112,19 +205,27 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="photo-waterfall-view" ref="containerRef">
-    <h2 class="page-title">照片墙</h2>
-
     <div class="waterfall-container">
       <VirtualWaterfall
-        :items="allPhotos as WaterfallItem[]"
+        ref="waterfallRef"
+        :groups="groups"
         :column-count="columnCount"
         :container-width="containerWidth"
         :gap="16"
+        @current-group-change="currentGroup = $event"
       >
+        <template #header="{ group }">
+          <div class="group-header">
+            <span class="group-header__icon">📅</span>
+            <span class="group-header__label">{{ group.label }}</span>
+          </div>
+        </template>
+
         <template #default="{ item }">
           <PhotoCard
             :item="getPhotoById(item.id)"
             @click="handlePhotoClick"
+            @like="handleLike"
           />
         </template>
       </VirtualWaterfall>
@@ -136,28 +237,44 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
+    <!-- 右侧时间线导航 -->
+    <TimelineNav
+      :month-stats="monthStats"
+      :current-group="currentGroup"
+      @navigate="handleNavigate"
+    />
+
     <!-- 照片查看器 -->
     <PhotoViewer
       v-model="viewerVisible"
       :photo="selectedPhoto"
-      @favorite="handleFavoriteChange"
+      @like="handleLikeChange"
     />
   </div>
 </template>
 
 <style scoped>
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) 0;
+  height: 100%;
+}
+
+.group-header__icon {
+  font-size: var(--text-lg);
+}
+
+.group-header__label {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
+}
+
 .photo-waterfall-view {
   padding: var(--spacing-6) var(--spacing-4);
   min-height: 100vh;
-}
-
-.page-title {
-  margin: var(--spacing-5) 0;
-  padding-left: var(--spacing-3);
-  border-left: 4px solid var(--color-primary);
-  font-size: var(--text-2xl);
-  font-weight: var(--font-light);
-  color: var(--color-text-primary);
 }
 
 .waterfall-container {
@@ -200,11 +317,6 @@ onBeforeUnmount(() => {
 @media (max-width: 768px) {
   .photo-waterfall-view {
     padding: var(--spacing-4) var(--spacing-2);
-  }
-
-  .page-title {
-    font-size: var(--text-xl);
-    margin: var(--spacing-4) 0;
   }
 }
 </style>

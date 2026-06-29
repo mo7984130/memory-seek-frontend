@@ -1,0 +1,74 @@
+.textarea {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  position: relative;
+}
+
+.textarea__field {
+  width: 100%;
+  background: var(--color-bg-input);
+  border: var(--input-border);
+  border-radius: var(--input-radius);
+  transition: var(--input-transition);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  padding: var(--spacing-3) var(--spacing-4);
+  resize: vertical;
+  outline: none;
+  min-height: 80px;
+}
+
+.textarea__field::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.textarea__field:disabled {
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+  opacity: var(--btn-disabled-opacity);
+}
+
+/* 焦点 */
+.textarea__field:focus {
+  border-color: var(--color-border-focus);
+  box-shadow: var(--input-focus-shadow);
+}
+
+/* 状态 */
+.textarea--error .textarea__field {
+  border-color: var(--color-danger);
+}
+
+.textarea--error .textarea__field:focus {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 4px rgba(232, 93, 93, 0.1);
+}
+
+.textarea--success .textarea__field {
+  border-color: var(--color-success);
+}
+
+.textarea--success .textarea__field:focus {
+  border-color: var(--color-success);
+  box-shadow: 0 0 0 4px rgba(82, 196, 26, 0.1);
+}
+
+/* 字数统计 */
+.textarea__count {
+  text-align: right;
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+  margin-top: var(--spacing-1);
+}
+
+.textarea--error .textarea__count {
+  color: var(--color-danger);
+}
+
+/* 禁止调整大小 */
+.textarea--no-resize .textarea__field {
+  resize: none;
+}

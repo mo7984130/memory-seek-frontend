@@ -369,6 +369,107 @@ export default defineConfig({
 })
 ```
 
+## 补充设计细节
+
+### Modal / Drawer 的 Teleport
+
+Modal 和 Drawer 使用 Vue 的 `<Teleport to="body">` 渲染，避免被父组件的 `overflow: hidden` 或 `z-index` 截断。
+
+```vue
+<!-- Modal.vue -->
+<template>
+  <Teleport to="body">
+    <div v-if="modelValue" class="modal-overlay" @click.self="onMaskClick">
+      <div :class="[modalVariants({ size })]">
+        <slot />
+      </div>
+    </div>
+  </Teleport>
+</template>
+```
+
+### Toast 命令式 API
+
+Toast 采用全局单例容器 + 命令式 API。容器通过 Teleport 挂载到 `body`。
+
+```typescript
+// toast.ts
+import { ref } from 'vue'
+
+export interface ToastOptions {
+  duration?: number    // 自动关闭延迟（ms），默认 3000
+  closable?: boolean   // 是否显示关闭按钮，默认 false
+}
+
+export interface ToastItem {
+  id: string
+  type: 'success' | 'warning' | 'error' | 'info'
+  message: string
+  duration: number
+  closable: boolean
+}
+
+// 全局状态（单例）
+const toasts = ref<ToastItem[]>([])
+
+export function useToast() {
+  function add(type: ToastItem['type'], message: string, options?: ToastOptions) {
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+    const toast: ToastItem = {
+      id,
+      type,
+      message,
+      duration: options?.duration ?? 3000,
+      closable: options?.closable ?? false,
+    }
+    toasts.value.push(toast)
+
+    // 自动移除
+    if (toast.duration > 0) {
+      setTimeout(() => remove(id), toast.duration)
+    }
+  }
+
+  function remove(id: string) {
+    const index = toasts.value.findIndex(t => t.id === id)
+    if (index !== -1) toasts.value.splice(index, 1)
+  }
+
+  return {
+    toasts,
+    success: (msg: string, opts?: ToastOptions) => add('success', msg, opts),
+    warning: (msg: string, opts?: ToastOptions) => add('warning', msg, opts),
+    error: (msg: string, opts?: ToastOptions) => add('error', msg, opts),
+    info: (msg: string, opts?: ToastOptions) => add('info', msg, opts),
+    remove,
+  }
+}
+```
+
+### Tooltip / Select 定位策略
+
+Tooltip 和 Select 的下拉面板先使用纯 CSS 定位（`position: absolute` + 方向类），满足基本需求。
+后续可替换为 `@floating-ui/vue` 以支持溢出翻转、自动调整等高级场景。
+
+### Button 默认 type
+
+Button 组件默认 `type="button"`，避免在 `<form>` 内意外触发提交：
+
+```vue
+<button :type="type ?? 'button'" ...>
+```
+
+### Drawer 方向阴影
+
+Drawer 按 `placement` 方向使用不同的阴影变量：
+
+```css
+.drawer--left   { box-shadow: 4px 0 16px rgba(0, 0, 0, 0.1); }
+.drawer--right  { box-shadow: -4px 0 16px rgba(0, 0, 0, 0.1); }
+.drawer--top    { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1); }
+.drawer--bottom { box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1); }
+```
+
 ## 不在范围内
 
 - 业务组件（页面级组件）

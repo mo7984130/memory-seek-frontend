@@ -1,0 +1,100 @@
+.card {
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  border: var(--card-border);
+  transition: var(--card-transition);
+  overflow: hidden;
+}
+
+/* ===== 阴影变体 ===== */
+
+.card--shadow-none {
+  box-shadow: none;
+}
+
+.card--shadow-sm {
+  box-shadow: var(--shadow-sm);
+}
+
+.card--shadow-md {
+  box-shadow: var(--card-shadow);
+}
+
+.card--shadow-lg {
+  box-shadow: var(--shadow-lg);
+}
+
+.card--shadow-hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.card--shadow-hover:hover {
+  box-shadow: var(--card-hover-shadow);
+  transform: var(--card-hover-transform);
+}
+
+/* ===== 间距变体 ===== */
+
+.card--padding-none {
+  padding: 0;
+}
+
+.card--padding-sm {
+  padding: var(--spacing-3);
+}
+
+.card--padding-md {
+  padding: var(--card-padding);
+}
+
+.card--padding-lg {
+  padding: var(--spacing-8);
+}
+
+/* ===== 可悬浮 ===== */
+
+.card--hoverable {
+  cursor: pointer;
+}
+
+.card--hoverable:hover {
+  box-shadow: var(--card-hover-shadow);
+  transform: var(--card-hover-transform);
+}
+
+.card--hoverable:active {
+  transform: var(--card-active-transform);
+}
+
+/* ===== 子组件 ===== */
+
+.card__header {
+  padding: var(--card-padding);
+  border-bottom: var(--card-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card__body {
+  padding: var(--card-padding);
+  flex: 1;
+}
+
+.card__footer {
+  padding: var(--card-padding);
+  border-top: var(--card-border);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+}
+
+/* 嵌套时去掉子组件的多余边框 */
+.card__header + .card__body {
+  padding-top: 0;
+}
+
+.card__body + .card__footer {
+  padding-bottom: 0;
+}

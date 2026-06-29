@@ -1,0 +1,87 @@
+.tooltip-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+/* 提示框 */
+.tooltip {
+  position: absolute;
+  z-index: var(--z-index-tooltip);
+  background: var(--color-text-primary);
+  color: var(--color-bg-primary);
+  font-size: var(--text-sm);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-fast) var(--ease-out);
+  line-height: var(--leading-normal);
+}
+
+.tooltip--visible {
+  opacity: 1;
+}
+
+/* 箭头 */
+.tooltip__arrow {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: var(--color-text-primary);
+  transform: rotate(45deg);
+}
+
+/* ===== 位置 ===== */
+
+/* Top */
+.tooltip--top {
+  bottom: calc(100% + var(--spacing-2));
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.tooltip--top .tooltip__arrow {
+  bottom: -4px;
+  left: 50%;
+  margin-left: -4px;
+}
+
+/* Right */
+.tooltip--right {
+  left: calc(100% + var(--spacing-2));
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.tooltip--right .tooltip__arrow {
+  left: -4px;
+  top: 50%;
+  margin-top: -4px;
+}
+
+/* Bottom */
+.tooltip--bottom {
+  top: calc(100% + var(--spacing-2));
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.tooltip--bottom .tooltip__arrow {
+  top: -4px;
+  left: 50%;
+  margin-left: -4px;
+}
+
+/* Left */
+.tooltip--left {
+  right: calc(100% + var(--spacing-2));
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.tooltip--left .tooltip__arrow {
+  right: -4px;
+  top: 50%;
+  margin-top: -4px;
+}

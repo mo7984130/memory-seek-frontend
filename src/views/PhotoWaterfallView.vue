@@ -126,6 +126,10 @@ function handleLikeChange(photoId: string) {
   }
 }
 
+function handleDelete(photoId: string) {
+  allPhotos.value = allPhotos.value.filter((p) => p.id !== photoId)
+}
+
 async function handleLike(photoItem: PhotoResult) {
   const photoId = photoItem.id as string
   const wasLiked = photoItem.isLiked ?? false
@@ -258,6 +262,7 @@ onBeforeUnmount(() => {
       v-model="viewerVisible"
       :photo="selectedPhoto"
       @like="handleLikeChange"
+      @delete="handleDelete"
     />
   </div>
 </template>

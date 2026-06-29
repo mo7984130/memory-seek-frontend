@@ -1,0 +1,5 @@
+export type Size = 'sm' | 'md' | 'lg'
+export type Status = 'default' | 'error' | 'success'
+export type Variant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger'
+export type Placement = 'top' | 'right' | 'bottom' | 'left'
+export type Shape = 'circle' | 'square'

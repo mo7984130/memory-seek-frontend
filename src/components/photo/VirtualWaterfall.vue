@@ -164,10 +164,9 @@ watch(visibleItems, (filtered) => {
   if (topItem.type === 'header') {
     currentGroupKey = topItem.groupKey || ''
   } else {
-    // Find the last header before or at the topItem's position
-    const reversedItems = [...positionedItems.value].reverse()
-    const headerItem = reversedItems.find(
-      p => p.type === 'header' && p.groupKey && p.renderTop <= topItem.renderTop,
+    const headerItem = positionedItems.value.find(
+      p => p.type === 'header' && p.groupKey && p.renderTop <= topItem.renderTop
+        && p.renderTop + p.renderHeight > topItem.renderTop - 1000
     )
     currentGroupKey = headerItem?.groupKey || ''
   }
@@ -179,7 +178,7 @@ watch(visibleItems, (filtered) => {
   if (topItem.type === 'item') {
     emit('top-item-change', topItem as WaterfallItem)
   }
-}, { immediate: true })
+})
 
 /**
  * 容器总高度（撑开父容器）

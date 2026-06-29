@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useIntersectionObserver } from '@vueuse/core'
 import { photo } from 'memory-seek-api'
 import type { PhotoResult, MonthStat } from 'memory-seek-api'
@@ -18,6 +18,7 @@ const containerWidth = ref(0)
 const loading = ref(false)
 const hasMore = ref(true)
 const cursor = ref<string | undefined>(undefined)
+const navigating = ref(false)
 
 // 时间线状态
 const monthStats = ref<MonthStat[]>([])
@@ -167,14 +168,22 @@ async function loadUntilGroup(targetKey: string) {
  * 时间线导航跳转
  */
 async function handleNavigate(groupKey: string) {
-  // 检查目标月份是否已加载
-  const hasTarget = groups.value.some((g) => g.key === groupKey)
+  if (navigating.value) return
+  navigating.value = true
 
-  if (!hasTarget) {
-    await loadUntilGroup(groupKey)
+  try {
+    // 检查目标月份是否已加载
+    const hasTarget = groups.value.some((g) => g.key === groupKey)
+
+    if (!hasTarget) {
+      await loadUntilGroup(groupKey)
+    }
+
+    await nextTick()
+    waterfallRef.value?.scrollToGroup(groupKey)
+  } finally {
+    navigating.value = false
   }
-
-  waterfallRef.value?.scrollToGroup(groupKey)
 }
 
 // 触底加载

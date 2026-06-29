@@ -61,3 +61,21 @@
   background: rgba(255, 255, 255, 0.2);
   margin: 0 var(--spacing-1);
 }
+
+.photo-toolbar__loading {
+  animation: photo-toolbar-spin 1s linear infinite;
+}
+
+@keyframes photo-toolbar-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.photo-toolbar__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

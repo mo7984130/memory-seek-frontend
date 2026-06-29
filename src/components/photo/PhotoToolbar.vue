@@ -1,11 +1,14 @@
 <!-- src/components/photo/PhotoToolbar.vue -->
 <script setup lang="ts">
-import { ZoomIn, ZoomOut, RotateCw, Heart, MessageCircle } from 'lucide-vue-next'
+import { ZoomIn, ZoomOut, RotateCw, Heart, MessageCircle, PhotoIcon, Download, LoadingIcon } from '@/components/base/Icon/icons'
 
 interface Props {
   zoom: number
   rotation: number
-  isFavorited: boolean
+  isFavorited?: boolean
+  showOriginal?: boolean
+  loadingOriginal?: boolean
+  hasOriginalToken?: boolean
 }
 
 defineProps<Props>()
@@ -16,6 +19,8 @@ const emit = defineEmits<{
   'rotate': []
   'toggle-favorite': []
   'toggle-comments': []
+  'view-original': []
+  'download': []
 }>()
 
 function handleZoomIn() {
@@ -36,6 +41,14 @@ function handleToggleFavorite() {
 
 function handleToggleComments() {
   emit('toggle-comments')
+}
+
+function handleViewOriginal() {
+  emit('view-original')
+}
+
+function handleDownload() {
+  emit('download')
 }
 </script>
 
@@ -64,6 +77,22 @@ function handleToggleComments() {
     </button>
     <button class="photo-toolbar__btn" type="button" @click="handleToggleComments" title="评论">
       <MessageCircle :size="20" />
+    </button>
+    <div class="photo-toolbar__divider" />
+    <button
+      v-if="hasOriginalToken"
+      class="photo-toolbar__btn"
+      :class="{ 'photo-toolbar__btn--active': showOriginal }"
+      type="button"
+      :disabled="loadingOriginal"
+      @click="handleViewOriginal"
+      :title="showOriginal ? '查看预览图 (O)' : '查看原图 (O)'"
+    >
+      <LoadingIcon v-if="loadingOriginal" :size="20" class="photo-toolbar__loading" />
+      <PhotoIcon v-else :size="20" />
+    </button>
+    <button class="photo-toolbar__btn" type="button" @click="handleDownload" title="下载 (D)">
+      <Download :size="20" />
     </button>
   </div>
 </template>

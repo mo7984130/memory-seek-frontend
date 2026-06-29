@@ -3,9 +3,9 @@
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { photo as photoApi } from 'memory-seek-api'
 import type { PhotoResult } from 'memory-seek-api'
-import Modal from '@/components/feedback/Modal/Modal.vue'
 import PhotoToolbar from './PhotoToolbar.vue'
 import PhotoComments from './PhotoComments.vue'
+import './photo-viewer.css'
 
 interface Props {
   modelValue: boolean
@@ -149,10 +149,13 @@ function close() {
 }
 
 /**
- * Modal 关闭时重置状态
+ * 点击背景关闭（只在点击空白区域时触发）
  */
-function handleModalClose(value: boolean) {
-  emit('update:modelValue', value)
+function handleContentClick(event: MouseEvent) {
+  // 只有直接点击 content 元素本身时才关闭（不包括子元素）
+  if (event.target === event.currentTarget) {
+    close()
+  }
 }
 
 /**
@@ -184,15 +187,15 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <Modal
-    :model-value="modelValue"
-    size="full"
-    :closable="false"
-    :mask-closable="true"
-    class="photo-viewer"
-    @update:model-value="handleModalClose"
-  >
-    <div class="photo-viewer__content" @wheel.prevent="handleWheel">
+  <Teleport to="body">
+    <div
+      v-if="modelValue"
+      class="photo-viewer"
+      @wheel.prevent="handleWheel"
+      @click.self="handleContentClick"
+      @keydown="handleKeydown"
+      tabindex="0"
+    >
       <!-- 图片 -->
       <img
         v-if="imageUrl"
@@ -226,5 +229,5 @@ onBeforeUnmount(() => {
         @close="showComments = false"
       />
     </div>
-  </Modal>
+  </Teleport>
 </template>

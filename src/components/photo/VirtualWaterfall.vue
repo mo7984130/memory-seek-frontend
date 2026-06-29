@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 
 /**
  * 瀑布流项目接口
@@ -145,40 +145,39 @@ const visibleItems = computed(() => {
   const start = scrollY.value - props.buffer
   const end = scrollY.value + windowHeight.value + props.buffer
 
-  const filtered = positionedItems.value.filter(
+  return positionedItems.value.filter(
     (p) => p.renderTop + p.renderHeight > start && p.renderTop < end,
   )
+})
 
-  // 找到当前最顶部的分组
-  if (filtered.length > 0) {
-    // 找最近的分组标题，或当前照片所属的分组
-    const topItem = filtered.reduce((prev, curr) =>
-      prev.renderTop < curr.renderTop ? prev : curr,
+/**
+ * 跟踪最顶部的分组并触发事件（从 computed 中抽离，避免副作用）
+ */
+watch(visibleItems, (filtered) => {
+  if (filtered.length === 0) return
+
+  const topItem = filtered.reduce((prev, curr) =>
+    prev.renderTop < curr.renderTop ? prev : curr,
+  )
+
+  let currentGroupKey = ''
+  if (topItem.type === 'header') {
+    currentGroupKey = topItem.groupKey || ''
+  } else {
+    const headerItem = positionedItems.value.find(
+      p => p.type === 'header' && p.groupKey && p.renderTop <= topItem.renderTop
+        && p.renderTop + p.renderHeight > topItem.renderTop - 1000
     )
-
-    let currentGroupKey = ''
-    if (topItem.type === 'header') {
-      currentGroupKey = topItem.groupKey || ''
-    } else {
-      // 向上找最近的分组标题
-      const headerItem = positionedItems.value.find(
-        p => p.type === 'header' && p.groupKey && p.renderTop <= topItem.renderTop
-          && p.renderTop + p.renderHeight > topItem.renderTop - 1000
-      )
-      currentGroupKey = headerItem?.groupKey || ''
-    }
-
-    if (currentGroupKey) {
-      emit('current-group-change', currentGroupKey)
-    }
-
-    // 保持原有事件
-    if (topItem.type === 'item') {
-      emit('top-item-change', topItem as WaterfallItem)
-    }
+    currentGroupKey = headerItem?.groupKey || ''
   }
 
-  return filtered
+  if (currentGroupKey) {
+    emit('current-group-change', currentGroupKey)
+  }
+
+  if (topItem.type === 'item') {
+    emit('top-item-change', topItem as WaterfallItem)
+  }
 })
 
 /**
@@ -186,7 +185,9 @@ const visibleItems = computed(() => {
  */
 const containerHeight = computed(() => {
   if (positionedItems.value.length === 0) return 100
-  return Math.max(...positionedItems.value.map((p) => p.renderTop + p.renderHeight))
+  return positionedItems.value.reduce(
+    (max, p) => Math.max(max, p.renderTop + p.renderHeight), 0,
+  )
 })
 
 /**

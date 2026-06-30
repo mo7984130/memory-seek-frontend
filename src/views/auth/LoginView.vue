@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Lock, User, ArrowRight } from '@/components/base/Icon/icons'
+import { Lock, User, ArrowRight, Sun, Moon } from '@/components/base/Icon/icons'
 import { useAuthStore } from '@/stores/auth'
+import { useThemeStore } from '@/stores/theme'
 import Input from '@/components/form/Input/Input.vue'
 import Button from '@/components/actions/Button/Button.vue'
-import Card from '@/components/data/Card/Card.vue'
+import IconButton from '@/components/actions/IconButton/IconButton.vue'
 import { useToast } from '@/components/feedback/Toast/toast'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const themeStore = useThemeStore()
 const toast = useToast()
 
 // 表单状态
@@ -55,6 +57,12 @@ function handleRegister() {
 
 <template>
   <div class="login-view">
+    <!-- 主题切换按钮 -->
+    <IconButton class="auth-theme-btn" @click="themeStore.toggleTheme()">
+      <Moon v-if="!themeStore.isDark" :size="20" />
+      <Sun v-else :size="20" />
+    </IconButton>
+
     <div class="login-container">
       <!-- 品牌区域 -->
       <div class="login-brand">
@@ -62,40 +70,38 @@ function handleRegister() {
         <p class="login-brand__subtitle">让时光驻留，让记忆重现。</p>
       </div>
 
-      <!-- 登录卡片 -->
-      <Card class="login-card" shadow="lg" padding="lg">
-        <form class="login-form" @submit.prevent="handleLogin">
-          <!-- 用户名输入框 -->
-          <div class="login-form__field">
-            <Input v-model="account" placeholder="用户名 / 邮箱" size="lg">
-              <template #prefix>
-                <User :size="18" class="login-form__icon" />
-              </template>
-            </Input>
-          </div>
-
-          <!-- 密码输入框 -->
-          <div class="login-form__field">
-            <Input v-model="password" type="password" placeholder="密码" size="lg">
-              <template #prefix>
-                <Lock :size="18" class="login-form__icon" />
-              </template>
-            </Input>
-          </div>
-
-          <!-- 登录按钮 -->
-          <Button type="submit" size="lg" block :loading="loading" class="login-form__submit">
-            登录
-            <ArrowRight :size="18" />
-          </Button>
-        </form>
-
-        <!-- 注册链接 -->
-        <div class="login-form__footer">
-          <span class="login-form__footer-text">还没有账号？</span>
-          <span class="login-form__footer-link" @click="handleRegister"> 立即注册 </span>
+      <!-- 登录表单 -->
+      <form class="login-form" @submit.prevent="handleLogin">
+        <!-- 用户名输入框 -->
+        <div class="login-form__field">
+          <Input v-model="account" placeholder="用户名 / 邮箱" size="lg">
+            <template #prefix>
+              <User :size="18" class="login-form__icon" />
+            </template>
+          </Input>
         </div>
-      </Card>
+
+        <!-- 密码输入框 -->
+        <div class="login-form__field">
+          <Input v-model="password" type="password" placeholder="密码" size="lg">
+            <template #prefix>
+              <Lock :size="18" class="login-form__icon" />
+            </template>
+          </Input>
+        </div>
+
+        <!-- 登录按钮 -->
+        <Button type="submit" size="lg" block :loading="loading" class="login-form__submit">
+          登录
+          <ArrowRight :size="18" />
+        </Button>
+      </form>
+
+      <!-- 注册链接 -->
+      <div class="login-form__footer">
+        <span class="login-form__footer-text">还没有账号？</span>
+        <span class="login-form__footer-link" @click="handleRegister"> 立即注册 </span>
+      </div>
     </div>
   </div>
 </template>
@@ -103,19 +109,47 @@ function handleRegister() {
 <style scoped>
 .login-view {
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, var(--color-bg-primary), var(--color-bg-secondary));
   padding: var(--spacing-4);
+  position: relative;
+}
+
+.auth-theme-btn {
+  position: fixed;
+  top: var(--spacing-4);
+  right: var(--spacing-4);
+  z-index: 10;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-fast-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .auth-theme-btn:hover {
+    background: var(--color-bg-hover);
+    color: var(--color-text-primary);
+  }
 }
 
 .login-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-10);
+  gap: var(--spacing-8);
+  width: 100%;
+  max-width: 360px;
 }
 
 .login-brand {
@@ -138,23 +172,23 @@ function handleRegister() {
   letter-spacing: var(--tracking-wider);
 }
 
-.login-card {
-  width: 380px;
+.login-form {
+  width: 360px;
   max-width: 100%;
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.dark .login-card {
-  background: rgba(45, 45, 45, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.login-form {
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-8);
+  box-shadow: var(--shadow-lg);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-5);
+}
+
+.dark .login-form {
+  background: rgba(45, 45, 45, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .login-form__field {
@@ -166,15 +200,46 @@ function handleRegister() {
 }
 
 .login-form__submit {
-  margin-top: var(--spacing-2);
+  margin-top: var(--spacing-4);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--spacing-2);
+  height: 48px;
+  font-size: var(--text-base);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  border: none;
+  color: white;
+  font-weight: var(--font-medium);
+  letter-spacing: var(--tracking-wide);
+  transition: var(--transition-normal-out);
+  box-shadow: 0 4px 12px rgba(143, 181, 163, 0.3);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .login-form__submit:hover {
+    background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary));
+    box-shadow: 0 6px 16px rgba(143, 181, 163, 0.4);
+    transform: translateY(-1px);
+  }
+}
+
+.login-form__submit:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(143, 181, 163, 0.3);
+}
+
+.dark .login-form__submit {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  box-shadow: 0 4px 12px rgba(120, 120, 120, 0.3);
+}
+
+.dark .login-form__submit:hover {
+  box-shadow: 0 6px 16px rgba(120, 120, 120, 0.4);
 }
 
 .login-form__footer {
-  margin-top: var(--spacing-6);
   text-align: center;
   font-size: var(--text-sm);
   letter-spacing: var(--tracking-wider);
@@ -204,12 +269,8 @@ function handleRegister() {
 
 @media (min-width: 769px) {
   .login-container {
-    flex-direction: row;
-    gap: var(--spacing-16);
-  }
-
-  .login-brand {
-    text-align: left;
+    max-width: 700px;
+    gap: var(--spacing-10);
   }
 }
 </style>

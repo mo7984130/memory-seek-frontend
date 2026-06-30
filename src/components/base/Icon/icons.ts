@@ -45,6 +45,9 @@ import {
   Ticket,
   Download,
   ExternalLink,
+  Calendar,
+  Mail,
+  Shield,
 } from 'lucide-vue-next'
 
 export {
@@ -80,6 +83,9 @@ export {
   Ticket,
   Download,
   ExternalLink,
+  Calendar,
+  Mail,
+  Shield,
 }
 
 /* ============================================

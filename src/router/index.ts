@@ -11,6 +11,12 @@ const router = createRouter({
       meta: { title: '登录', requiresGuest: true },
     },
     {
+      path: '/register',
+      name: 'register',
+      component: () => import('@/views/auth/RegisterView.vue'),
+      meta: { title: '注册', requiresGuest: true },
+    },
+    {
       path: '/',
       component: () => import('@/layouts/AppLayout.vue'),
       meta: { requiresAuth: true },

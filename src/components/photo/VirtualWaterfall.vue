@@ -71,7 +71,6 @@ const positionedItems = computed<PositionedItem[]>(() => {
   // 确保 groups 被追踪为依赖，即使 containerWidth 为 0
   const _groups = props.groups
   const _containerWidth = props.containerWidth
-  console.log('[VirtualWaterfall] positionedItems 重新计算', { containerWidth: _containerWidth, groupsCount: _groups?.length })
 
   if (_containerWidth <= 0) return []
 

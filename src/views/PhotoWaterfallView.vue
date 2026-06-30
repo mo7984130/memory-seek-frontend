@@ -65,7 +65,6 @@ function formatMonthLabel(key: string): string {
  * 按月分组
  */
 const groups = computed<WaterfallGroup[]>(() => {
-  console.log('[groups] 重新计算, allPhotos长度:', allPhotos.value.length)
   if (!allPhotos.value.length) return []
 
   const map = new Map<string, typeof allPhotos.value>()
@@ -170,7 +169,6 @@ async function handleLike(photoItem: PhotoResult) {
  * 时间线导航跳转：用 anchorTime 直接定位到目标月份，替换照片列表
  */
 async function handleNavigate(groupKey: string) {
-  console.log('[handleNavigate] 点击月份:', groupKey, { navigating: navigating.value })
   if (navigating.value) return
   navigating.value = true
   fetchGeneration++

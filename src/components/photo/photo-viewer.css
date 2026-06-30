@@ -12,6 +12,22 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   outline: none;
+  animation: photo-viewer-fade-in 0.3s var(--ease-out);
+}
+
+@keyframes photo-viewer-fade-in {
+  from {
+    opacity: 0;
+    background: rgba(0, 0, 0, 0);
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
 }
 
 /* 图片包裹层（撑满可用空间，pointer-events: none 让点击穿透到 .photo-viewer） */
@@ -67,6 +83,18 @@
   -webkit-user-drag: none;
   pointer-events: auto;
   cursor: grab;
+  animation: photo-viewer-zoom-in 0.3s var(--ease-out);
+}
+
+@keyframes photo-viewer-zoom-in {
+  from {
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
 }
 
 .photo-viewer__image--dragging {

@@ -77,7 +77,8 @@ const imageUrl = computed(() => {
 
 /** 图片 transform 样式（zoom 相对于 baseZoom 的比值） */
 const imageTransform = computed(() => {
-  return `translate(${translateX.value}px, ${translateY.value}px) scale(${zoom.value / baseZoom.value}) rotate(${rotation.value}deg)`
+  const scaleRatio = zoom.value / baseZoom.value
+  return `translate(-50%, -50%) scale(${scaleRatio}) rotate(${rotation.value}deg) translate(${translateX.value / scaleRatio}px, ${translateY.value / scaleRatio}px)`
 })
 
 /** 是否已点赞 */

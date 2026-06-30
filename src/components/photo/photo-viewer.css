@@ -58,17 +58,19 @@
 
 .photo-viewer__image {
   object-fit: contain;
-  transition: transform 0.2s var(--ease-out);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: 0;
+  transition: none;
   user-select: none;
   -webkit-user-drag: none;
-  /* 恢复图片本身的交互（父层 pointer-events: none 会穿透到这里） */
   pointer-events: auto;
   cursor: grab;
 }
 
 .photo-viewer__image--dragging {
   cursor: grabbing;
-  transition: none;
 }
 
 .photo-viewer__empty {

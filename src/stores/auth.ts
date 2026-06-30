@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { auth, user as userApi, AuthStorage } from 'memory-seek-api'
 import type { UserInfo } from 'memory-seek-api'
 import router from '@/router'
+import { useUserStore } from './user'
 
 /**
  * 认证状态管理
@@ -29,6 +30,8 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const res = await userApi.getMe()
       userInfo.value = res.data
+      // 将当前用户信息注入用户缓存
+      useUserStore().initSelf()
     } catch {
       // token 失效时 API 拦截器会自动处理
     } finally {

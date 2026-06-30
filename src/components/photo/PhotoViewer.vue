@@ -19,7 +19,7 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
-  'favorite': [photoId: string]
+  'like': [photoId: string, isLiked: boolean]
   'delete': [photoId: string]
 }>()
 
@@ -71,8 +71,8 @@ const imageTransform = computed(() => {
   return `scale(${zoom.value / baseZoom.value}) rotate(${rotation.value}deg)`
 })
 
-/** 是否已收藏 */
-const isFavorited = computed(() => props.photo?.isFavorited ?? false)
+/** 是否已点赞 */
+const isFavorited = computed(() => props.photo?.isLiked ?? false)
 
 /** 是否是照片上传者 */
 const isOwner = computed(() => {
@@ -123,28 +123,20 @@ function resetView() {
   rotation.value = 0
 }
 
-// ---- 收藏切换 ----
+// ---- 点赞切换 ----
 async function toggleFavorite() {
   if (!props.photo) return
+  const wasLiked = isFavorited.value
   try {
-    // 获取收藏夹列表
-    const collectionRes = await photoApi.collection.getCollectionList()
-    const favoriteCollection = collectionRes.data.find((c) => c.isFavorite)
-    if (!favoriteCollection) {
-      console.error('未找到默认收藏夹')
-      return
-    }
-
-    if (isFavorited.value) {
-      await photoApi.collection.removePhotoFromCollection(favoriteCollection.id, props.photo.id)
+    if (wasLiked) {
+      await photoApi.like.unlikePhoto(props.photo.id)
     } else {
-      await photoApi.collection.addPhotosToCollection(favoriteCollection.id, [props.photo.id])
+      await photoApi.like.likePhoto(props.photo.id)
     }
-
     // 通知父组件更新状态
-    emit('favorite', props.photo.id)
+    emit('like', props.photo.id, !wasLiked)
   } catch (error) {
-    console.error('收藏操作失败:', error)
+    console.error('点赞操作失败:', error)
   }
 }
 

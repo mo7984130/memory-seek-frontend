@@ -127,10 +127,13 @@ function handlePhotoClick(photoItem: PhotoResult) {
   viewerVisible.value = true
 }
 
-function handleLikeChange(photoId: string) {
+function handleLikeChange(photoId: string, isLiked: boolean) {
   const target = allPhotos.value.find((p) => p.id === photoId)
   if (target) {
-    target.isLiked = !target.isLiked
+    target.isLiked = isLiked
+  }
+  if (selectedPhoto.value?.id === photoId) {
+    selectedPhoto.value.isLiked = isLiked
   }
 }
 

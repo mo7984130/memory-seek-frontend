@@ -80,10 +80,13 @@ function handlePhotoClick(photoItem: PhotoResult) {
   viewerVisible.value = true
 }
 
-function handleLikeChange(photoId: string) {
-  const target = allPhotos.value.find((p) => p.id === photoId)
-  if (target) {
-    target.isLiked = !target.isLiked
+function handleLikeChange(photoId: string, isLiked: boolean) {
+  if (!isLiked) {
+    // 在点赞页面，取消点赞需要从列表中移除
+    allPhotos.value = allPhotos.value.filter((p) => p.id !== photoId)
+  }
+  if (selectedPhoto.value?.id === photoId) {
+    selectedPhoto.value.isLiked = isLiked
   }
 }
 

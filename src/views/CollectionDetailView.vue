@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useIntersectionObserver } from '@vueuse/core'
 import { ArrowLeft, Pencil, Trash2 } from '@/components/base/Icon/icons'
 import { photo } from 'memory-seek-api'
 import type { PhotoResult, CollectionResult } from 'memory-seek-api'
-import VirtualWaterfall, { type WaterfallItem } from '@/components/photo/VirtualWaterfall.vue'
+import { useWaterfallPersistence } from '@/composables/useWaterfallPersistence'
+import VirtualWaterfall, { type WaterfallItem, type WaterfallGroup } from '@/components/photo/VirtualWaterfall.vue'
 import PhotoCard from '@/components/photo/PhotoCard.vue'
 import PhotoViewer from '@/components/photo/PhotoViewer.vue'
 import IconButton from '@/components/actions/IconButton/IconButton.vue'
@@ -21,16 +22,16 @@ const toast = useToast()
 
 const collectionId = route.params.id as string
 
-// 状态
+// 使用持久化 composable（每个收藏夹独立存储）
+const waterfall = useWaterfallPersistence(`collection-${collectionId}`)
+
+// 本地 UI 状态
 const containerRef = ref<HTMLElement | null>(null)
 const sentinelRef = ref<HTMLElement | null>(null)
 const collection = ref<CollectionResult | null>(null)
-const allPhotos = ref<PhotoResult[]>([])
 const columnCount = ref(4)
 const containerWidth = ref(0)
 const loading = ref(false)
-const hasMore = ref(true)
-const cursor = ref<string | undefined>(undefined)
 
 // 照片查看器状态
 const viewerVisible = ref(false)
@@ -68,6 +69,26 @@ function handleResize() {
 }
 
 /**
+ * 按月分组
+ */
+const groups = computed<WaterfallGroup[]>(() => {
+  if (!waterfall.allPhotos.value.length) return []
+
+  const map = new Map<string, typeof waterfall.allPhotos.value>()
+  for (const photo of waterfall.allPhotos.value) {
+    const key = photo.createdAt.substring(0, 7)
+    if (!map.has(key)) map.set(key, [])
+    map.get(key)!.push(photo)
+  }
+
+  return Array.from(map.entries()).map(([key, photos]) => ({
+    key,
+    label: `${key.split('-')[0]}年${parseInt(key.split('-')[1])}月`,
+    items: photos,
+  }))
+})
+
+/**
  * 加载收藏夹信息
  */
 async function loadCollection() {
@@ -83,28 +104,28 @@ async function loadCollection() {
  * 获取收藏夹照片
  */
 async function fetchPhotos() {
-  if (loading.value || !hasMore.value) return
+  if (loading.value || !waterfall.hasMore.value) return
 
   loading.value = true
+  console.log('[CollectionDetailView] 开始获取照片', { cursor: waterfall.cursor.value })
+
   try {
     const response = await photo.collection.getCollectionPhotos(collectionId, {
-      cursor: cursor.value,
+      cursor: waterfall.cursor.value,
       size: 20,
     })
     const { records, nextCursor, hasMore: more } = response.data
 
-    allPhotos.value.push(...records)
-    cursor.value = nextCursor ?? undefined
-    hasMore.value = more
+    waterfall.appendPhotos(records, nextCursor ?? undefined, more)
   } catch (error) {
-    console.error('获取收藏夹照片失败:', error)
+    console.error('[CollectionDetailView] 获取收藏夹照片失败:', error)
   } finally {
     loading.value = false
   }
 }
 
-function getPhotoById(id: string | number): PhotoResult {
-  return allPhotos.value.find((p) => p.id === id) as PhotoResult
+function getPhotoById(id: string | number): PhotoResult | undefined {
+  return waterfall.allPhotos.value.find((p) => p.id === id)
 }
 
 function handlePhotoClick(photoItem: PhotoResult) {
@@ -113,17 +134,14 @@ function handlePhotoClick(photoItem: PhotoResult) {
 }
 
 function handleLikeChange(photoId: string, isLiked: boolean) {
-  const target = allPhotos.value.find((p) => p.id === photoId)
-  if (target) {
-    target.isLiked = isLiked
-  }
+  waterfall.updatePhotoLike(photoId, isLiked)
   if (selectedPhoto.value?.id === photoId) {
     selectedPhoto.value.isLiked = isLiked
   }
 }
 
 function handlePhotoDelete(photoId: string) {
-  allPhotos.value = allPhotos.value.filter((p) => p.id !== photoId)
+  waterfall.removePhoto(photoId)
   if (collection.value) {
     collection.value.photoCount = Math.max(0, collection.value.photoCount - 1)
   }
@@ -133,11 +151,8 @@ async function handleLike(photoItem: PhotoResult) {
   const photoId = photoItem.id as string
   const wasLiked = photoItem.isLiked ?? false
 
-  // 乐观更新 UI
-  const target = allPhotos.value.find((p) => p.id === photoId)
-  if (target) {
-    target.isLiked = !wasLiked
-  }
+  // 乐观更新
+  waterfall.updatePhotoLike(photoId, !wasLiked)
 
   try {
     if (wasLiked) {
@@ -147,10 +162,8 @@ async function handleLike(photoItem: PhotoResult) {
     }
   } catch (error) {
     // 回滚
-    if (target) {
-      target.isLiked = wasLiked
-    }
-    console.error('点赞操作失败:', error)
+    waterfall.updatePhotoLike(photoId, wasLiked)
+    console.error('[CollectionDetailView] 点赞操作失败:', error)
   }
 }
 
@@ -216,20 +229,31 @@ async function handleDelete() {
 // 触底加载
 useIntersectionObserver(sentinelRef, (entries) => {
   const isIntersecting = entries[0]?.isIntersecting || false
-  if (isIntersecting && !loading.value && hasMore.value) {
+  if (isIntersecting && !loading.value && waterfall.hasMore.value) {
     fetchPhotos()
   }
 })
 
-onMounted(() => {
+onMounted(async () => {
   handleResize()
   window.addEventListener('resize', handleResize)
   loadCollection()
+
+  // 检查是否有缓存状态
+  const restored = waterfall.onMount()
+  if (restored) {
+    console.log('[CollectionDetailView] 已恢复缓存状态，跳过加载')
+    return
+  }
+
+  // 首次加载
+  console.log('[CollectionDetailView] 首次加载')
   fetchPhotos()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
+  waterfall.onUnmount()
 })
 </script>
 
@@ -259,14 +283,15 @@ onBeforeUnmount(() => {
     <!-- 照片瀑布流 -->
     <div class="waterfall-container">
       <VirtualWaterfall
-        :items="allPhotos as WaterfallItem[]"
+        :groups="groups"
         :column-count="columnCount"
         :container-width="containerWidth"
         :gap="16"
       >
         <template #default="{ item }">
           <PhotoCard
-            :item="getPhotoById(item.id)"
+            v-if="getPhotoById(item.id)"
+            :item="getPhotoById(item.id)!"
             @click="handlePhotoClick"
             @like="handleLike"
           />
@@ -275,10 +300,10 @@ onBeforeUnmount(() => {
 
       <div ref="sentinelRef" class="load-sentinel">
         <Spinner v-if="loading" />
-        <span v-else-if="!hasMore && allPhotos.length > 0" class="load-sentinel__text">
+        <span v-else-if="!waterfall.hasMore.value && waterfall.allPhotos.value.length > 0" class="load-sentinel__text">
           已经到底啦 ~
         </span>
-        <span v-else-if="!loading && allPhotos.length === 0" class="load-sentinel__text">
+        <span v-else-if="!loading && waterfall.allPhotos.value.length === 0" class="load-sentinel__text">
           收藏夹里还没有照片
         </span>
       </div>

@@ -188,7 +188,7 @@ watch(
         加载中...
       </div>
       <div v-else-if="comments.length === 0" class="photo-comments__empty">
-        暂无评论，快来发表第一条吧~
+        暂无评论
       </div>
       <template v-else>
         <div

@@ -20,10 +20,12 @@ const hasMore = ref(true)
 const cursor = ref<string | undefined>(undefined)
 const navigating = ref(false)
 
+// 请求版本号，用于防止竞态条件
+let fetchGeneration = 0
+
 // 时间线状态
 const monthStats = ref<MonthStat[]>([])
 const currentGroup = ref('')
-const waterfallRef = ref<InstanceType<typeof VirtualWaterfall> | null>(null)
 
 // 照片查看器状态
 const viewerVisible = ref(false)
@@ -63,6 +65,7 @@ function formatMonthLabel(key: string): string {
  * 按月分组
  */
 const groups = computed<WaterfallGroup[]>(() => {
+  console.log('[groups] 重新计算, allPhotos长度:', allPhotos.value.length)
   if (!allPhotos.value.length) return []
 
   const map = new Map<string, typeof allPhotos.value>()
@@ -85,6 +88,7 @@ const groups = computed<WaterfallGroup[]>(() => {
 async function fetchPhotos() {
   if (loading.value || !hasMore.value) return
 
+  const gen = fetchGeneration
   loading.value = true
   try {
     const response = await photo.getPhotos({
@@ -92,6 +96,10 @@ async function fetchPhotos() {
       size: 20,
       direction: 'next',
     })
+
+    // 导航已发起新请求，丢弃本次结果
+    if (gen !== fetchGeneration) return
+
     const { records, nextCursor, hasMore: more } = response.data
 
     allPhotos.value.push(...records)
@@ -107,8 +115,8 @@ async function fetchPhotos() {
 /**
  * 根据 ID 获取照片
  */
-function getPhotoById(id: string | number): PhotoResult {
-  return allPhotos.value.find((p) => p.id === id) as PhotoResult
+function getPhotoById(id: string | number): PhotoResult | undefined {
+  return allPhotos.value.find((p) => p.id === id)
 }
 
 /**
@@ -156,39 +164,45 @@ async function handleLike(photoItem: PhotoResult) {
 }
 
 /**
- * 加载照片直到包含目标月份
- */
-async function loadUntilGroup(targetKey: string) {
-  while (hasMore.value) {
-    await fetchPhotos()
-    const hasTarget = allPhotos.value.some(
-      (p) => p.createdAt.substring(0, 7) === targetKey,
-    )
-    if (hasTarget) break
-  }
-}
-
-/**
- * 时间线导航跳转
+ * 时间线导航跳转：用 anchorTime 直接定位到目标月份，替换照片列表
  */
 async function handleNavigate(groupKey: string) {
+  console.log('[handleNavigate] 点击月份:', groupKey, { navigating: navigating.value })
   if (navigating.value) return
   navigating.value = true
+  fetchGeneration++
 
   try {
-    // 检查目标月份是否已加载
-    const hasTarget = groups.value.some((g) => g.key === groupKey)
+    // 目标月份下月1日 00:00 UTC 作为锚点
+    // groupKey 格式 "2023-02"，Date.UTC 月份从0开始，parseInt("02")=2 正好是下月
+    const [yearStr, monthStr] = groupKey.split('-')
+    const anchorTime = new Date(Date.UTC(parseInt(yearStr), parseInt(monthStr), 1)).toISOString()
 
-    if (!hasTarget) {
-      await loadUntilGroup(groupKey)
-    }
+    loading.value = true
+    const response = await photo.getPhotos({
+      size: 20,
+      direction: 'next',
+      anchorTime,
+    })
+    const { records, nextCursor, hasMore: more } = response.data
 
+    // 替换照片列表
+    allPhotos.value = records
+    cursor.value = nextCursor ?? undefined
+    hasMore.value = more
+    currentGroup.value = groupKey
+
+    // 等待 DOM 更新后滚动到顶部
     await nextTick()
-    waterfallRef.value?.scrollToGroup(groupKey)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  } catch (error) {
+    console.error('导航失败:', error)
   } finally {
+    loading.value = false
     navigating.value = false
   }
 }
+
 
 // 触底加载
 useIntersectionObserver(sentinelRef, (entries) => {
@@ -220,7 +234,6 @@ onBeforeUnmount(() => {
   <div class="photo-waterfall-view" ref="containerRef">
     <div class="waterfall-container">
       <VirtualWaterfall
-        ref="waterfallRef"
         :groups="groups"
         :column-count="columnCount"
         :container-width="containerWidth"
@@ -236,7 +249,8 @@ onBeforeUnmount(() => {
 
         <template #default="{ item }">
           <PhotoCard
-            :item="getPhotoById(item.id)"
+            v-if="getPhotoById(item.id)"
+            :item="getPhotoById(item.id)!"
             @click="handlePhotoClick"
             @like="handleLike"
           />
@@ -254,6 +268,7 @@ onBeforeUnmount(() => {
     <TimelineNav
       :month-stats="monthStats"
       :current-group="currentGroup"
+      :navigating="navigating"
       @navigate="handleNavigate"
     />
 

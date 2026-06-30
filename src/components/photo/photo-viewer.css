@@ -14,14 +14,17 @@
   outline: none;
 }
 
-/* 图片包裹层（用于玻璃光动画） */
+/* 图片包裹层（撑满可用空间，pointer-events: none 让点击穿透到 .photo-viewer） */
 .photo-viewer__image-wrapper {
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   overflow: hidden;
   background: transparent;
+  pointer-events: none;
 }
 
 /* 玻璃光扫过动画 */
@@ -54,12 +57,12 @@
 }
 
 .photo-viewer__image {
-  max-width: calc(100% - var(--spacing-16));
-  max-height: calc(100% - var(--spacing-16));
   object-fit: contain;
   transition: transform 0.2s var(--ease-out);
   user-select: none;
   -webkit-user-drag: none;
+  /* 恢复图片本身的交互（父层 pointer-events: none 会穿透到这里） */
+  pointer-events: auto;
 }
 
 .photo-viewer__empty {
@@ -67,10 +70,60 @@
   font-size: var(--text-lg);
 }
 
-/* 移动端适配 */
-@media (max-width: 768px) {
-  .photo-viewer__image {
-    max-width: calc(100% - var(--spacing-8));
-    max-height: calc(100% - var(--spacing-24));
-  }
+/* 删除确认弹窗（z-index 高于照片查看器） */
+.photo-viewer__modal-overlay {
+  z-index: 10000;
 }
+
+/* 删除确认弹窗 */
+.delete-confirm__text {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin: 0 0 var(--spacing-6);
+}
+
+.delete-confirm__actions {
+  display: flex;
+  gap: var(--spacing-3);
+  justify-content: flex-end;
+}
+
+.delete-confirm__cancel {
+  padding: var(--spacing-2) var(--spacing-5);
+  background: transparent;
+  border: 2px solid var(--color-border);
+  border-radius: var(--btn-radius);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: var(--btn-transition);
+}
+
+.delete-confirm__cancel:hover {
+  border-color: var(--color-text-tertiary);
+}
+
+.delete-confirm__delete {
+  padding: var(--spacing-2) var(--spacing-5);
+  background: var(--color-danger);
+  color: white;
+  border: none;
+  border-radius: var(--btn-radius);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  font-family: inherit;
+  transition: var(--btn-transition);
+}
+
+.delete-confirm__delete:hover {
+  opacity: 0.9;
+}
+
+.delete-confirm__delete:disabled {
+  opacity: var(--btn-disabled-opacity);
+  cursor: not-allowed;
+}
+

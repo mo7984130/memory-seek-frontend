@@ -10,10 +10,14 @@ interface NavYear {
   months: { key: string; label: string }[]
 }
 
-const props = defineProps<{
-  monthStats: MonthStat[]
-  currentGroup: string
-}>()
+const props = withDefaults(
+  defineProps<{
+    monthStats: MonthStat[]
+    currentGroup: string
+    navigating?: boolean
+  }>(),
+  { navigating: false },
+)
 
 const emit = defineEmits<{
   (e: 'navigate', groupKey: string): void
@@ -49,12 +53,17 @@ const navYears = computed<NavYear[]>(() => {
  * 点击月份处理
  */
 function handleMonthClick(key: string) {
+  if (props.navigating) return
   emit('navigate', key)
 }
 </script>
 
 <template>
   <nav class="timeline-nav" v-if="navYears.length > 0">
+    <!-- 加载指示器 -->
+    <div v-if="navigating" class="timeline-nav__loading" title="加载中...">
+      <span class="timeline-nav__spinner"></span>
+    </div>
     <template v-for="year in navYears" :key="year.year">
       <!-- 年份标签 -->
       <div
@@ -70,9 +79,13 @@ function handleMonthClick(key: string) {
         v-for="month in year.months"
         :key="month.key"
         class="timeline-nav__month"
-        :class="{ 'timeline-nav__month--active': month.key === currentGroup }"
+        :class="{
+          'timeline-nav__month--active': month.key === currentGroup,
+          'timeline-nav__month--disabled': navigating,
+        }"
         @click="handleMonthClick(month.key)"
         :title="`${year.year}年${month.label}`"
+        :disabled="navigating"
       >
         {{ month.label }}
       </button>
@@ -140,6 +153,12 @@ function handleMonthClick(key: string) {
   color: var(--color-text-secondary);
 }
 
+.timeline-nav__month--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .timeline-nav__month--active {
   color: var(--color-primary);
   font-weight: var(--font-semibold);
@@ -148,6 +167,27 @@ function handleMonthClick(key: string) {
 
 .dark .timeline-nav__month--active {
   background: rgba(212, 175, 55, 0.15);
+}
+
+.timeline-nav__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 0;
+}
+
+.timeline-nav__spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--color-text-tertiary);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: timeline-spin 0.6s linear infinite;
+}
+
+@keyframes timeline-spin {
+  to { transform: rotate(360deg); }
 }
 
 @media (max-width: 768px) {

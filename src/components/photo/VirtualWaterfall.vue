@@ -46,6 +46,8 @@ const emit = defineEmits<{
 const windowHeight = ref(window.innerHeight)
 // 滚动位置
 const scrollY = ref(0)
+// 容器 ref
+const waterfallRef = ref<HTMLElement | null>(null)
 
 /**
  * 定位后的项目（照片或分组标题）
@@ -66,9 +68,14 @@ interface PositionedItem {
  * 计算每张照片的绝对定位坐标
  */
 const positionedItems = computed<PositionedItem[]>(() => {
-  if (props.containerWidth <= 0) return []
+  // 确保 groups 被追踪为依赖，即使 containerWidth 为 0
+  const _groups = props.groups
+  const _containerWidth = props.containerWidth
+  console.log('[VirtualWaterfall] positionedItems 重新计算', { containerWidth: _containerWidth, groupsCount: _groups?.length })
 
-  const colWidth = (props.containerWidth - (props.columnCount - 1) * props.gap) / props.columnCount
+  if (_containerWidth <= 0) return []
+
+  const colWidth = (_containerWidth - (props.columnCount - 1) * props.gap) / props.columnCount
   const heights = new Array(props.columnCount).fill(0)
 
   // 分组模式
@@ -164,10 +171,10 @@ watch(visibleItems, (filtered) => {
   if (topItem.type === 'header') {
     currentGroupKey = topItem.groupKey || ''
   } else {
-    const headerItem = positionedItems.value.find(
-      p => p.type === 'header' && p.groupKey && p.renderTop <= topItem.renderTop
-        && p.renderTop + p.renderHeight > topItem.renderTop - 1000
-    )
+    // 找 renderTop <= topItem.renderTop 中最大的那个 header
+    const headerItem = positionedItems.value
+      .filter(p => p.type === 'header' && p.groupKey && p.renderTop <= topItem.renderTop)
+      .reduce((best, curr) => (!best || curr.renderTop > best.renderTop ? curr : best), null as PositionedItem | null)
     currentGroupKey = headerItem?.groupKey || ''
   }
 
@@ -211,12 +218,21 @@ function scrollToGroup(groupKey: string) {
   const header = positionedItems.value.find(
     p => p.type === 'header' && p.groupKey === groupKey,
   )
-  if (header) {
-    window.scrollTo({
-      top: header.renderTop,
-      behavior: 'smooth',
-    })
+  if (!header) {
+    console.warn(`scrollToGroup: 未找到分组 ${groupKey}，当前分组:`, positionedItems.value.filter(p => p.type === 'header').map(p => p.groupKey))
+    return
   }
+
+  if (!waterfallRef.value) {
+    console.warn('scrollToGroup: 容器 ref 未就绪')
+    return
+  }
+  const containerRect = waterfallRef.value.getBoundingClientRect()
+  const scrollTop = containerRect.top + window.scrollY + header.renderTop
+  window.scrollTo({
+    top: scrollTop,
+    behavior: 'smooth',
+  })
 }
 
 defineExpose({ scrollToGroup })
@@ -233,7 +249,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="virtual-waterfall" :style="{ height: containerHeight + 'px' }">
+  <div class="virtual-waterfall" ref="waterfallRef" :style="{ height: containerHeight + 'px' }">
     <div
       v-for="item in visibleItems"
       :key="item.id"

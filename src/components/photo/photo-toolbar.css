@@ -79,3 +79,8 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.photo-toolbar__btn--danger:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: var(--color-danger);
+}

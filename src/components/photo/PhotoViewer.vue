@@ -3,6 +3,9 @@
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { photo as photoApi } from 'memory-seek-api'
 import type { PhotoResult } from 'memory-seek-api'
+import { useAuthStore } from '@/stores/auth'
+import { useToast } from '@/components/feedback/Toast/toast'
+import Modal from '@/components/feedback/Modal/Modal.vue'
 import PhotoToolbar from './PhotoToolbar.vue'
 import PhotoComments from './PhotoComments.vue'
 import './photo-viewer.css'
@@ -17,23 +20,32 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
   'favorite': [photoId: string]
+  'delete': [photoId: string]
 }>()
+
+const authStore = useAuthStore()
+const toast = useToast()
 
 // ---- 状态 ----
 const zoom = ref(1)
+const baseZoom = ref(1)
 const rotation = ref(0)
+const imageWidth = ref(0)
+const imageHeight = ref(0)
 const showComments = ref(false)
 const showOriginal = ref(false)
 const loadingOriginal = ref(false)
 const refreshing = ref(false)
+const showDeleteConfirm = ref(false)
+const deleting = ref(false)
 
 // 原图缓存（仅当前会话有效）
 const originalUrl = ref<string | null>(null)
 
-// 缩放范围常量
-const ZOOM_MIN = 0.5
-const ZOOM_MAX = 3
-const ZOOM_STEP = 0.25
+// 缩放常量（相对于 baseZoom 的倍数）
+const ZOOM_RATIO_MIN = 0.25
+const ZOOM_RATIO_MAX = 4
+const ZOOM_RATIO_STEP = 0.25
 
 // ---- 计算属性 ----
 
@@ -54,26 +66,61 @@ const imageUrl = computed(() => {
   return token ? photoApi.getImgUrl(token) : null
 })
 
-/** 图片 transform 样式 */
+/** 图片 transform 样式（zoom 相对于 baseZoom 的比值） */
 const imageTransform = computed(() => {
-  return `scale(${zoom.value}) rotate(${rotation.value}deg)`
+  return `scale(${zoom.value / baseZoom.value}) rotate(${rotation.value}deg)`
 })
 
 /** 是否已收藏 */
 const isFavorited = computed(() => props.photo?.isFavorited ?? false)
 
+/** 是否是照片上传者 */
+const isOwner = computed(() => {
+  if (!props.photo || !authStore.userId) return false
+  return props.photo.userId === authStore.userId
+})
+
 // ---- 缩放控制 ----
 function zoomIn() {
-  zoom.value = Math.min(zoom.value + ZOOM_STEP, ZOOM_MAX)
+  const step = baseZoom.value * ZOOM_RATIO_STEP
+  zoom.value = Math.min(zoom.value + step, baseZoom.value * ZOOM_RATIO_MAX)
 }
 
 function zoomOut() {
-  zoom.value = Math.max(zoom.value - ZOOM_STEP, ZOOM_MIN)
+  const step = baseZoom.value * ZOOM_RATIO_STEP
+  zoom.value = Math.max(zoom.value - step, baseZoom.value * ZOOM_RATIO_MIN)
+}
+
+// ---- 图片加载后计算适配尺寸 ----
+function handleImageLoad(event: Event) {
+  const img = event.target as HTMLImageElement
+  const naturalW = img.naturalWidth
+  const naturalH = img.naturalHeight
+  if (!naturalW || !naturalH) return
+
+  // 可用区域（减去工具栏和边距空间）
+  const availW = window.innerWidth - 80
+  const availH = window.innerHeight - 120
+
+  const scale = Math.min(availW / naturalW, availH / naturalH)
+  imageWidth.value = Math.round(naturalW * scale)
+  imageHeight.value = Math.round(naturalH * scale)
+
+  // 设置初始缩放为适配缩放
+  baseZoom.value = scale
+  zoom.value = scale
+  rotation.value = 0
 }
 
 // ---- 旋转控制（每次 90°） ----
 function rotate() {
   rotation.value = (rotation.value + 90) % 360
+}
+
+// ---- 重置缩放和旋转 ----
+function resetView() {
+  zoom.value = baseZoom.value
+  rotation.value = 0
 }
 
 // ---- 收藏切换 ----
@@ -187,6 +234,24 @@ async function downloadOriginal() {
   }
 }
 
+// ---- 删除照片 ----
+async function handleDelete() {
+  if (!props.photo) return
+  deleting.value = true
+  try {
+    await photoApi.deletePhotos([props.photo.id])
+    toast.success('照片已删除')
+    emit('delete', props.photo.id)
+    showDeleteConfirm.value = false
+    close()
+  } catch (error) {
+    console.error('删除照片失败:', error)
+    toast.error('删除失败，请重试')
+  } finally {
+    deleting.value = false
+  }
+}
+
 // ---- 滚轮缩放 ----
 function handleWheel(event: WheelEvent) {
   event.preventDefault()
@@ -218,6 +283,9 @@ function handleKeydown(event: KeyboardEvent) {
     case 'R':
       rotate()
       break
+    case '0':
+      resetView()
+      break
     case 'o':
     case 'O':
       viewOriginal()
@@ -245,12 +313,17 @@ function handleContentClick(event: MouseEvent) {
 // ---- 重置内部状态 ----
 function resetState() {
   zoom.value = 1
+  baseZoom.value = 1
   rotation.value = 0
+  imageWidth.value = 0
+  imageHeight.value = 0
   showComments.value = false
   showOriginal.value = false
   loadingOriginal.value = false
   refreshing.value = false
   originalUrl.value = null
+  showDeleteConfirm.value = false
+  deleting.value = false
 }
 
 // 监听弹窗打开，添加键盘事件
@@ -277,8 +350,7 @@ onBeforeUnmount(() => {
     <div
       v-if="modelValue"
       class="photo-viewer"
-      @wheel.prevent="handleWheel"
-      @click.self="handleContentClick"
+      @click="handleContentClick"
       @keydown="handleKeydown"
       tabindex="0"
     >
@@ -293,8 +365,10 @@ onBeforeUnmount(() => {
           :src="imageUrl"
           :alt="photo?.name"
           class="photo-viewer__image"
-          :style="{ transform: imageTransform }"
+          :style="{ transform: imageTransform, width: imageWidth ? imageWidth + 'px' : undefined, height: imageHeight ? imageHeight + 'px' : undefined }"
           draggable="false"
+          @load="handleImageLoad"
+          @wheel.prevent="handleWheel"
         />
       </div>
       <div v-else class="photo-viewer__empty">
@@ -309,13 +383,16 @@ onBeforeUnmount(() => {
         :show-original="showOriginal"
         :loading-original="loadingOriginal"
         :has-original-token="hasOriginalToken"
+        :is-owner="isOwner"
         @zoom-in="zoomIn"
         @zoom-out="zoomOut"
         @rotate="rotate"
+        @reset="resetView"
         @toggle-favorite="toggleFavorite"
         @toggle-comments="toggleComments"
         @view-original="viewOriginal"
         @download="downloadOriginal"
+        @delete="showDeleteConfirm = true"
       />
 
       <!-- 侧边评论抽屉 -->
@@ -325,6 +402,23 @@ onBeforeUnmount(() => {
         :visible="showComments"
         @close="showComments = false"
       />
+
+      <!-- 删除确认弹窗 -->
+      <Modal v-model="showDeleteConfirm" size="sm" title="删除照片" overlay-class="photo-viewer__modal-overlay">
+        <div class="delete-confirm">
+          <p class="delete-confirm__text">
+            确定要删除这张照片吗？此操作不可撤销。
+          </p>
+          <div class="delete-confirm__actions">
+            <button class="delete-confirm__cancel" type="button" @click="showDeleteConfirm = false">
+              取消
+            </button>
+            <button class="delete-confirm__delete" type="button" :disabled="deleting" @click="handleDelete">
+              {{ deleting ? '删除中...' : '删除' }}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   </Teleport>
 </template>

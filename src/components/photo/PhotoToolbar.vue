@@ -1,6 +1,7 @@
 <!-- src/components/photo/PhotoToolbar.vue -->
 <script setup lang="ts">
-import { ZoomIn, ZoomOut, RotateCw, Heart, MessageCircle, PhotoIcon, Download, LoadingIcon } from '@/components/base/Icon/icons'
+import { ZoomIn, ZoomOut, RotateCw, Maximize2, Heart, MessageCircle, PhotoIcon, Download, LoadingIcon, Trash2 } from '@/components/base/Icon/icons'
+import './photo-toolbar.css'
 
 interface Props {
   zoom: number
@@ -9,6 +10,7 @@ interface Props {
   showOriginal?: boolean
   loadingOriginal?: boolean
   hasOriginalToken?: boolean
+  isOwner?: boolean
 }
 
 defineProps<Props>()
@@ -17,10 +19,12 @@ const emit = defineEmits<{
   'zoom-in': []
   'zoom-out': []
   'rotate': []
+  'reset': []
   'toggle-favorite': []
   'toggle-comments': []
   'view-original': []
   'download': []
+  'delete': []
 }>()
 
 function handleZoomIn() {
@@ -33,6 +37,10 @@ function handleZoomOut() {
 
 function handleRotate() {
   emit('rotate')
+}
+
+function handleReset() {
+  emit('reset')
 }
 
 function handleToggleFavorite() {
@@ -50,6 +58,10 @@ function handleViewOriginal() {
 function handleDownload() {
   emit('download')
 }
+
+function handleDelete() {
+  emit('delete')
+}
 </script>
 
 <template>
@@ -64,6 +76,9 @@ function handleDownload() {
     <div class="photo-toolbar__divider" />
     <button class="photo-toolbar__btn" type="button" @click="handleRotate" title="旋转 (R)">
       <RotateCw :size="20" />
+    </button>
+    <button class="photo-toolbar__btn" type="button" @click="handleReset" title="重置 (0)">
+      <Maximize2 :size="20" />
     </button>
     <div class="photo-toolbar__divider" />
     <button
@@ -94,5 +109,11 @@ function handleDownload() {
     <button class="photo-toolbar__btn" type="button" @click="handleDownload" title="下载 (D)">
       <Download :size="20" />
     </button>
+    <template v-if="isOwner">
+      <div class="photo-toolbar__divider" />
+      <button class="photo-toolbar__btn photo-toolbar__btn--danger" type="button" @click="handleDelete" title="删除">
+        <Trash2 :size="20" />
+      </button>
+    </template>
   </div>
 </template>

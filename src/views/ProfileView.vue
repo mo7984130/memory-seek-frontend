@@ -6,6 +6,7 @@ import type { UserInfo, InviterCodeResult } from 'memory-seek-api'
 import { useAuthStore } from '@/stores/auth'
 import Card from '@/components/data/Card/Card.vue'
 import Modal from '@/components/feedback/Modal/Modal.vue'
+import Input from '@/components/form/Input/Input.vue'
 import Spinner from '@/components/base/Spinner/Spinner.vue'
 import { useToast } from '@/components/feedback/Toast/toast'
 
@@ -312,7 +313,7 @@ onMounted(() => {
       <!-- 邀请码 -->
       <div class="invite-section">
         <h3 class="section-title">邀请码</h3>
-        <div class="invite-card">
+        <Card shadow="sm" padding="sm" class="invite-card">
           <div v-if="inviterCode" class="invite-card__row">
             <code class="invite-card__code">{{ inviterCode.inviterCode }}</code>
             <button
@@ -350,21 +351,25 @@ onMounted(() => {
               {{ generatingCode ? '生成中...' : '生成' }}
             </button>
           </div>
-        </div>
+        </Card>
       </div>
 
       <!-- 账号安全 -->
       <div class="security-section">
         <h3 class="section-title">账号安全</h3>
         <div class="security-actions">
-          <button class="security-btn" type="button" @click="openPasswordChange">
-            <Key :size="18" />
-            <span>修改密码</span>
-          </button>
-          <button class="security-btn security-btn--danger" type="button" @click="showLogoutConfirm = true">
-            <LogOut :size="18" />
-            <span>退出登录</span>
-          </button>
+          <Card shadow="sm" padding="none" hoverable class="security-card" @click="openPasswordChange">
+            <div class="security-btn">
+              <Key :size="18" />
+              <span>修改密码</span>
+            </div>
+          </Card>
+          <Card shadow="sm" padding="none" hoverable class="security-card security-card--danger" @click="showLogoutConfirm = true">
+            <div class="security-btn security-btn--danger">
+              <LogOut :size="18" />
+              <span>退出登录</span>
+            </div>
+          </Card>
         </div>
       </div>
     </template>
@@ -374,11 +379,9 @@ onMounted(() => {
       <div class="modal-form">
         <div class="modal-form__field">
           <label class="modal-form__label">新昵称</label>
-          <input
+          <Input
             v-model="newNickname"
-            class="modal-form__input"
             placeholder="输入新昵称"
-            maxlength="32"
             @keydown.enter="handleSaveNickname"
           />
         </div>
@@ -393,28 +396,25 @@ onMounted(() => {
       <div class="modal-form">
         <div class="modal-form__field">
           <label class="modal-form__label">当前密码</label>
-          <input
+          <Input
             v-model="oldPassword"
             type="password"
-            class="modal-form__input"
             placeholder="输入当前密码"
           />
         </div>
         <div class="modal-form__field">
           <label class="modal-form__label">新密码</label>
-          <input
+          <Input
             v-model="newPassword"
             type="password"
-            class="modal-form__input"
             placeholder="输入新密码（至少 6 位）"
           />
         </div>
         <div class="modal-form__field">
           <label class="modal-form__label">确认新密码</label>
-          <input
+          <Input
             v-model="confirmPassword"
             type="password"
-            class="modal-form__input"
             placeholder="再次输入新密码"
             @keydown.enter="handleSavePassword"
           />
@@ -584,11 +584,7 @@ onMounted(() => {
 }
 
 .invite-card {
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-3) var(--spacing-4);
-  margin-bottom: var(--spacing-3);
+  /* Card 组件已处理基础样式 */
 }
 
 .invite-card__row {
@@ -705,8 +701,16 @@ onMounted(() => {
 
 .security-actions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: var(--spacing-3);
+}
+
+.security-card {
+  flex: 1;
+}
+
+.security-card--danger:hover {
+  border-color: var(--color-danger);
 }
 
 .security-btn {
@@ -714,28 +718,14 @@ onMounted(() => {
   align-items: center;
   gap: var(--spacing-3);
   padding: var(--spacing-4);
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
   font-size: var(--text-base);
   color: var(--color-text-primary);
   cursor: pointer;
   font-family: inherit;
-  transition: var(--transition-fast-out);
-}
-
-.security-btn:hover {
-  border-color: var(--color-primary);
-  background: var(--color-bg-hover);
 }
 
 .security-btn--danger {
   color: var(--color-danger);
-}
-
-.security-btn--danger:hover {
-  border-color: var(--color-danger);
-  background: rgba(232, 93, 93, 0.05);
 }
 
 /* 弹窗表单 */
@@ -755,25 +745,6 @@ onMounted(() => {
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
   color: var(--color-text-secondary);
-}
-
-.modal-form__input {
-  width: 100%;
-  padding: var(--spacing-3);
-  border: 2px solid var(--color-border);
-  border-radius: var(--input-radius);
-  font-size: var(--text-base);
-  color: var(--color-text-primary);
-  background: var(--color-bg-input);
-  font-family: inherit;
-  transition: var(--input-transition);
-  outline: none;
-  box-sizing: border-box;
-}
-
-.modal-form__input:focus {
-  border-color: var(--color-border-focus);
-  box-shadow: var(--input-focus-shadow);
 }
 
 .modal-form__submit {

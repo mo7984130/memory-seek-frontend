@@ -13,7 +13,7 @@
 }
 
 .card--shadow-sm {
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .card--shadow-md {
@@ -25,12 +25,17 @@
 }
 
 .card--shadow-hover {
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .card--shadow-hover:hover {
   box-shadow: var(--card-hover-shadow);
   transform: var(--card-hover-transform);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.dark .card--shadow-hover:hover {
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 /* ===== 间距变体 ===== */
@@ -60,6 +65,11 @@
 .card--hoverable:hover {
   box-shadow: var(--card-hover-shadow);
   transform: var(--card-hover-transform);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.dark .card--hoverable:hover {
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .card--hoverable:active {

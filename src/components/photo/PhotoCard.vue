@@ -77,24 +77,33 @@ function handleLike(event: Event) {
   overflow: hidden;
   background: var(--color-bg-card);
   cursor: pointer;
-  border: 1px solid var(--color-border);
-  transition: all 0.3s var(--ease-out);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  transition: all 280ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .photo-card {
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .photo-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
-    border-color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 8px 32px rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+
+  .dark .photo-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.12);
   }
 
   .photo-card:hover .photo-card__image {
-    transform: scale(1.05);
+    transform: scale(1.03);
   }
 }
 
 .photo-card:active {
-  transform: scale(0.98);
+  transform: scale(0.99);
 }
 
 .photo-card__image-wrapper {

@@ -5,7 +5,9 @@ import { Plus, FolderOpen } from '@/components/base/Icon/icons'
 import { photo } from 'memory-seek-api'
 import type { CollectionResult } from 'memory-seek-api'
 import IconButton from '@/components/actions/IconButton/IconButton.vue'
+import Card from '@/components/data/Card/Card.vue'
 import Modal from '@/components/feedback/Modal/Modal.vue'
+import Input from '@/components/form/Input/Input.vue'
 import Spinner from '@/components/base/Spinner/Spinner.vue'
 import { useToast } from '@/components/feedback/Toast/toast'
 
@@ -111,9 +113,12 @@ onMounted(() => {
 
     <!-- 收藏夹网格 -->
     <div v-else-if="collections.length > 0" class="collections-view__grid">
-      <div
+      <Card
         v-for="(collection, index) in collections"
         :key="collection.id"
+        shadow="sm"
+        padding="none"
+        hoverable
         class="collection-card"
         @click="enterCollection(collection)"
       >
@@ -130,7 +135,7 @@ onMounted(() => {
           <div class="collection-card__name">{{ collection.name }}</div>
           <div class="collection-card__count">{{ collection.photoCount }} 张照片</div>
         </div>
-      </div>
+      </Card>
     </div>
 
     <!-- 空状态 -->
@@ -149,21 +154,17 @@ onMounted(() => {
       <div class="create-form">
         <div class="create-form__field">
           <label class="create-form__label">名称</label>
-          <input
+          <Input
             v-model="newCollectionName"
-            class="create-form__input"
             placeholder="输入收藏夹名称"
-            maxlength="128"
             @keydown.enter="handleCreate"
           />
         </div>
         <div class="create-form__field">
           <label class="create-form__label">描述（可选）</label>
-          <input
+          <Input
             v-model="newCollectionDesc"
-            class="create-form__input"
             placeholder="简短描述"
-            maxlength="256"
           />
         </div>
         <button
@@ -224,24 +225,7 @@ onMounted(() => {
 }
 
 .collection-card {
-  background: var(--color-bg-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  cursor: pointer;
-  transition: var(--transition-normal-out);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .collection-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
-    border-color: var(--color-primary);
-  }
-}
-
-.collection-card:active {
-  transform: scale(0.98);
+  /* Card 组件已处理基础样式 */
 }
 
 .collection-card__cover {
@@ -322,25 +306,6 @@ onMounted(() => {
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
   color: var(--color-text-secondary);
-}
-
-.create-form__input {
-  width: 100%;
-  padding: var(--spacing-3);
-  border: 2px solid var(--color-border);
-  border-radius: var(--input-radius);
-  font-size: var(--text-base);
-  color: var(--color-text-primary);
-  background: var(--color-bg-input);
-  font-family: inherit;
-  transition: var(--input-transition);
-  outline: none;
-  box-sizing: border-box;
-}
-
-.create-form__input:focus {
-  border-color: var(--color-border-focus);
-  box-shadow: var(--input-focus-shadow);
 }
 
 .create-form__submit {

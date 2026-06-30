@@ -281,7 +281,7 @@ watch(
         v-model="newComment"
         class="photo-comments__input"
         placeholder="写评论..."
-        rows="2"
+        rows="1"
         @keydown="handleKeydown"
       />
       <button

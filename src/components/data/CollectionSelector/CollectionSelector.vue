@@ -5,6 +5,7 @@ import { photo as photoApi } from 'memory-seek-api'
 import type { CollectionResult, PhotoCollectionResult } from 'memory-seek-api'
 import { useCollectionStore } from '@/stores/collection'
 import Modal from '@/components/feedback/Modal/Modal.vue'
+import Input from '@/components/form/Input/Input.vue'
 import IconButton from '@/components/actions/IconButton/IconButton.vue'
 import Spinner from '@/components/base/Spinner/Spinner.vue'
 import {
@@ -217,12 +218,10 @@ watch(
       <div class="collection-selector">
         <!-- 新建表单 -->
         <div v-if="showCreateForm" class="collection-selector__create-form">
-          <input
-            ref="createInput"
+          <Input
             v-model="newCollectionName"
-            class="collection-selector__create-input"
             placeholder="输入收藏夹名称，回车确认"
-            maxlength="128"
+            size="sm"
             @keydown.enter="createCollection"
             @keydown.escape="showCreateForm = false"
           />
@@ -251,10 +250,9 @@ watch(
               <div class="collection-selector__item-details">
                 <!-- 编辑模式 -->
                 <div v-if="editingId === collection.id" @click.stop>
-                  <input
+                  <Input
                     v-model="editingName"
-                    class="collection-selector__create-input"
-                    maxlength="128"
+                    size="sm"
                     @keydown.enter="saveEdit"
                     @keydown.escape="cancelEdit"
                   />

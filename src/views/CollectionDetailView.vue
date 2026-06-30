@@ -9,8 +9,10 @@ import VirtualWaterfall, { type WaterfallItem } from '@/components/photo/Virtual
 import PhotoCard from '@/components/photo/PhotoCard.vue'
 import PhotoViewer from '@/components/photo/PhotoViewer.vue'
 import IconButton from '@/components/actions/IconButton/IconButton.vue'
+import Button from '@/components/actions/Button/Button.vue'
 import Spinner from '@/components/base/Spinner/Spinner.vue'
 import Modal from '@/components/feedback/Modal/Modal.vue'
+import Input from '@/components/form/Input/Input.vue'
 import { useToast } from '@/components/feedback/Toast/toast'
 
 const route = useRoute()
@@ -295,26 +297,22 @@ onBeforeUnmount(() => {
       <div class="edit-form">
         <div class="edit-form__field">
           <label class="edit-form__label">名称</label>
-          <input
+          <Input
             v-model="editName"
-            class="edit-form__input"
             placeholder="收藏夹名称"
-            maxlength="128"
             @keydown.enter="handleSaveEdit"
           />
         </div>
         <div class="edit-form__field">
           <label class="edit-form__label">描述（可选）</label>
-          <input
+          <Input
             v-model="editDesc"
-            class="edit-form__input"
             placeholder="简短描述"
-            maxlength="256"
           />
         </div>
-        <button class="edit-form__submit" type="button" :disabled="saving" @click="handleSaveEdit">
-          {{ saving ? '保存中...' : '保存' }}
-        </button>
+        <Button type="button" :loading="saving" block @click="handleSaveEdit">
+          保存
+        </Button>
       </div>
     </Modal>
 
@@ -325,12 +323,12 @@ onBeforeUnmount(() => {
           确定要删除「{{ collection?.name }}」吗？收藏夹内的照片不会被删除。
         </p>
         <div class="delete-confirm__actions">
-          <button class="delete-confirm__cancel" type="button" @click="showDeleteConfirm = false">
+          <Button variant="outline" type="button" @click="showDeleteConfirm = false">
             取消
-          </button>
-          <button class="delete-confirm__delete" type="button" :disabled="deleting" @click="handleDelete">
-            {{ deleting ? '删除中...' : '删除' }}
-          </button>
+          </Button>
+          <Button variant="danger" type="button" :loading="deleting" @click="handleDelete">
+            删除
+          </Button>
         </div>
       </div>
     </Modal>
@@ -435,48 +433,6 @@ onBeforeUnmount(() => {
   color: var(--color-text-secondary);
 }
 
-.edit-form__input {
-  width: 100%;
-  padding: var(--spacing-3);
-  border: 2px solid var(--color-border);
-  border-radius: var(--input-radius);
-  font-size: var(--text-base);
-  color: var(--color-text-primary);
-  background: var(--color-bg-input);
-  font-family: inherit;
-  transition: var(--input-transition);
-  outline: none;
-  box-sizing: border-box;
-}
-
-.edit-form__input:focus {
-  border-color: var(--color-border-focus);
-  box-shadow: var(--input-focus-shadow);
-}
-
-.edit-form__submit {
-  width: 100%;
-  padding: var(--spacing-3);
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: var(--btn-radius);
-  font-size: var(--text-base);
-  font-weight: var(--font-semibold);
-  cursor: pointer;
-  font-family: inherit;
-  transition: var(--btn-transition);
-}
-
-.edit-form__submit:hover {
-  background: var(--color-primary-dark);
-}
-
-.edit-form__submit:disabled {
-  opacity: var(--btn-disabled-opacity);
-  cursor: not-allowed;
-}
-
 /* 删除确认 */
 .delete-confirm__text {
   font-size: var(--text-base);
@@ -489,44 +445,6 @@ onBeforeUnmount(() => {
   display: flex;
   gap: var(--spacing-3);
   justify-content: flex-end;
-}
-
-.delete-confirm__cancel {
-  padding: var(--spacing-2) var(--spacing-5);
-  background: transparent;
-  border: 2px solid var(--color-border);
-  border-radius: var(--btn-radius);
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  font-family: inherit;
-  transition: var(--btn-transition);
-}
-
-.delete-confirm__cancel:hover {
-  border-color: var(--color-text-tertiary);
-}
-
-.delete-confirm__delete {
-  padding: var(--spacing-2) var(--spacing-5);
-  background: var(--color-danger);
-  color: white;
-  border: none;
-  border-radius: var(--btn-radius);
-  font-size: var(--text-sm);
-  font-weight: var(--font-semibold);
-  cursor: pointer;
-  font-family: inherit;
-  transition: var(--btn-transition);
-}
-
-.delete-confirm__delete:hover {
-  opacity: 0.9;
-}
-
-.delete-confirm__delete:disabled {
-  opacity: var(--btn-disabled-opacity);
-  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {

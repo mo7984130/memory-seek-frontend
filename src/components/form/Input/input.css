@@ -7,9 +7,10 @@
   display: flex;
   align-items: center;
   width: 100%;
-  background: var(--color-bg-input);
-  border: var(--input-border);
-  border-radius: var(--input-radius);
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid var(--color-border);
+  border-radius: 0;
   transition: var(--input-transition);
   position: relative;
 }
@@ -56,27 +57,27 @@
 
 /* 焦点 */
 .input:focus-within {
-  border-color: var(--color-border-focus);
-  box-shadow: var(--input-focus-shadow);
+  border-bottom-color: var(--color-border-focus);
+  box-shadow: none;
 }
 
 /* 状态 */
 .input--error {
-  border-color: var(--color-danger);
+  border-bottom-color: var(--color-danger);
 }
 
 .input--error:focus-within {
-  border-color: var(--color-danger);
-  box-shadow: var(--input-error-focus-shadow, 0 0 0 4px rgba(232, 93, 93, 0.1));
+  border-bottom-color: var(--color-danger);
+  box-shadow: none;
 }
 
 .input--success {
-  border-color: var(--color-success);
+  border-bottom-color: var(--color-success);
 }
 
 .input--success:focus-within {
-  border-color: var(--color-success);
-  box-shadow: var(--input-success-focus-shadow, 0 0 0 4px rgba(82, 196, 26, 0.1));
+  border-bottom-color: var(--color-success);
+  box-shadow: none;
 }
 
 /* 禁用 */

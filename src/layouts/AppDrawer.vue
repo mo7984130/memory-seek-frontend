@@ -145,7 +145,7 @@ function navigateTo(path: string) {
 }
 
 .dark .app-drawer__nav-item--active {
-  background: rgba(212, 175, 55, 0.1);
+  background: rgba(120, 120, 120, 0.1);
 }
 
 .app-drawer__footer {

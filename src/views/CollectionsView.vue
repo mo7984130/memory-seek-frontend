@@ -5,6 +5,7 @@ import { Plus, FolderOpen } from '@/components/base/Icon/icons'
 import { photo } from 'memory-seek-api'
 import type { CollectionResult } from 'memory-seek-api'
 import IconButton from '@/components/actions/IconButton/IconButton.vue'
+import Button from '@/components/actions/Button/Button.vue'
 import Card from '@/components/data/Card/Card.vue'
 import Modal from '@/components/feedback/Modal/Modal.vue'
 import Input from '@/components/form/Input/Input.vue'
@@ -167,14 +168,14 @@ onMounted(() => {
             placeholder="简短描述"
           />
         </div>
-        <button
-          class="create-form__submit"
+        <Button
           type="button"
-          :disabled="creating"
+          :loading="creating"
+          block
           @click="handleCreate"
         >
-          {{ creating ? '创建中...' : '创建' }}
-        </button>
+          创建
+        </Button>
       </div>
     </Modal>
   </div>
@@ -221,7 +222,7 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: var(--spacing-5);
-  padding-left: var(--spacing-4);
+  padding-left: var(--spacing-8);
 }
 
 .collection-card {
@@ -306,30 +307,6 @@ onMounted(() => {
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
   color: var(--color-text-secondary);
-}
-
-.create-form__submit {
-  width: 100%;
-  padding: var(--spacing-3);
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: var(--btn-radius);
-  font-size: var(--text-base);
-  font-weight: var(--font-semibold);
-  cursor: pointer;
-  font-family: inherit;
-  transition: var(--btn-transition);
-  margin-top: var(--spacing-2);
-}
-
-.create-form__submit:hover {
-  background: var(--color-primary-dark);
-}
-
-.create-form__submit:disabled {
-  opacity: var(--btn-disabled-opacity);
-  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {

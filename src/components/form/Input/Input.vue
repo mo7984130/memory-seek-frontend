@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { inputVariants } from './input.variants'
 import type { Size, Status } from '../../_shared/types'
 import Icon from '../../base/Icon/Icon.vue'
@@ -23,7 +23,16 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
+  keydown: [event: KeyboardEvent]
 }>()
+
+const inputRef = ref<HTMLInputElement>()
+
+function focus() {
+  inputRef.value?.focus()
+}
+
+defineExpose({ focus })
 
 const showClear = computed(() => props.clearable && props.modelValue && !props.disabled)
 
@@ -48,6 +57,7 @@ function onClear() {
       <slot name="prefix" />
     </span>
     <input
+      ref="inputRef"
       class="input__field"
       :type="type"
       :value="modelValue"
@@ -56,6 +66,7 @@ function onClear() {
       :aria-invalid="status === 'error'"
       :aria-disabled="disabled"
       @input="onInput"
+      @keydown="emit('keydown', $event)"
     />
     <button
       v-if="showClear"

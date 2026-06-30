@@ -7,6 +7,8 @@ import { useAuthStore } from '@/stores/auth'
 import Card from '@/components/data/Card/Card.vue'
 import Modal from '@/components/feedback/Modal/Modal.vue'
 import Input from '@/components/form/Input/Input.vue'
+import Button from '@/components/actions/Button/Button.vue'
+import IconButton from '@/components/actions/IconButton/IconButton.vue'
 import Spinner from '@/components/base/Spinner/Spinner.vue'
 import { useToast } from '@/components/feedback/Toast/toast'
 
@@ -297,9 +299,9 @@ onMounted(() => {
           <div class="profile-card__info">
             <div class="profile-card__name-row">
               <span class="profile-card__nickname">{{ userInfo.nickname || userInfo.username }}</span>
-              <button class="profile-card__edit-btn" type="button" @click="openNicknameEdit" title="编辑昵称">
+              <IconButton size="sm" variant="ghost" @click="openNicknameEdit" title="编辑昵称">
                 <Edit3 :size="14" />
-              </button>
+              </IconButton>
             </div>
             <div class="profile-card__username">@{{ userInfo.username }}</div>
             <div class="profile-card__email" v-if="userInfo.email">{{ userInfo.email }}</div>
@@ -316,40 +318,28 @@ onMounted(() => {
         <Card shadow="sm" padding="sm" class="invite-card">
           <div v-if="inviterCode" class="invite-card__row">
             <code class="invite-card__code">{{ inviterCode.inviterCode }}</code>
-            <button
-              class="invite-card__copy"
-              type="button"
-              @click="copyInviterCode"
-              title="复制"
-            >
+            <IconButton size="sm" variant="outline" @click="copyInviterCode" title="复制">
               <Check v-if="copied" :size="16" />
               <Copy v-else :size="16" />
-            </button>
+            </IconButton>
             <span class="invite-card__expire">
               {{ formatExpireAt(inviterCode.expireAt) }}
             </span>
-            <button
-              class="invite-card__regenerate"
-              type="button"
-              :disabled="generatingCode"
-              @click="handleGenerateCode"
-              title="重新生成"
-            >
+            <IconButton size="sm" variant="outline" :disabled="generatingCode" @click="handleGenerateCode" title="重新生成">
               <Ticket :size="14" />
-            </button>
+            </IconButton>
           </div>
           <div v-else class="invite-card__row invite-card__row--empty">
             <span class="invite-card__placeholder">暂无邀请码</span>
-            <button
-              class="invite-card__generate"
-              type="button"
-              :disabled="generatingCode"
+            <Button
+              variant="outline"
+              size="sm"
+              :loading="generatingCode"
               @click="handleGenerateCode"
-              title="生成邀请码"
             >
               <Ticket :size="14" />
-              {{ generatingCode ? '生成中...' : '生成' }}
-            </button>
+              生成
+            </Button>
           </div>
         </Card>
       </div>
@@ -385,9 +375,9 @@ onMounted(() => {
             @keydown.enter="handleSaveNickname"
           />
         </div>
-        <button class="modal-form__submit" type="button" :disabled="savingNickname" @click="handleSaveNickname">
-          {{ savingNickname ? '保存中...' : '保存' }}
-        </button>
+        <Button type="button" :loading="savingNickname" block @click="handleSaveNickname">
+          保存
+        </Button>
       </div>
     </Modal>
 
@@ -419,9 +409,9 @@ onMounted(() => {
             @keydown.enter="handleSavePassword"
           />
         </div>
-        <button class="modal-form__submit" type="button" :disabled="savingPassword" @click="handleSavePassword">
-          {{ savingPassword ? '修改中...' : '修改密码' }}
-        </button>
+        <Button type="button" :loading="savingPassword" block @click="handleSavePassword">
+          修改密码
+        </Button>
       </div>
     </Modal>
 
@@ -430,12 +420,12 @@ onMounted(() => {
       <div class="logout-confirm">
         <p class="logout-confirm__text">确定要退出登录吗？</p>
         <div class="logout-confirm__actions">
-          <button class="logout-confirm__cancel" type="button" @click="showLogoutConfirm = false">
+          <Button variant="outline" type="button" @click="showLogoutConfirm = false">
             取消
-          </button>
-          <button class="logout-confirm__logout" type="button" @click="handleLogout">
+          </Button>
+          <Button variant="danger" type="button" @click="handleLogout">
             退出登录
-          </button>
+          </Button>
         </div>
       </div>
     </Modal>
@@ -535,21 +525,6 @@ onMounted(() => {
   color: var(--color-text-primary);
 }
 
-.profile-card__edit-btn {
-  background: transparent;
-  border: none;
-  color: var(--color-text-tertiary);
-  cursor: pointer;
-  padding: var(--spacing-1);
-  border-radius: var(--radius-sm);
-  transition: var(--transition-fast-out);
-}
-
-.profile-card__edit-btn:hover {
-  color: var(--color-primary);
-  background: var(--color-bg-hover);
-}
-
 .profile-card__username {
   font-size: var(--text-sm);
   color: var(--color-text-tertiary);
@@ -603,26 +578,6 @@ onMounted(() => {
   letter-spacing: 0.05em;
 }
 
-.invite-card__copy {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  background: transparent;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--transition-fast-out);
-}
-
-.invite-card__copy:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
 .invite-card__expire {
   flex: 1;
   font-size: var(--text-xs);
@@ -634,31 +589,6 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-.invite-card__regenerate {
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-  background: transparent;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: var(--transition-fast-out);
-}
-
-.invite-card__regenerate:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.invite-card__regenerate:disabled {
-  opacity: var(--btn-disabled-opacity);
-  cursor: not-allowed;
-}
-
 .invite-card__row--empty {
   justify-content: space-between;
 }
@@ -666,32 +596,6 @@ onMounted(() => {
 .invite-card__placeholder {
   font-size: var(--text-sm);
   color: var(--color-text-tertiary);
-}
-
-.invite-card__generate {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-1);
-  padding: var(--spacing-1) var(--spacing-3);
-  background: transparent;
-  border: 1px solid var(--color-primary);
-  border-radius: var(--btn-radius);
-  font-size: var(--text-sm);
-  font-weight: var(--font-medium);
-  color: var(--color-primary);
-  cursor: pointer;
-  font-family: inherit;
-  transition: var(--btn-transition);
-}
-
-.invite-card__generate:hover {
-  background: var(--color-primary);
-  color: white;
-}
-
-.invite-card__generate:disabled {
-  opacity: var(--btn-disabled-opacity);
-  cursor: not-allowed;
 }
 
 /* 账号安全 */
@@ -747,29 +651,6 @@ onMounted(() => {
   color: var(--color-text-secondary);
 }
 
-.modal-form__submit {
-  width: 100%;
-  padding: var(--spacing-3);
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: var(--btn-radius);
-  font-size: var(--text-base);
-  font-weight: var(--font-semibold);
-  cursor: pointer;
-  font-family: inherit;
-  transition: var(--btn-transition);
-}
-
-.modal-form__submit:hover {
-  background: var(--color-primary-dark);
-}
-
-.modal-form__submit:disabled {
-  opacity: var(--btn-disabled-opacity);
-  cursor: not-allowed;
-}
-
 /* 退出确认 */
 .logout-confirm__text {
   font-size: var(--text-base);
@@ -781,39 +662,6 @@ onMounted(() => {
   display: flex;
   gap: var(--spacing-3);
   justify-content: flex-end;
-}
-
-.logout-confirm__cancel {
-  padding: var(--spacing-2) var(--spacing-5);
-  background: transparent;
-  border: 2px solid var(--color-border);
-  border-radius: var(--btn-radius);
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  font-family: inherit;
-  transition: var(--btn-transition);
-}
-
-.logout-confirm__cancel:hover {
-  border-color: var(--color-text-tertiary);
-}
-
-.logout-confirm__logout {
-  padding: var(--spacing-2) var(--spacing-5);
-  background: var(--color-danger);
-  color: white;
-  border: none;
-  border-radius: var(--btn-radius);
-  font-size: var(--text-sm);
-  font-weight: var(--font-semibold);
-  cursor: pointer;
-  font-family: inherit;
-  transition: var(--btn-transition);
-}
-
-.logout-confirm__logout:hover {
-  opacity: 0.9;
 }
 
 @media (max-width: 768px) {

@@ -166,7 +166,7 @@ function handleMonthClick(key: string) {
 }
 
 .dark .timeline-nav__month--active {
-  background: rgba(212, 175, 55, 0.15);
+  background: rgba(120, 120, 120, 0.15);
 }
 
 .timeline-nav__loading {

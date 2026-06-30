@@ -137,10 +137,6 @@ function handleLike(event: Event) {
     opacity: 1;
     transform: translateY(0);
   }
-
-  .photo-card:hover .photo-card__like-btn {
-    opacity: 1;
-  }
 }
 
 .photo-card:active {
@@ -243,7 +239,7 @@ function handleLike(event: Event) {
   cursor: pointer;
   transition: all 0.2s ease;
   padding: 0;
-  opacity: 0;
+  opacity: 1;
   z-index: 1;
 }
 
@@ -284,10 +280,6 @@ function handleLike(event: Event) {
   .photo-card__info {
     opacity: 1;
     transform: translateY(0);
-  }
-
-  .photo-card__like-btn {
-    opacity: 1;
   }
 }
 </style>

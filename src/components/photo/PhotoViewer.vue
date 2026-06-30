@@ -444,7 +444,6 @@ onBeforeUnmount(() => {
       <!-- 加载提示 -->
       <div v-if="imageLoading" class="photo-viewer__loading">
         <div class="photo-viewer__loading-spinner"></div>
-        <div class="photo-viewer__loading-text">加载中...</div>
       </div>
 
       <!-- 图片 -->

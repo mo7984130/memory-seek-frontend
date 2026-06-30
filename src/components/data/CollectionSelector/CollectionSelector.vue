@@ -1,6 +1,6 @@
 <!-- src/components/data/CollectionSelector/CollectionSelector.vue -->
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { photo as photoApi } from 'memory-seek-api'
 import type { CollectionResult, PhotoCollectionResult } from 'memory-seek-api'
 import { useCollectionStore } from '@/stores/collection'
@@ -22,6 +22,7 @@ import './collection-selector.css'
 interface Props {
   modelValue: boolean
   photoId?: string
+  overlayClass?: string
 }
 
 const props = defineProps<Props>()
@@ -32,6 +33,7 @@ const emit = defineEmits<{
 }>()
 
 const collectionStore = useCollectionStore()
+const createInputRef = ref<InstanceType<typeof Input> | null>(null)
 
 // 状态
 const loading = ref(false)
@@ -170,6 +172,14 @@ function cancelEdit() {
 }
 
 /**
+ * 取消创建
+ */
+function cancelCreate() {
+  showCreateForm.value = false
+  newCollectionName.value = ''
+}
+
+/**
  * 删除收藏夹
  */
 async function deleteCollectionItem(collectionId: string) {
@@ -197,6 +207,7 @@ watch(
     if (isOpen) {
       activeMenuId.value = null
       showCreateForm.value = false
+      newCollectionName.value = ''
       editingId.value = null
       await loadCollections()
       if (props.photoId) {
@@ -205,6 +216,14 @@ watch(
     }
   },
 )
+
+// 监听创建表单显示，自动聚焦输入框
+watch(showCreateForm, async (show) => {
+  if (show) {
+    await nextTick()
+    createInputRef.value?.focus()
+  }
+})
 </script>
 
 <template>
@@ -212,19 +231,30 @@ watch(
     :model-value="modelValue"
     size="sm"
     title="收藏夹"
+    :overlay-class="overlayClass"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <template #default>
       <div class="collection-selector">
-        <!-- 新建表单 -->
-        <div v-if="showCreateForm" class="collection-selector__create-form">
+        <!-- 创建输入框 -->
+        <div v-if="showCreateForm" class="collection-selector__create-form" @click.stop>
           <Input
+            ref="createInputRef"
             v-model="newCollectionName"
-            placeholder="输入收藏夹名称，回车确认"
+            placeholder="输入收藏夹名称"
             size="sm"
+            class="collection-selector__create-input"
             @keydown.enter="createCollection"
-            @keydown.escape="showCreateForm = false"
+            @keydown.escape="cancelCreate"
           />
+          <button
+            class="collection-selector__create-btn"
+            type="button"
+            :disabled="!newCollectionName.trim()"
+            @click="createCollection"
+          >
+            <Check :size="16" />
+          </button>
         </div>
 
         <!-- 加载状态 -->
@@ -233,7 +263,7 @@ watch(
         </div>
 
         <!-- 收藏夹列表 -->
-        <div v-else-if="collections.length > 0" class="collection-selector__list">
+        <div v-else class="collection-selector__list">
           <div
             v-for="collection in collections"
             :key="collection.id"
@@ -309,20 +339,24 @@ watch(
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- 空状态 -->
-        <div v-else class="collection-selector__empty">
-          <FolderOpen :size="48" class="collection-selector__empty-icon" />
-          <div class="collection-selector__empty-text">
-            暂无收藏夹
+          <!-- 空状态提示 -->
+          <div v-if="!loading && collections.length === 0" class="collection-selector__empty-hint">
+            <FolderOpen :size="32" class="collection-selector__empty-hint-icon" />
+            <div class="collection-selector__empty-hint-text">
+              还没有收藏夹
+            </div>
           </div>
         </div>
       </div>
     </template>
 
     <template #header-extra>
-      <IconButton @click="showCreateForm = !showCreateForm">
+      <IconButton
+        class="collection-selector__header-add"
+        :class="{ 'collection-selector__header-add--active': showCreateForm }"
+        @click="showCreateForm = !showCreateForm"
+      >
         <Plus :size="18" />
       </IconButton>
     </template>

@@ -124,16 +124,67 @@
   color: var(--color-text);
 }
 
-/* 新建收藏夹表单 */
-.collection-selector__create-form {
-  margin-bottom: var(--spacing-4);
+/* 标题栏添加按钮 */
+.collection-selector__header-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: var(--transition-fast-out);
 }
 
-.collection-selector__create-actions {
+.collection-selector__header-add:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text);
+}
+
+.collection-selector__header-add--active {
+  background: var(--color-primary-50);
+  color: var(--color-primary);
+  transform: rotate(45deg);
+}
+
+/* 创建表单 */
+.collection-selector__create-form {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
   gap: var(--spacing-2);
-  margin-top: var(--spacing-3);
+  padding: var(--spacing-3) var(--modal-padding);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.collection-selector__create-input {
+  flex: 1;
+}
+
+.collection-selector__create-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: var(--transition-fast-out);
+}
+
+.collection-selector__create-btn:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.collection-selector__create-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* 操作菜单 */
@@ -177,23 +228,24 @@
   background: var(--color-error-light);
 }
 
-/* 空状态 */
-.collection-selector__empty {
+/* 空状态提示 */
+.collection-selector__empty-hint {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-8);
-  color: var(--color-text-secondary);
+  padding: var(--spacing-6) var(--spacing-4);
+  color: var(--color-text-tertiary);
 }
 
-.collection-selector__empty-icon {
-  margin-bottom: var(--spacing-3);
-  opacity: 0.5;
+.collection-selector__empty-hint-icon {
+  margin-bottom: var(--spacing-2);
+  opacity: 0.4;
 }
 
-.collection-selector__empty-text {
-  font-size: var(--text-sm);
+.collection-selector__empty-hint-text {
+  font-size: var(--text-xs);
+  text-align: center;
 }
 
 /* 加载状态 */

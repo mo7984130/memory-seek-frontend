@@ -23,19 +23,37 @@ const newCollectionDesc = ref('')
 const creating = ref(false)
 
 /**
- * 封面渐变色 — 根据 index 循环
+ * 封面渐变色 — 根据 index 循环，分浅色/暗色两套
  */
-const gradients = [
-  'linear-gradient(135deg, #ccfbf1, #99f6e4)',
-  'linear-gradient(135deg, #fef3c7, #fde68a)',
-  'linear-gradient(135deg, #dbeafe, #93c5fd)',
-  'linear-gradient(135deg, #fce7f3, #f9a8d4)',
-  'linear-gradient(135deg, #e0e7ff, #a5b4fc)',
-  'linear-gradient(135deg, #d1fae5, #6ee7b7)',
-]
+const gradients = {
+  light: [
+    'linear-gradient(135deg, #ccfbf1, #99f6e4)',
+    'linear-gradient(135deg, #fef3c7, #fde68a)',
+    'linear-gradient(135deg, #dbeafe, #93c5fd)',
+    'linear-gradient(135deg, #fce7f3, #f9a8d4)',
+    'linear-gradient(135deg, #e0e7ff, #a5b4fc)',
+    'linear-gradient(135deg, #d1fae5, #6ee7b7)',
+  ],
+  dark: [
+    'linear-gradient(135deg, #134e4a, #115e59)',
+    'linear-gradient(135deg, #78350f, #92400e)',
+    'linear-gradient(135deg, #1e3a5f, #1e40af)',
+    'linear-gradient(135deg, #831843, #9d174d)',
+    'linear-gradient(135deg, #312e81, #4338ca)',
+    'linear-gradient(135deg, #064e3b, #065f46)',
+  ],
+}
+
+/**
+ * 判断当前是否为暗色模式
+ */
+function isDarkMode() {
+  return document.documentElement.classList.contains('dark')
+}
 
 function getGradient(index: number) {
-  return gradients[index % gradients.length]
+  const mode = isDarkMode() ? 'dark' : 'light'
+  return gradients[mode][index % gradients.light.length]
 }
 
 /**
@@ -244,7 +262,11 @@ onMounted(() => {
 }
 
 .collection-card__cover-icon {
-  color: rgba(0, 0, 0, 0.2);
+  color: rgba(0, 0, 0, 0.15);
+}
+
+.dark .collection-card__cover-icon {
+  color: rgba(255, 255, 255, 0.2);
 }
 
 .collection-card__info {

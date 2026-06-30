@@ -79,7 +79,6 @@ function handleLike(event: Event) {
 
       <!-- 底部信息 -->
       <div class="photo-card__info">
-        <span class="photo-card__name">{{ item.name }}</span>
         <span class="photo-card__date">{{ formattedDate }}</span>
       </div>
 
@@ -196,23 +195,13 @@ function handleLike(event: Event) {
   bottom: 0;
   left: 0;
   right: 0;
-  padding: var(--spacing-4);
+  padding: var(--spacing-3);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-1);
   opacity: 0;
   transform: translateY(8px);
   transition: all 0.3s ease;
-}
-
-.photo-card__name {
-  font-size: var(--text-sm);
-  font-weight: var(--font-medium);
-  color: white;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .photo-card__date {

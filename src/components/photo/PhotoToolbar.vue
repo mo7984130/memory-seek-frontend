@@ -1,12 +1,13 @@
 <!-- src/components/photo/PhotoToolbar.vue -->
 <script setup lang="ts">
-import { ZoomIn, ZoomOut, RotateCw, Maximize2, Heart, MessageCircle, PhotoIcon, Download, LoadingIcon, Trash2 } from '@/components/base/Icon/icons'
+import { ZoomIn, ZoomOut, RotateCw, Maximize2, Heart, Bookmark, MessageCircle, PhotoIcon, Download, LoadingIcon, Trash2 } from '@/components/base/Icon/icons'
 import './photo-toolbar.css'
 
 interface Props {
   zoom: number
   rotation: number
   isFavorited?: boolean
+  isCollected?: boolean
   showOriginal?: boolean
   loadingOriginal?: boolean
   hasOriginalToken?: boolean
@@ -21,6 +22,7 @@ const emit = defineEmits<{
   'rotate': []
   'reset': []
   'toggle-favorite': []
+  'toggle-collect': []
   'toggle-comments': []
   'view-original': []
   'download': []
@@ -45,6 +47,10 @@ function handleReset() {
 
 function handleToggleFavorite() {
   emit('toggle-favorite')
+}
+
+function handleToggleCollect() {
+  emit('toggle-collect')
 }
 
 function handleToggleComments() {
@@ -86,9 +92,18 @@ function handleDelete() {
       :class="{ 'photo-toolbar__btn--active': isFavorited }"
       type="button"
       @click="handleToggleFavorite"
-      title="收藏"
+      title="喜欢"
     >
       <Heart :size="20" :fill="isFavorited ? 'var(--color-like)' : 'none'" />
+    </button>
+    <button
+      class="photo-toolbar__btn"
+      :class="{ 'photo-toolbar__btn--collected': isCollected }"
+      type="button"
+      @click="handleToggleCollect"
+      title="收藏 (B)"
+    >
+      <Bookmark :size="20" :fill="isCollected ? 'var(--color-warning)' : 'none'" />
     </button>
     <button class="photo-toolbar__btn" type="button" @click="handleToggleComments" title="评论">
       <MessageCircle :size="20" />

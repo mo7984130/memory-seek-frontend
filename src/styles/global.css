@@ -12,6 +12,7 @@ html {
   -webkit-text-size-adjust: 100%;
   -moz-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* 文档主体 */
@@ -27,6 +28,21 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 主题切换平滑过渡 — 仅对常见元素生效 */
+#app,
+#app div,
+#app header,
+#app main,
+#app nav,
+#app aside,
+#app section,
+#app article {
+  transition: background-color 0.3s ease,
+              border-color 0.3s ease,
+              box-shadow 0.3s ease;
 }
 
 /* 应用容器 */

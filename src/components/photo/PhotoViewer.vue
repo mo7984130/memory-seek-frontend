@@ -6,6 +6,7 @@ import type { PhotoResult } from 'memory-seek-api'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/components/feedback/Toast/toast'
 import Modal from '@/components/feedback/Modal/Modal.vue'
+import CollectionSelector from '@/components/data/CollectionSelector/CollectionSelector.vue'
 import PhotoToolbar from './PhotoToolbar.vue'
 import PhotoComments from './PhotoComments.vue'
 import './photo-viewer.css'
@@ -35,6 +36,7 @@ const translateY = ref(0)
 const imageWidth = ref(0)
 const imageHeight = ref(0)
 const showComments = ref(false)
+const showCollectionSelector = ref(false)
 const showOriginal = ref(false)
 const loadingOriginal = ref(false)
 const refreshing = ref(false)
@@ -83,6 +85,9 @@ const imageTransform = computed(() => {
 
 /** 是否已点赞 */
 const isFavorited = computed(() => props.photo?.isLiked ?? false)
+
+/** 是否已收藏 */
+const isCollected = computed(() => props.photo?.isCollected ?? false)
 
 /** 是否是照片上传者 */
 const isOwner = computed(() => {
@@ -198,6 +203,11 @@ async function toggleFavorite() {
   } catch (error) {
     console.error('点赞操作失败:', error)
   }
+}
+
+// ---- 收藏夹选择器切换 ----
+function toggleCollect() {
+  showCollectionSelector.value = !showCollectionSelector.value
 }
 
 // ---- 评论抽屉切换 ----
@@ -346,6 +356,10 @@ function handleKeydown(event: KeyboardEvent) {
     case 'D':
       downloadOriginal()
       break
+    case 'b':
+    case 'B':
+      toggleCollect()
+      break
   }
 }
 
@@ -372,6 +386,7 @@ function resetState() {
   imageWidth.value = 0
   imageHeight.value = 0
   showComments.value = false
+  showCollectionSelector.value = false
   showOriginal.value = false
   loadingOriginal.value = false
   refreshing.value = false
@@ -443,9 +458,11 @@ onBeforeUnmount(() => {
 
       <!-- 底部工具栏 -->
       <PhotoToolbar
+        v-show="!showComments"
         :zoom="zoom"
         :rotation="rotation"
         :is-favorited="isFavorited"
+        :is-collected="isCollected"
         :show-original="showOriginal"
         :loading-original="loadingOriginal"
         :has-original-token="hasOriginalToken"
@@ -455,6 +472,7 @@ onBeforeUnmount(() => {
         @rotate="rotate"
         @reset="resetView"
         @toggle-favorite="toggleFavorite"
+        @toggle-collect="toggleCollect"
         @toggle-comments="toggleComments"
         @view-original="viewOriginal"
         @download="downloadOriginal"
@@ -467,6 +485,14 @@ onBeforeUnmount(() => {
         :photo-id="photo.id"
         :visible="showComments"
         @close="showComments = false"
+      />
+
+      <!-- 收藏夹选择器 -->
+      <CollectionSelector
+        v-if="photo"
+        v-model="showCollectionSelector"
+        :photo-id="photo.id"
+        overlay-class="photo-viewer__modal-overlay"
       />
 
       <!-- 删除确认弹窗 -->

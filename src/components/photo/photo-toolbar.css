@@ -20,6 +20,7 @@
   color: white;
   z-index: var(--z-index-tooltip);
   user-select: none;
+  max-width: calc(100vw - var(--spacing-8));
 }
 
 .photo-toolbar__btn {
@@ -46,6 +47,10 @@
 
 .photo-toolbar__btn--active {
   color: var(--color-like);
+}
+
+.photo-toolbar__btn--collected {
+  color: var(--color-warning);
 }
 
 .photo-toolbar__zoom {
@@ -83,4 +88,43 @@
 .photo-toolbar__btn--danger:hover {
   background: rgba(239, 68, 68, 0.3);
   color: var(--color-danger);
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .photo-toolbar {
+    --photo-toolbar-btn-size: 32px;
+    --photo-toolbar-divider-height: 16px;
+    --photo-toolbar-zoom-min-width: 32px;
+
+    gap: var(--spacing-1);
+    padding: var(--spacing-1) var(--spacing-2);
+    bottom: var(--spacing-4);
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .photo-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .photo-toolbar__btn {
+    flex-shrink: 0;
+  }
+
+  .photo-toolbar__divider {
+    flex-shrink: 0;
+  }
+
+  .photo-toolbar__zoom {
+    font-size: var(--text-xs);
+    min-width: 28px;
+  }
+
+  /* 隐藏次要按钮 */
+  .photo-toolbar__btn[title*="重置"] {
+    display: none;
+  }
 }

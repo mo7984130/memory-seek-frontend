@@ -63,6 +63,12 @@
   -webkit-user-drag: none;
   /* 恢复图片本身的交互（父层 pointer-events: none 会穿透到这里） */
   pointer-events: auto;
+  cursor: grab;
+}
+
+.photo-viewer__image--dragging {
+  cursor: grabbing;
+  transition: none;
 }
 
 .photo-viewer__empty {

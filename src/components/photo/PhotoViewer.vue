@@ -30,6 +30,8 @@ const toast = useToast()
 const zoom = ref(1)
 const baseZoom = ref(1)
 const rotation = ref(0)
+const translateX = ref(0)
+const translateY = ref(0)
 const imageWidth = ref(0)
 const imageHeight = ref(0)
 const showComments = ref(false)
@@ -38,6 +40,13 @@ const loadingOriginal = ref(false)
 const refreshing = ref(false)
 const showDeleteConfirm = ref(false)
 const deleting = ref(false)
+
+// 拖拽状态
+const isDragging = ref(false)
+const dragStartX = ref(0)
+const dragStartY = ref(0)
+const dragStartTranslateX = ref(0)
+const dragStartTranslateY = ref(0)
 
 // 原图缓存（仅当前会话有效）
 const originalUrl = ref<string | null>(null)
@@ -68,7 +77,7 @@ const imageUrl = computed(() => {
 
 /** 图片 transform 样式（zoom 相对于 baseZoom 的比值） */
 const imageTransform = computed(() => {
-  return `scale(${zoom.value / baseZoom.value}) rotate(${rotation.value}deg)`
+  return `translate(${translateX.value}px, ${translateY.value}px) scale(${zoom.value / baseZoom.value}) rotate(${rotation.value}deg)`
 })
 
 /** 是否已点赞 */
@@ -117,10 +126,60 @@ function rotate() {
   rotation.value = (rotation.value + 90) % 360
 }
 
-// ---- 重置缩放和旋转 ----
+// ---- 重置缩放、旋转和位置 ----
 function resetView() {
   zoom.value = baseZoom.value
   rotation.value = 0
+  translateX.value = 0
+  translateY.value = 0
+}
+
+// ---- 拖拽控制（鼠标） ----
+function handleMouseDown(event: MouseEvent) {
+  if (event.button !== 0) return // 只响应左键
+  isDragging.value = true
+  dragStartX.value = event.clientX
+  dragStartY.value = event.clientY
+  dragStartTranslateX.value = translateX.value
+  dragStartTranslateY.value = translateY.value
+  event.preventDefault()
+}
+
+function handleMouseMove(event: MouseEvent) {
+  if (!isDragging.value) return
+  const dx = event.clientX - dragStartX.value
+  const dy = event.clientY - dragStartY.value
+  translateX.value = dragStartTranslateX.value + dx
+  translateY.value = dragStartTranslateY.value + dy
+}
+
+function handleMouseUp() {
+  isDragging.value = false
+}
+
+// ---- 拖拽控制（触摸） ----
+function handleTouchStart(event: TouchEvent) {
+  if (event.touches.length !== 1) return // 只响应单指触摸
+  const touch = event.touches[0]
+  isDragging.value = true
+  dragStartX.value = touch.clientX
+  dragStartY.value = touch.clientY
+  dragStartTranslateX.value = translateX.value
+  dragStartTranslateY.value = translateY.value
+}
+
+function handleTouchMove(event: TouchEvent) {
+  if (!isDragging.value || event.touches.length !== 1) return
+  const touch = event.touches[0]
+  const dx = touch.clientX - dragStartX.value
+  const dy = touch.clientY - dragStartY.value
+  translateX.value = dragStartTranslateX.value + dx
+  translateY.value = dragStartTranslateY.value + dy
+  event.preventDefault()
+}
+
+function handleTouchEnd() {
+  isDragging.value = false
 }
 
 // ---- 点赞切换 ----
@@ -307,6 +366,8 @@ function resetState() {
   zoom.value = 1
   baseZoom.value = 1
   rotation.value = 0
+  translateX.value = 0
+  translateY.value = 0
   imageWidth.value = 0
   imageHeight.value = 0
   showComments.value = false
@@ -316,16 +377,21 @@ function resetState() {
   originalUrl.value = null
   showDeleteConfirm.value = false
   deleting.value = false
+  isDragging.value = false
 }
 
-// 监听弹窗打开，添加键盘事件
+// 监听弹窗打开，添加键盘和拖拽事件
 watch(
   () => props.modelValue,
   (isOpen) => {
     if (isOpen) {
       window.addEventListener('keydown', handleKeydown)
+      window.addEventListener('mousemove', handleMouseMove)
+      window.addEventListener('mouseup', handleMouseUp)
     } else {
       window.removeEventListener('keydown', handleKeydown)
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
       resetState()
     }
   },
@@ -334,6 +400,8 @@ watch(
 // 组件卸载时清理
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('mousemove', handleMouseMove)
+  window.removeEventListener('mouseup', handleMouseUp)
 })
 </script>
 
@@ -357,10 +425,15 @@ onBeforeUnmount(() => {
           :src="imageUrl"
           :alt="photo?.name"
           class="photo-viewer__image"
+          :class="{ 'photo-viewer__image--dragging': isDragging }"
           :style="{ transform: imageTransform, width: imageWidth ? imageWidth + 'px' : undefined, height: imageHeight ? imageHeight + 'px' : undefined }"
           draggable="false"
           @load="handleImageLoad"
           @wheel.prevent="handleWheel"
+          @mousedown="handleMouseDown"
+          @touchstart="handleTouchStart"
+          @touchmove.prevent="handleTouchMove"
+          @touchend="handleTouchEnd"
         />
       </div>
       <div v-else class="photo-viewer__empty">

@@ -3,14 +3,15 @@ import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useIntersectionObserver } from '@vueuse/core'
 import { photo } from 'memory-seek-api'
 import type { PhotoResult, MonthStat } from 'memory-seek-api'
-import { usePhotoStore } from '@/stores/photo'
+import { useWaterfallPersistence } from '@/composables/useWaterfallPersistence'
 import VirtualWaterfall, { type WaterfallItem, type WaterfallGroup } from '@/components/photo/VirtualWaterfall.vue'
 import TimelineNav from '@/components/photo/TimelineNav.vue'
 import PhotoCard from '@/components/photo/PhotoCard.vue'
 import PhotoViewer from '@/components/photo/PhotoViewer.vue'
 import Spinner from '@/components/base/Spinner/Spinner.vue'
 
-const photoStore = usePhotoStore()
+// 使用持久化 composable
+const waterfall = useWaterfallPersistence('photos')
 
 // 本地 UI 状态
 const containerRef = ref<HTMLElement | null>(null)
@@ -23,15 +24,9 @@ const navigating = ref(false)
 // 请求版本号，用于防止竞态条件
 let fetchGeneration = 0
 
-// 照片查看器状态（临时 UI 状态，不存 Store）
+// 照片查看器状态（临时 UI 状态，不持久化）
 const viewerVisible = ref(false)
 const selectedPhoto = ref<PhotoResult | null>(null)
-
-// 从 Store 读取状态
-const allPhotos = computed(() => photoStore.allPhotos)
-const hasMore = computed(() => photoStore.hasMore)
-const monthStats = computed(() => photoStore.monthStats)
-const currentGroup = computed(() => photoStore.currentGroup)
 
 /**
  * 计算列数和容器宽度
@@ -67,10 +62,10 @@ function formatMonthLabel(key: string): string {
  * 按月分组
  */
 const groups = computed<WaterfallGroup[]>(() => {
-  if (!allPhotos.value.length) return []
+  if (!waterfall.allPhotos.value.length) return []
 
-  const map = new Map<string, typeof allPhotos.value>()
-  for (const photo of allPhotos.value) {
+  const map = new Map<string, typeof waterfall.allPhotos.value>()
+  for (const photo of waterfall.allPhotos.value) {
     const key = photo.createdAt.substring(0, 7) // "2026-06"
     if (!map.has(key)) map.set(key, [])
     map.get(key)!.push(photo)
@@ -87,13 +82,15 @@ const groups = computed<WaterfallGroup[]>(() => {
  * 获取照片列表
  */
 async function fetchPhotos() {
-  if (loading.value || !photoStore.hasMore) return
+  if (loading.value || !waterfall.hasMore.value) return
 
   const gen = fetchGeneration
   loading.value = true
+  console.log('[PhotoWaterfallView] 开始获取照片', { cursor: waterfall.cursor.value })
+
   try {
     const response = await photo.getPhotos({
-      cursor: photoStore.cursor,
+      cursor: waterfall.cursor.value,
       size: 20,
       direction: 'next',
     })
@@ -102,9 +99,9 @@ async function fetchPhotos() {
     if (gen !== fetchGeneration) return
 
     const { records, nextCursor, hasMore: more } = response.data
-    photoStore.appendPhotos(records, nextCursor ?? undefined, more)
+    waterfall.appendPhotos(records, nextCursor ?? undefined, more)
   } catch (error) {
-    console.error('获取照片失败:', error)
+    console.error('[PhotoWaterfallView] 获取照片失败:', error)
   } finally {
     loading.value = false
   }
@@ -114,7 +111,7 @@ async function fetchPhotos() {
  * 根据 ID 获取照片
  */
 function getPhotoById(id: string | number): PhotoResult | undefined {
-  return allPhotos.value.find((p) => p.id === id)
+  return waterfall.allPhotos.value.find((p) => p.id === id)
 }
 
 /**
@@ -126,22 +123,22 @@ function handlePhotoClick(photoItem: PhotoResult) {
 }
 
 function handleLikeChange(photoId: string, isLiked: boolean) {
-  photoStore.updatePhotoLike(photoId, isLiked)
+  waterfall.updatePhotoLike(photoId, isLiked)
   if (selectedPhoto.value?.id === photoId) {
     selectedPhoto.value.isLiked = isLiked
   }
 }
 
 function handleDelete(photoId: string) {
-  photoStore.removePhoto(photoId)
+  waterfall.removePhoto(photoId)
 }
 
 async function handleLike(photoItem: PhotoResult) {
   const photoId = photoItem.id as string
   const wasLiked = photoItem.isLiked ?? false
 
-  // 乐观更新 Store
-  photoStore.updatePhotoLike(photoId, !wasLiked)
+  // 乐观更新
+  waterfall.updatePhotoLike(photoId, !wasLiked)
 
   try {
     if (wasLiked) {
@@ -151,13 +148,13 @@ async function handleLike(photoItem: PhotoResult) {
     }
   } catch (error) {
     // 回滚
-    photoStore.updatePhotoLike(photoId, wasLiked)
-    console.error('点赞操作失败:', error)
+    waterfall.updatePhotoLike(photoId, wasLiked)
+    console.error('[PhotoWaterfallView] 点赞操作失败:', error)
   }
 }
 
 /**
- * 时间线导航跳转：用 anchorTime 直接定位到目标月份，替换照片列表
+ * 时间线导航跳转
  */
 async function handleNavigate(groupKey: string) {
   if (navigating.value) return
@@ -165,12 +162,12 @@ async function handleNavigate(groupKey: string) {
   fetchGeneration++
 
   try {
-    // 目标月份下月1日 00:00 UTC 作为锚点
-    // groupKey 格式 "2023-02"，Date.UTC 月份从0开始，parseInt("02")=2 正好是下月
     const [yearStr, monthStr] = groupKey.split('-')
     const anchorTime = new Date(Date.UTC(parseInt(yearStr), parseInt(monthStr), 1)).toISOString()
 
     loading.value = true
+    console.log('[PhotoWaterfallView] 时间线导航', { groupKey, anchorTime })
+
     const response = await photo.getPhotos({
       size: 20,
       direction: 'next',
@@ -178,15 +175,13 @@ async function handleNavigate(groupKey: string) {
     })
     const { records, nextCursor, hasMore: more } = response.data
 
-    // 替换照片列表
-    photoStore.replacePhotos(records, nextCursor ?? undefined, more)
-    photoStore.currentGroup = groupKey
+    waterfall.replacePhotos(records, nextCursor ?? undefined, more)
+    waterfall.currentGroup.value = groupKey
 
-    // 等待 DOM 更新后滚动到顶部
     await nextTick()
     window.scrollTo({ top: 0, behavior: 'smooth' })
   } catch (error) {
-    console.error('导航失败:', error)
+    console.error('[PhotoWaterfallView] 导航失败:', error)
   } finally {
     loading.value = false
     navigating.value = false
@@ -197,7 +192,7 @@ async function handleNavigate(groupKey: string) {
 // 触底加载
 useIntersectionObserver(sentinelRef, (entries) => {
   const isIntersecting = entries[0]?.isIntersecting || false
-  if (isIntersecting && !loading.value && hasMore.value) {
+  if (isIntersecting && !loading.value && waterfall.hasMore.value) {
     fetchPhotos()
   }
 })
@@ -206,24 +201,26 @@ onMounted(async () => {
   handleResize()
   window.addEventListener('resize', handleResize)
 
-  // 如果 Store 有数据，跳过加载，恢复滚动位置
-  if (photoStore.allPhotos.length > 0) {
-    photoStore.restoreScrollPosition()
+  // 检查是否有缓存状态
+  const restored = waterfall.onMount()
+  if (restored) {
+    console.log('[PhotoWaterfallView] 已恢复缓存状态，跳过加载')
     return
   }
 
   // 首次加载
+  console.log('[PhotoWaterfallView] 首次加载')
   const [statsRes] = await Promise.all([
     photo.timeline.getMonthlyStats(),
     fetchPhotos(),
   ])
 
-  photoStore.monthStats = statsRes.data
+  waterfall.monthStats.value = statsRes.data
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
-  photoStore.saveScrollPosition()  // 保存滚动位置
+  waterfall.onUnmount()
 })
 </script>
 
@@ -235,7 +232,7 @@ onBeforeUnmount(() => {
         :column-count="columnCount"
         :container-width="containerWidth"
         :gap="16"
-        @current-group-change="photoStore.currentGroup = $event"
+        @current-group-change="waterfall.currentGroup.value = $event"
       >
         <template #header="{ group }">
           <div class="group-header">
@@ -257,14 +254,14 @@ onBeforeUnmount(() => {
       <!-- 加载指示器 -->
       <div ref="sentinelRef" class="load-sentinel">
         <Spinner v-if="loading" />
-        <span v-else-if="!hasMore" class="load-sentinel__text">已经到底啦 ~</span>
+        <span v-else-if="!waterfall.hasMore.value" class="load-sentinel__text">已经到底啦 ~</span>
       </div>
     </div>
 
     <!-- 右侧时间线导航 -->
     <TimelineNav
-      :month-stats="monthStats"
-      :current-group="currentGroup"
+      :month-stats="waterfall.monthStats.value"
+      :current-group="waterfall.currentGroup.value"
       :navigating="navigating"
       @navigate="handleNavigate"
     />

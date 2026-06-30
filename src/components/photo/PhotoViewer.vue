@@ -53,6 +53,9 @@ const dragStartTranslateY = ref(0)
 // 原图缓存（仅当前会话有效）
 const originalUrl = ref<string | null>(null)
 
+// 图片加载状态
+const imageLoading = ref(true)
+
 // 缩放常量（相对于 baseZoom 的倍数）
 const ZOOM_RATIO_MIN = 0.25
 const ZOOM_RATIO_MAX = 4
@@ -125,7 +128,15 @@ function handleImageLoad(event: Event) {
   baseZoom.value = scale
   zoom.value = scale
   rotation.value = 0
+
+  // 图片加载完成
+  imageLoading.value = false
 }
+
+// ---- 监听 photo 变化，重置加载状态 ----
+watch(() => props.photo, () => {
+  imageLoading.value = true
+})
 
 // ---- 旋转控制（每次 90°） ----
 function rotate() {
@@ -430,6 +441,12 @@ onBeforeUnmount(() => {
       @keydown="handleKeydown"
       tabindex="0"
     >
+      <!-- 加载提示 -->
+      <div v-if="imageLoading" class="photo-viewer__loading">
+        <div class="photo-viewer__loading-spinner"></div>
+        <div class="photo-viewer__loading-text">加载中...</div>
+      </div>
+
       <!-- 图片 -->
       <div
         v-if="imageUrl"
@@ -441,7 +458,10 @@ onBeforeUnmount(() => {
           :src="imageUrl"
           :alt="photo?.name"
           class="photo-viewer__image"
-          :class="{ 'photo-viewer__image--dragging': isDragging }"
+          :class="{
+            'photo-viewer__image--dragging': isDragging,
+            'photo-viewer__image--loaded': !imageLoading,
+          }"
           :style="{ transform: imageTransform, width: imageWidth ? imageWidth + 'px' : undefined, height: imageHeight ? imageHeight + 'px' : undefined }"
           draggable="false"
           @load="handleImageLoad"

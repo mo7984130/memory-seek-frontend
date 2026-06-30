@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { LikeIcon, PhotoIcon } from '@/components/base/Icon/icons'
 import { photo, type PhotoResult } from 'memory-seek-api'
+import dayjs from 'dayjs'
 
 const props = defineProps<{
   item: PhotoResult
@@ -24,6 +25,23 @@ const thumbnailUrl = computed(() => {
  * 是否已点赞
  */
 const isLiked = computed(() => props.item.isLiked ?? false)
+
+/**
+ * 格式化日期
+ */
+const formattedDate = computed(() => {
+  return dayjs(props.item.createdAt).format('YYYY/MM/DD')
+})
+
+/**
+ * 图片尺寸比例
+ */
+const aspectRatio = computed(() => {
+  if (props.item.width && props.item.height) {
+    return props.item.width / props.item.height
+  }
+  return 4 / 3
+})
 
 /**
  * 点击处理
@@ -56,6 +74,15 @@ function handleLike(event: Event) {
         <PhotoIcon :size="32" />
       </div>
 
+      <!-- 渐变遮罩 -->
+      <div class="photo-card__overlay" />
+
+      <!-- 底部信息 -->
+      <div class="photo-card__info">
+        <span class="photo-card__name">{{ item.name }}</span>
+        <span class="photo-card__date">{{ formattedDate }}</span>
+      </div>
+
       <!-- 点赞按钮 -->
       <button
         class="photo-card__like-btn"
@@ -63,7 +90,8 @@ function handleLike(event: Event) {
         @click="handleLike"
         title="点赞"
       >
-        <LikeIcon :size="18" :fill="isLiked ? 'currentColor' : 'none'" />
+        <div class="photo-card__like-bg" />
+        <LikeIcon :size="16" :fill="isLiked ? 'currentColor' : 'none'" />
       </button>
     </div>
   </div>
@@ -73,12 +101,12 @@ function handleLike(event: Event) {
 .photo-card {
   width: 100%;
   height: 100%;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--color-bg-card);
   cursor: pointer;
   border: 1px solid rgba(0, 0, 0, 0.06);
-  transition: all 280ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dark .photo-card {
@@ -87,23 +115,36 @@ function handleLike(event: Event) {
 
 @media (hover: hover) and (pointer: fine) {
   .photo-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 8px 32px rgba(0, 0, 0, 0.04);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 16px 48px rgba(0, 0, 0, 0.08);
     border-color: rgba(0, 0, 0, 0.1);
   }
 
   .dark .photo-card:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(0, 0, 0, 0.2);
-    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 16px 48px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.15);
   }
 
   .photo-card:hover .photo-card__image {
-    transform: scale(1.03);
+    transform: scale(1.05);
+  }
+
+  .photo-card:hover .photo-card__overlay {
+    opacity: 1;
+  }
+
+  .photo-card:hover .photo-card__info {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .photo-card:hover .photo-card__like-btn {
+    opacity: 1;
   }
 }
 
 .photo-card:active {
-  transform: scale(0.99);
+  transform: scale(0.98);
 }
 
 .photo-card__image-wrapper {
@@ -117,7 +158,7 @@ function handleLike(event: Event) {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.5s var(--ease-out);
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .photo-card__placeholder {
@@ -130,34 +171,123 @@ function handleLike(event: Event) {
   color: var(--color-text-tertiary);
 }
 
+/* 渐变遮罩 */
+.photo-card__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.6) 0%,
+    rgba(0, 0, 0, 0.2) 40%,
+    transparent 100%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.dark .photo-card__overlay {
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.7) 0%,
+    rgba(0, 0, 0, 0.3) 40%,
+    transparent 100%
+  );
+}
+
+/* 底部信息 */
+.photo-card__info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: var(--spacing-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: all 0.3s ease;
+}
+
+.photo-card__name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: white;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photo-card__date {
+  font-size: var(--text-xs);
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* 点赞按钮 */
 .photo-card__like-btn {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 32px;
-  height: 32px;
+  top: var(--spacing-3);
+  right: var(--spacing-3);
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-full);
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.95);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
   padding: 0;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+  opacity: 0;
+  z-index: 1;
 }
 
-.photo-card__like-btn:hover {
+.photo-card__like-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+
+.photo-card__like-btn:hover .photo-card__like-bg {
+  background: rgba(255, 255, 255, 0.3);
   transform: scale(1.1);
 }
 
-.photo-card__like-btn:active {
+.photo-card__like-btn:active .photo-card__like-bg {
   transform: scale(0.95);
 }
 
 .photo-card__like-btn--active {
   color: var(--color-like, #ef4444);
+  opacity: 1;
+}
+
+.photo-card__like-btn--active .photo-card__like-bg {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* 移动端始终显示 */
+@media (hover: none) {
+  .photo-card__overlay {
+    opacity: 1;
+  }
+
+  .photo-card__info {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .photo-card__like-btn {
+    opacity: 1;
+  }
 }
 </style>

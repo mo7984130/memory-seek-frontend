@@ -222,8 +222,8 @@
   font-family: var(--font-sans);
   color: var(--color-text-primary);
   background: var(--color-bg-input);
-  line-height: 1.4;
-  height: var(--photo-comments-send-size);
+  line-height: 1;
+  height: 1em;
   outline: none;
   transition: var(--input-transition);
   overflow: hidden;

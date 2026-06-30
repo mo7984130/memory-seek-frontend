@@ -226,6 +226,7 @@
   height: var(--photo-comments-send-size);
   outline: none;
   transition: var(--input-transition);
+  overflow: hidden;
 }
 
 .photo-comments__input:focus {

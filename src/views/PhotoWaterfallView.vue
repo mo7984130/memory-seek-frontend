@@ -3,33 +3,35 @@ import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useIntersectionObserver } from '@vueuse/core'
 import { photo } from 'memory-seek-api'
 import type { PhotoResult, MonthStat } from 'memory-seek-api'
+import { usePhotoStore } from '@/stores/photo'
 import VirtualWaterfall, { type WaterfallItem, type WaterfallGroup } from '@/components/photo/VirtualWaterfall.vue'
 import TimelineNav from '@/components/photo/TimelineNav.vue'
 import PhotoCard from '@/components/photo/PhotoCard.vue'
 import PhotoViewer from '@/components/photo/PhotoViewer.vue'
 import Spinner from '@/components/base/Spinner/Spinner.vue'
 
-// 状态
+const photoStore = usePhotoStore()
+
+// 本地 UI 状态
 const containerRef = ref<HTMLElement | null>(null)
 const sentinelRef = ref<HTMLElement | null>(null)
-const allPhotos = ref<PhotoResult[]>([])
 const columnCount = ref(4)
 const containerWidth = ref(0)
 const loading = ref(false)
-const hasMore = ref(true)
-const cursor = ref<string | undefined>(undefined)
 const navigating = ref(false)
 
 // 请求版本号，用于防止竞态条件
 let fetchGeneration = 0
 
-// 时间线状态
-const monthStats = ref<MonthStat[]>([])
-const currentGroup = ref('')
-
-// 照片查看器状态
+// 照片查看器状态（临时 UI 状态，不存 Store）
 const viewerVisible = ref(false)
 const selectedPhoto = ref<PhotoResult | null>(null)
+
+// 从 Store 读取状态
+const allPhotos = computed(() => photoStore.allPhotos)
+const hasMore = computed(() => photoStore.hasMore)
+const monthStats = computed(() => photoStore.monthStats)
+const currentGroup = computed(() => photoStore.currentGroup)
 
 /**
  * 计算列数和容器宽度
@@ -85,13 +87,13 @@ const groups = computed<WaterfallGroup[]>(() => {
  * 获取照片列表
  */
 async function fetchPhotos() {
-  if (loading.value || !hasMore.value) return
+  if (loading.value || !photoStore.hasMore) return
 
   const gen = fetchGeneration
   loading.value = true
   try {
     const response = await photo.getPhotos({
-      cursor: cursor.value,
+      cursor: photoStore.cursor,
       size: 20,
       direction: 'next',
     })
@@ -100,10 +102,7 @@ async function fetchPhotos() {
     if (gen !== fetchGeneration) return
 
     const { records, nextCursor, hasMore: more } = response.data
-
-    allPhotos.value.push(...records)
-    cursor.value = nextCursor ?? undefined
-    hasMore.value = more
+    photoStore.appendPhotos(records, nextCursor ?? undefined, more)
   } catch (error) {
     console.error('获取照片失败:', error)
   } finally {
@@ -127,28 +126,22 @@ function handlePhotoClick(photoItem: PhotoResult) {
 }
 
 function handleLikeChange(photoId: string, isLiked: boolean) {
-  const target = allPhotos.value.find((p) => p.id === photoId)
-  if (target) {
-    target.isLiked = isLiked
-  }
+  photoStore.updatePhotoLike(photoId, isLiked)
   if (selectedPhoto.value?.id === photoId) {
     selectedPhoto.value.isLiked = isLiked
   }
 }
 
 function handleDelete(photoId: string) {
-  allPhotos.value = allPhotos.value.filter((p) => p.id !== photoId)
+  photoStore.removePhoto(photoId)
 }
 
 async function handleLike(photoItem: PhotoResult) {
   const photoId = photoItem.id as string
   const wasLiked = photoItem.isLiked ?? false
 
-  // 乐观更新 UI
-  const target = allPhotos.value.find((p) => p.id === photoId)
-  if (target) {
-    target.isLiked = !wasLiked
-  }
+  // 乐观更新 Store
+  photoStore.updatePhotoLike(photoId, !wasLiked)
 
   try {
     if (wasLiked) {
@@ -158,9 +151,7 @@ async function handleLike(photoItem: PhotoResult) {
     }
   } catch (error) {
     // 回滚
-    if (target) {
-      target.isLiked = wasLiked
-    }
+    photoStore.updatePhotoLike(photoId, wasLiked)
     console.error('点赞操作失败:', error)
   }
 }
@@ -188,10 +179,8 @@ async function handleNavigate(groupKey: string) {
     const { records, nextCursor, hasMore: more } = response.data
 
     // 替换照片列表
-    allPhotos.value = records
-    cursor.value = nextCursor ?? undefined
-    hasMore.value = more
-    currentGroup.value = groupKey
+    photoStore.replacePhotos(records, nextCursor ?? undefined, more)
+    photoStore.currentGroup = groupKey
 
     // 等待 DOM 更新后滚动到顶部
     await nextTick()
@@ -217,17 +206,24 @@ onMounted(async () => {
   handleResize()
   window.addEventListener('resize', handleResize)
 
-  // 并行加载月份统计和首批照片
+  // 如果 Store 有数据，跳过加载，恢复滚动位置
+  if (photoStore.allPhotos.length > 0) {
+    photoStore.restoreScrollPosition()
+    return
+  }
+
+  // 首次加载
   const [statsRes] = await Promise.all([
     photo.timeline.getMonthlyStats(),
     fetchPhotos(),
   ])
 
-  monthStats.value = statsRes.data
+  photoStore.monthStats = statsRes.data
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
+  photoStore.saveScrollPosition()  // 保存滚动位置
 })
 </script>
 
@@ -239,7 +235,7 @@ onBeforeUnmount(() => {
         :column-count="columnCount"
         :container-width="containerWidth"
         :gap="16"
-        @current-group-change="currentGroup = $event"
+        @current-group-change="photoStore.currentGroup = $event"
       >
         <template #header="{ group }">
           <div class="group-header">

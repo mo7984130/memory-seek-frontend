@@ -57,6 +57,8 @@ export const useAuthStore = defineStore('auth', () => {
         })
         // 内存中保存完整用户信息
         userInfo.value = result.user
+        // 将当前用户信息注入用户缓存
+        useUserStore().initSelf()
         return true
       }
       return false

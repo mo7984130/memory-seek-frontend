@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useIntersectionObserver } from '@vueuse/core'
 import { photo } from 'memory-seek-api'
 import type { PhotoResult } from 'memory-seek-api'
@@ -114,9 +114,14 @@ useIntersectionObserver(sentinelRef, (entries) => {
   }
 })
 
-onMounted(() => {
+onMounted(async () => {
   handleResize()
   window.addEventListener('resize', handleResize)
+
+  // 确保滚动到顶部
+  await nextTick()
+  window.scrollTo(0, 0)
+
   fetchPhotos()
 })
 

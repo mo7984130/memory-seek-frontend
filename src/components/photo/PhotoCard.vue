@@ -90,8 +90,7 @@ function handleLike(event: Event) {
         @click="handleLike"
         title="点赞"
       >
-        <div class="photo-card__like-bg" />
-        <LikeIcon :size="16" :fill="isLiked ? 'currentColor' : 'none'" />
+        <LikeIcon :size="18" :fill="isLiked ? 'currentColor' : 'none'" />
       </button>
     </div>
   </div>
@@ -227,48 +226,33 @@ function handleLike(event: Event) {
   position: absolute;
   top: var(--spacing-3);
   right: var(--spacing-3);
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-full);
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.95);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
   padding: 0;
-  opacity: 1;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
   z-index: 1;
 }
 
-.photo-card__like-bg {
-  position: absolute;
-  inset: 0;
-  border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  transition: all 0.2s ease;
+.photo-card__like-btn:hover {
+  transform: scale(1.15);
 }
 
-.photo-card__like-btn:hover .photo-card__like-bg {
-  background: rgba(255, 255, 255, 0.3);
-  transform: scale(1.1);
-}
-
-.photo-card__like-btn:active .photo-card__like-bg {
-  transform: scale(0.95);
+.photo-card__like-btn:active {
+  transform: scale(0.9);
 }
 
 .photo-card__like-btn--active {
   color: var(--color-like, #ef4444);
-  opacity: 1;
-}
-
-.photo-card__like-btn--active .photo-card__like-bg {
-  background: rgba(255, 255, 255, 0.9);
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4));
 }
 
 /* 移动端始终显示 */

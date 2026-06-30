@@ -1,9 +1,10 @@
 <!-- src/components/photo/PhotoComments.vue -->
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
-import { X, Heart, Send } from 'lucide-vue-next'
+import { X, Heart, Send, Trash2 } from 'lucide-vue-next'
 import { photo, user as userApi } from 'memory-seek-api'
 import type { PhotoCommentResult, UserInfoResult } from 'memory-seek-api'
+import { useAuthStore } from '@/stores/auth'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
@@ -21,6 +22,8 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   close: []
 }>()
+
+const authStore = useAuthStore()
 
 const comments = ref<PhotoCommentResult[]>([])
 const loading = ref(false)
@@ -137,6 +140,25 @@ async function handleToggleLike(comment: PhotoCommentResult) {
 }
 
 /**
+ * 是否是自己的评论
+ */
+function isOwnComment(comment: PhotoCommentResult): boolean {
+  return comment.userId === authStore.userId
+}
+
+/**
+ * 删除评论
+ */
+async function handleDeleteComment(comment: PhotoCommentResult) {
+  try {
+    await photo.comment.deleteComment(props.photoId, comment.id)
+    comments.value = comments.value.filter((c) => c.id !== comment.id)
+  } catch (error) {
+    console.error('删除评论失败:', error)
+  }
+}
+
+/**
  * 格式化时间
  */
 function formatTime(time: string): string {
@@ -226,6 +248,14 @@ watch(
             >
               <Heart :size="14" :fill="comment.isLiked ? 'var(--color-like)' : 'none'" />
               <span v-if="comment.likeCount > 0">{{ comment.likeCount }}</span>
+            </button>
+            <button
+              v-if="isOwnComment(comment)"
+              class="comment-item__delete"
+              type="button"
+              @click="handleDeleteComment(comment)"
+            >
+              <Trash2 :size="14" />
             </button>
           </div>
         </div>

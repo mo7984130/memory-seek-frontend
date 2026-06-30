@@ -150,6 +150,7 @@
   color: var(--color-text-secondary);
   line-height: var(--leading-normal);
   margin: 0;
+  margin-left: 32px;
   word-break: break-all;
 }
 
@@ -157,6 +158,7 @@
   display: flex;
   align-items: center;
   margin-top: var(--spacing-1);
+  margin-left: 32px;
 }
 
 .comment-item__like {
@@ -171,6 +173,7 @@
   padding: var(--spacing-1);
   border-radius: var(--radius-sm);
   transition: var(--btn-transition);
+  vertical-align: middle;
 }
 
 .comment-item__like:hover {
@@ -179,6 +182,24 @@
 
 .comment-item__like--active {
   color: var(--color-like);
+}
+
+.comment-item__delete {
+  display: inline-flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  padding: var(--spacing-1);
+  border-radius: var(--radius-sm);
+  transition: var(--btn-transition);
+  vertical-align: middle;
+  margin-left: var(--spacing-1);
+}
+
+.comment-item__delete:hover {
+  color: var(--color-danger);
 }
 
 /* 输入区域 */

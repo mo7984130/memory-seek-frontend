@@ -110,6 +110,30 @@
   margin-bottom: var(--spacing-1);
 }
 
+.comment-item__user-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.comment-item__avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.comment-item__avatar--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary);
+  color: white;
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+}
+
 .comment-item__user {
   font-size: var(--text-sm);
   font-weight: var(--font-medium);

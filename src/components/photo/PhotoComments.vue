@@ -2,8 +2,8 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
 import { X, Heart, Send } from 'lucide-vue-next'
-import { photo } from 'memory-seek-api'
-import type { PhotoCommentResult } from 'memory-seek-api'
+import { photo, user as userApi } from 'memory-seek-api'
+import type { PhotoCommentResult, UserInfoResult } from 'memory-seek-api'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
@@ -30,6 +30,43 @@ const listRef = ref<HTMLElement | null>(null)
 const cursor = ref<string | undefined>(undefined)
 const hasMore = ref(true)
 
+// 用户信息缓存
+const userInfoMap = ref<Record<string, UserInfoResult>>({})
+
+/**
+ * 获取评论用户信息
+ */
+async function fetchUserInfo(userIds: string[]) {
+  const uncachedIds = userIds.filter((id) => !userInfoMap.value[id])
+  if (uncachedIds.length === 0) return
+
+  try {
+    const res = await userApi.getUserInfoBatch(uncachedIds)
+    for (const info of res.data) {
+      if (info) {
+        userInfoMap.value[info.userId] = info
+      }
+    }
+  } catch (error) {
+    console.error('获取用户信息失败:', error)
+  }
+}
+
+/**
+ * 获取用户昵称
+ */
+function getNickname(userId: string): string {
+  return userInfoMap.value[userId]?.nickname ?? '未知'
+}
+
+/**
+ * 获取用户头像 URL
+ */
+function getAvatarUrl(userId: string): string | null {
+  const token = userInfoMap.value[userId]?.avatarToken
+  return token ? photo.getImgUrl(token) : null
+}
+
 /**
  * 加载评论列表
  */
@@ -45,6 +82,10 @@ async function loadComments() {
     comments.value.push(...records)
     cursor.value = nextCursor ?? undefined
     hasMore.value = more
+
+    // 获取评论用户信息
+    const userIds = [...new Set(records.map((c) => c.userId))]
+    await fetchUserInfo(userIds)
   } catch (error) {
     console.error('加载评论失败:', error)
   } finally {
@@ -161,7 +202,18 @@ watch(
           class="comment-item"
         >
           <div class="comment-item__header">
-            <span class="comment-item__user">{{ comment.userId }}</span>
+            <div class="comment-item__user-info">
+              <img
+                v-if="getAvatarUrl(comment.userId)"
+                :src="getAvatarUrl(comment.userId)!"
+                :alt="getNickname(comment.userId)"
+                class="comment-item__avatar"
+              />
+              <div v-else class="comment-item__avatar comment-item__avatar--placeholder">
+                {{ getNickname(comment.userId).charAt(0) }}
+              </div>
+              <span class="comment-item__user">{{ getNickname(comment.userId) }}</span>
+            </div>
             <span class="comment-item__time">{{ formatTime(comment.createdAt) }}</span>
           </div>
           <p class="comment-item__content">{{ comment.content }}</p>

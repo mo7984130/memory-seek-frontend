@@ -1,22 +1,23 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useIntersectionObserver } from '@vueuse/core'
 import { photo } from 'memory-seek-api'
 import type { PhotoResult } from 'memory-seek-api'
-import VirtualWaterfall, { type WaterfallItem } from '@/components/photo/VirtualWaterfall.vue'
+import { useWaterfallPersistence } from '@/composables/useWaterfallPersistence'
+import VirtualWaterfall, { type WaterfallItem, type WaterfallGroup } from '@/components/photo/VirtualWaterfall.vue'
 import PhotoCard from '@/components/photo/PhotoCard.vue'
 import PhotoViewer from '@/components/photo/PhotoViewer.vue'
 import Spinner from '@/components/base/Spinner/Spinner.vue'
 
-// 状态
+// 使用持久化 composable
+const waterfall = useWaterfallPersistence('likes')
+
+// 本地 UI 状态
 const containerRef = ref<HTMLElement | null>(null)
 const sentinelRef = ref<HTMLElement | null>(null)
-const allPhotos = ref<PhotoResult[]>([])
 const columnCount = ref(4)
 const containerWidth = ref(0)
 const loading = ref(false)
-const hasMore = ref(true)
-const cursor = ref<string | undefined>(undefined)
 const total = ref(0)
 
 // 照片查看器状态
@@ -45,34 +46,54 @@ function handleResize() {
 }
 
 /**
+ * 按月分组
+ */
+const groups = computed<WaterfallGroup[]>(() => {
+  if (!waterfall.allPhotos.value.length) return []
+
+  const map = new Map<string, typeof waterfall.allPhotos.value>()
+  for (const photo of waterfall.allPhotos.value) {
+    const key = photo.createdAt.substring(0, 7)
+    if (!map.has(key)) map.set(key, [])
+    map.get(key)!.push(photo)
+  }
+
+  return Array.from(map.entries()).map(([key, photos]) => ({
+    key,
+    label: `${key.split('-')[0]}年${parseInt(key.split('-')[1])}月`,
+    items: photos,
+  }))
+})
+
+/**
  * 获取点赞照片列表
  */
 async function fetchPhotos() {
-  if (loading.value || !hasMore.value) return
+  if (loading.value || !waterfall.hasMore.value) return
 
   loading.value = true
+  console.log('[LikesView] 开始获取照片', { cursor: waterfall.cursor.value })
+
   try {
     const response = await photo.like.getLikedPhotos({
-      cursor: cursor.value,
+      cursor: waterfall.cursor.value,
       size: 20,
     })
     const { records, nextCursor, hasMore: more } = response.data
 
-    allPhotos.value.push(...records)
-    cursor.value = nextCursor ?? undefined
-    hasMore.value = more
-    if (!cursor.value) {
-      total.value = allPhotos.value.length
+    waterfall.appendPhotos(records, nextCursor ?? undefined, more)
+    if (!waterfall.cursor.value) {
+      total.value = waterfall.allPhotos.value.length
     }
   } catch (error) {
-    console.error('获取点赞照片失败:', error)
+    console.error('[LikesView] 获取点赞照片失败:', error)
   } finally {
     loading.value = false
   }
 }
 
-function getPhotoById(id: string | number): PhotoResult {
-  return allPhotos.value.find((p) => p.id === id) as PhotoResult
+function getPhotoById(id: string | number): PhotoResult | undefined {
+  return waterfall.allPhotos.value.find((p) => p.id === id)
 }
 
 function handlePhotoClick(photoItem: PhotoResult) {
@@ -83,7 +104,7 @@ function handlePhotoClick(photoItem: PhotoResult) {
 function handleLikeChange(photoId: string, isLiked: boolean) {
   if (!isLiked) {
     // 在点赞页面，取消点赞需要从列表中移除
-    allPhotos.value = allPhotos.value.filter((p) => p.id !== photoId)
+    waterfall.removePhoto(photoId)
   }
   if (selectedPhoto.value?.id === photoId) {
     selectedPhoto.value.isLiked = isLiked
@@ -91,7 +112,7 @@ function handleLikeChange(photoId: string, isLiked: boolean) {
 }
 
 function handleDelete(photoId: string) {
-  allPhotos.value = allPhotos.value.filter((p) => p.id !== photoId)
+  waterfall.removePhoto(photoId)
 }
 
 async function handleLike(photoItem: PhotoResult) {
@@ -100,16 +121,16 @@ async function handleLike(photoItem: PhotoResult) {
   // 在点赞页面，取消点赞需要从列表中移除
   try {
     await photo.like.unlikePhoto(photoId)
-    allPhotos.value = allPhotos.value.filter((p) => p.id !== photoId)
+    waterfall.removePhoto(photoId)
   } catch (error) {
-    console.error('取消点赞失败:', error)
+    console.error('[LikesView] 取消点赞失败:', error)
   }
 }
 
 // 触底加载
 useIntersectionObserver(sentinelRef, (entries) => {
   const isIntersecting = entries[0]?.isIntersecting || false
-  if (isIntersecting && !loading.value && hasMore.value) {
+  if (isIntersecting && !loading.value && waterfall.hasMore.value) {
     fetchPhotos()
   }
 })
@@ -118,36 +139,43 @@ onMounted(async () => {
   handleResize()
   window.addEventListener('resize', handleResize)
 
-  // 确保滚动到顶部
-  await nextTick()
-  window.scrollTo(0, 0)
+  // 检查是否有缓存状态
+  const restored = waterfall.onMount()
+  if (restored) {
+    console.log('[LikesView] 已恢复缓存状态，跳过加载')
+    return
+  }
 
+  // 首次加载
+  console.log('[LikesView] 首次加载')
   fetchPhotos()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize)
+  waterfall.onUnmount()
 })
 </script>
 
 <template>
   <div class="likes-view" ref="containerRef">
     <div class="likes-view__header">
-      <span class="likes-view__count" v-if="allPhotos.length > 0">
-        {{ allPhotos.length }} 张照片
+      <span class="likes-view__count" v-if="waterfall.allPhotos.value.length > 0">
+        {{ waterfall.allPhotos.value.length }} 张照片
       </span>
     </div>
 
     <div class="waterfall-container">
       <VirtualWaterfall
-        :items="allPhotos as WaterfallItem[]"
+        :groups="groups"
         :column-count="columnCount"
         :container-width="containerWidth"
         :gap="16"
       >
         <template #default="{ item }">
           <PhotoCard
-            :item="getPhotoById(item.id)"
+            v-if="getPhotoById(item.id)"
+            :item="getPhotoById(item.id)!"
             @click="handlePhotoClick"
             @like="handleLike"
           />
@@ -156,10 +184,10 @@ onBeforeUnmount(() => {
 
       <div ref="sentinelRef" class="load-sentinel">
         <Spinner v-if="loading" />
-        <span v-else-if="!hasMore && allPhotos.length > 0" class="load-sentinel__text">
+        <span v-else-if="!waterfall.hasMore.value && waterfall.allPhotos.value.length > 0" class="load-sentinel__text">
           已经到底啦 ~
         </span>
-        <span v-else-if="!loading && allPhotos.length === 0" class="load-sentinel__text">
+        <span v-else-if="!loading && waterfall.allPhotos.value.length === 0" class="load-sentinel__text">
           还没有点赞的照片
         </span>
       </div>

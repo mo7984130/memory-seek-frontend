@@ -33,15 +33,6 @@ const formattedDate = computed(() => {
   return dayjs(props.item.createdAt).format('YYYY/MM/DD')
 })
 
-/**
- * 图片尺寸比例
- */
-const aspectRatio = computed(() => {
-  if (props.item.width && props.item.height) {
-    return props.item.width / props.item.height
-  }
-  return 4 / 3
-})
 
 /**
  * 点击处理

@@ -101,7 +101,6 @@ async function toggleCollection(collectionId: string) {
         photoCollections.value.push({
           id: collection.id,
           name: collection.name,
-          isFavorite: false,
         })
       }
     }
@@ -128,7 +127,6 @@ async function createCollection() {
       photoCollections.value.push({
         id: newCollection.id,
         name: newCollection.name,
-        isFavorite: false,
       })
       emit('change')
     }

@@ -1,4 +1,4 @@
-import { ref, nextTick, onMounted, onBeforeUnmount, type Ref } from 'vue'
+import { ref, nextTick, type Ref } from 'vue'
 import type { PhotoResult, MonthStat } from 'memory-seek-api'
 
 /**

@@ -34,9 +34,9 @@ const navYears = computed<NavYear[]>(() => {
   const yearMap = new Map<number, { key: string; label: string; count: number }[]>()
 
   for (const stat of props.monthStats) {
-    const [yearStr, monthStr] = stat.dateStr.split('-')
-    const year = parseInt(yearStr)
-    const month = parseInt(monthStr)
+    const parts = stat.dateStr.split('-')
+    const year = parseInt(parts[0]!)
+    const month = parseInt(parts[1]!)
 
     if (!yearMap.has(year)) {
       yearMap.set(year, [])
@@ -48,10 +48,12 @@ const navYears = computed<NavYear[]>(() => {
     })
   }
 
-  return Array.from(yearMap.entries()).map(([year, months]) => ({
-    year,
-    months,
-  }))
+  return Array.from(yearMap.entries())
+    .sort(([yearA], [yearB]) => yearB - yearA)
+    .map(([year, months]) => ({
+      year,
+      months: months.sort((a, b) => b.key.localeCompare(a.key)),
+    }))
 })
 
 /**

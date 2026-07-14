@@ -31,9 +31,6 @@ function toggle() {
   isVisible.value = !isVisible.value
 }
 
-function onClickOutside() {
-  if (props.trigger === 'click') hide()
-}
 </script>
 
 <template>

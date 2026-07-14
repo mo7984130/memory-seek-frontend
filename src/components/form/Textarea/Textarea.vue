@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, nextTick } from 'vue'
+import { computed, ref, onMounted, nextTick } from 'vue'
 import { textareaVariants } from './textarea.variants'
 import type { Status } from '../../_shared/types'
 import './textarea.css'

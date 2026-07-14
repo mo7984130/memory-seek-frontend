@@ -1,9 +1,9 @@
 <!-- 瀑布流容器组件 - 自动管理状态持久化 -->
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref } from 'vue'
 import { useIntersectionObserver } from '@vueuse/core'
 import { useWaterfallPersistence } from '@/composables/useWaterfallPersistence'
-import VirtualWaterfall, { type WaterfallGroup } from './VirtualWaterfall.vue'
+import type { WaterfallGroup } from './VirtualWaterfall.vue'
 import Spinner from '@/components/base/Spinner/Spinner.vue'
 
 interface Props {
@@ -43,33 +43,6 @@ const waterfall = useWaterfallPersistence(props.storageKey)
 const containerRef = ref<HTMLElement | null>(null)
 const sentinelRef = ref<HTMLElement | null>(null)
 
-/**
- * 计算列数和容器宽度
- */
-function handleResize() {
-  if (!containerRef.value) return
-  const style = getComputedStyle(containerRef.value)
-  const paddingLeft = parseInt(style.paddingLeft) || 0
-  const paddingRight = parseInt(style.paddingRight) || 0
-  const width = containerRef.value.clientWidth - paddingLeft - paddingRight
-
-  // 响应式列数
-  let cols = 4
-  if (width < 640) {
-    cols = 2
-  } else if (width < 1024) {
-    cols = 3
-  } else if (width < 1440) {
-    cols = 4
-  } else {
-    cols = 5
-  }
-
-  // 更新父组件
-  emit('current-group-change', waterfall.currentGroup.value)
-
-  return { width, cols }
-}
 
 // 触底加载
 useIntersectionObserver(sentinelRef, (entries) => {

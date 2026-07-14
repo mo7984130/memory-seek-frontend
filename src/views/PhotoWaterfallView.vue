@@ -2,9 +2,9 @@
 import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useIntersectionObserver } from '@vueuse/core'
 import { photo } from 'memory-seek-api'
-import type { PhotoResult, MonthStat } from 'memory-seek-api'
+import type { PhotoResult } from 'memory-seek-api'
 import { useWaterfallPersistence } from '@/composables/useWaterfallPersistence'
-import VirtualWaterfall, { type WaterfallItem, type WaterfallGroup } from '@/components/photo/VirtualWaterfall.vue'
+import VirtualWaterfall, { type WaterfallGroup } from '@/components/photo/VirtualWaterfall.vue'
 import TimelineNav from '@/components/photo/TimelineNav.vue'
 import PhotoCard from '@/components/photo/PhotoCard.vue'
 import PhotoViewer from '@/components/photo/PhotoViewer.vue'
@@ -54,8 +54,8 @@ function handleResize() {
  * 格式化月份标签
  */
 function formatMonthLabel(key: string): string {
-  const [year, month] = key.split('-')
-  return `${year}年${parseInt(month)}月`
+  const parts = key.split('-')
+  return `${parts[0]}年${parseInt(parts[1]!)}月`
 }
 
 /**
@@ -162,8 +162,8 @@ async function handleNavigate(groupKey: string) {
   fetchGeneration++
 
   try {
-    const [yearStr, monthStr] = groupKey.split('-')
-    const anchorTime = new Date(Date.UTC(parseInt(yearStr), parseInt(monthStr), 1)).toISOString()
+    const parts = groupKey.split('-')
+    const anchorTime = new Date(Date.UTC(parseInt(parts[0]!), parseInt(parts[1]!), 1)).toISOString()
 
     loading.value = true
     console.log('[PhotoWaterfallView] 时间线导航', { groupKey, anchorTime })

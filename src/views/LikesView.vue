@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useIntersectionObserver } from '@vueuse/core'
 import { photo } from 'memory-seek-api'
 import type { PhotoResult } from 'memory-seek-api'
 import { useWaterfallPersistence } from '@/composables/useWaterfallPersistence'
-import VirtualWaterfall, { type WaterfallItem, type WaterfallGroup } from '@/components/photo/VirtualWaterfall.vue'
+import VirtualWaterfall, { type WaterfallGroup } from '@/components/photo/VirtualWaterfall.vue'
 import PhotoCard from '@/components/photo/PhotoCard.vue'
 import PhotoViewer from '@/components/photo/PhotoViewer.vue'
 import Spinner from '@/components/base/Spinner/Spinner.vue'
@@ -60,7 +60,7 @@ const groups = computed<WaterfallGroup[]>(() => {
 
   return Array.from(map.entries()).map(([key, photos]) => ({
     key,
-    label: `${key.split('-')[0]}年${parseInt(key.split('-')[1])}月`,
+    label: `${key.split('-')[0]}年${parseInt(key.split('-')[1]!)}月`,
     items: photos,
   }))
 })

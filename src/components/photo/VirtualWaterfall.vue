@@ -53,7 +53,7 @@ const waterfallRef = ref<HTMLElement | null>(null)
  * 定位后的项目（照片或分组标题）
  */
 interface PositionedItem {
-  id: string
+  id: string | number
   type: 'item' | 'header'
   groupKey?: string         // 分组标题的 key
   groupLabel?: string       // 分组标题的文本
@@ -68,8 +68,6 @@ interface PositionedItem {
  * 计算每张照片的绝对定位坐标
  */
 const positionedItems = computed<PositionedItem[]>(() => {
-  // 确保 groups 被追踪为依赖，即使 containerWidth 为 0
-  const _groups = props.groups
   const _containerWidth = props.containerWidth
 
   if (_containerWidth <= 0) return []
@@ -182,7 +180,7 @@ watch(visibleItems, (filtered) => {
   }
 
   if (topItem.type === 'item') {
-    emit('top-item-change', topItem as WaterfallItem)
+    emit('top-item-change', topItem as unknown as WaterfallItem)
   }
 })
 

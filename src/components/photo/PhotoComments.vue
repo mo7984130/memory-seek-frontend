@@ -1,7 +1,6 @@
 <!-- src/components/photo/PhotoComments.vue -->
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
-import { X, Heart, Send, Trash2 } from 'lucide-vue-next'
 import { photo } from 'memory-seek-api'
 import type { PhotoCommentResult } from 'memory-seek-api'
 import { useAuthStore } from '@/stores/auth'

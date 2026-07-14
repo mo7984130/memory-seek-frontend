@@ -5,36 +5,20 @@ import type { CollectionResult } from 'memory-seek-api'
 
 /**
  * 收藏夹状态管理
- *
- * 缓存收藏夹列表，避免重复请求
  */
 export const useCollectionStore = defineStore('collection', () => {
   // 状态
   const collections = ref<CollectionResult[]>([])
   const loading = ref(false)
-  const loaded = ref(false)
 
   /**
    * 获取收藏夹列表
-   * @param force 是否强制刷新
    */
-  async function fetchCollections(force = false): Promise<CollectionResult[]> {
-    // 已加载且不强制刷新时，直接返回缓存
-    if (loaded.value && !force) {
-      return collections.value
-    }
-
-    // 正在加载中，等待完成
-    if (loading.value) {
-      await waitForLoad()
-      return collections.value
-    }
-
+  async function fetchCollections(): Promise<CollectionResult[]> {
     loading.value = true
     try {
       const response = await photo.collection.getCollectionList()
       collections.value = response.data
-      loaded.value = true
       return collections.value
     } catch (error) {
       console.error('获取收藏夹列表失败:', error)
@@ -42,22 +26,6 @@ export const useCollectionStore = defineStore('collection', () => {
     } finally {
       loading.value = false
     }
-  }
-
-  /**
-   * 等待加载完成
-   */
-  function waitForLoad(): Promise<void> {
-    return new Promise((resolve) => {
-      const check = () => {
-        if (!loading.value) {
-          resolve()
-        } else {
-          setTimeout(check, 50)
-        }
-      }
-      check()
-    })
   }
 
   /**
@@ -118,17 +86,15 @@ export const useCollectionStore = defineStore('collection', () => {
   }
 
   /**
-   * 清空缓存
+   * 清空状态
    */
   function clear() {
     collections.value = []
-    loaded.value = false
   }
 
   return {
     collections,
     loading,
-    loaded,
     fetchCollections,
     addPhotosToCollection,
     removePhotoFromCollection,

@@ -48,7 +48,7 @@ import {
   Calendar,
   Mail,
   Shield,
-} from 'lucide-vue-next'
+} from '@lucide/vue'
 
 export {
   X,

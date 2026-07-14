@@ -177,7 +177,7 @@ function handleMouseUp() {
 // ---- 拖拽控制（触摸） ----
 function handleTouchStart(event: TouchEvent) {
   if (event.touches.length !== 1) return // 只响应单指触摸
-  const touch = event.touches[0]
+  const touch = event.touches[0]!
   isDragging.value = true
   dragStartX.value = touch.clientX
   dragStartY.value = touch.clientY
@@ -187,7 +187,7 @@ function handleTouchStart(event: TouchEvent) {
 
 function handleTouchMove(event: TouchEvent) {
   if (!isDragging.value || event.touches.length !== 1) return
-  const touch = event.touches[0]
+  const touch = event.touches[0]!
   const dx = touch.clientX - dragStartX.value
   const dy = touch.clientY - dragStartY.value
   translateX.value = dragStartTranslateX.value + dx

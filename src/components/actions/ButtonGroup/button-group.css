@@ -1,0 +1,52 @@
+.btn-group {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* 水平排列（默认） */
+.btn-group:not(.btn-group--vertical) {
+  flex-direction: row;
+}
+
+.btn-group:not(.btn-group--vertical) > .btn + .btn,
+.btn-group:not(.btn-group--vertical) > .icon-btn + .icon-btn {
+  margin-left: -2px;
+}
+
+.btn-group:not(.btn-group--vertical) > .btn:first-child {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.btn-group:not(.btn-group--vertical) > .btn:last-child {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.btn-group:not(.btn-group--vertical) > .btn:not(:first-child):not(:last-child) {
+  border-radius: 0;
+}
+
+/* 垂直排列 */
+.btn-group--vertical {
+  flex-direction: column;
+}
+
+.btn-group--vertical > .btn + .btn,
+.btn-group--vertical > .icon-btn + .icon-btn {
+  margin-top: -2px;
+}
+
+.btn-group--vertical > .btn:first-child {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.btn-group--vertical > .btn:last-child {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.btn-group--vertical > .btn:not(:first-child):not(:last-child) {
+  border-radius: 0;
+}

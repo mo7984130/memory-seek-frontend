@@ -6,19 +6,19 @@
 
 :root {
     /* 主色调 - 浅色模式 */
-    --color-primary: #2DD4A8;
-    --color-primary-light: #5EEAD4;
-    --color-primary-dark: #14B8A6;
-    --color-primary-50: #F0FDFA;
-    --color-primary-100: #CCFBF1;
-    --color-primary-200: #99F6E4;
-    --color-primary-300: #5EEAD4;
-    --color-primary-400: #2DD4A8;
-    --color-primary-500: #14B8A6;
-    --color-primary-600: #0D9488;
-    --color-primary-700: #0F766E;
-    --color-primary-800: #115E59;
-    --color-primary-900: #134E4A;
+    --color-primary: #8FB5A3;
+    --color-primary-light: #AACBBA;
+    --color-primary-dark: #76A08E;
+    --color-primary-50: #F0F7F4;
+    --color-primary-100: #DCEEE6;
+    --color-primary-200: #C5E2D5;
+    --color-primary-300: #AACBBA;
+    --color-primary-400: #8FB5A3;
+    --color-primary-500: #76A08E;
+    --color-primary-600: #5F8A77;
+    --color-primary-700: #4A7363;
+    --color-primary-800: #365C50;
+    --color-primary-900: #23463D;
 
     /* 次要色 */
     --color-secondary: #818CF8;
@@ -35,19 +35,19 @@
 
 /* 深色模式主色调 */
 .dark {
-    --color-primary: #D4AF37;
-    --color-primary-light: #F0D060;
-    --color-primary-dark: #C5A028;
-    --color-primary-50: #FFF8E1;
-    --color-primary-100: #FFECB3;
-    --color-primary-200: #FFD54F;
-    --color-primary-300: #FFCA28;
-    --color-primary-400: #D4AF37;
-    --color-primary-500: #C5A028;
-    --color-primary-600: #B8941E;
-    --color-primary-700: #9A7B14;
-    --color-primary-800: #7D620A;
-    --color-primary-900: #604900;
+    --color-primary: #787878;
+    --color-primary-light: #9A9A9A;
+    --color-primary-dark: #636363;
+    --color-primary-50: #2A2A2A;
+    --color-primary-100: #333333;
+    --color-primary-200: #444444;
+    --color-primary-300: #5A5A5A;
+    --color-primary-400: #787878;
+    --color-primary-500: #636363;
+    --color-primary-600: #555555;
+    --color-primary-700: #484848;
+    --color-primary-800: #3B3B3B;
+    --color-primary-900: #2E2E2E;
 }
 
 /* ============================================
@@ -56,7 +56,7 @@
 
 :root {
     /* 浅色模式 */
-    --color-bg-primary: #FFFEF8;
+    --color-bg-primary: #F2F0EB;
     --color-bg-secondary: #FAFAF5;
     --color-bg-card: #FFFFFF;
     --color-bg-input: rgba(0, 0, 0, 0.03);
@@ -188,20 +188,20 @@
    ============================================ */
 
 :root {
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.10);
-    --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.12);
-    --shadow-2xl: 0 20px 60px rgba(0, 0, 0, 0.15);
-    --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.03);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.05), 0 4px 16px rgba(0, 0, 0, 0.04);
+    --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.06), 0 8px 32px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.08), 0 16px 48px rgba(0, 0, 0, 0.06);
+    --shadow-2xl: 0 12px 36px rgba(0, 0, 0, 0.1), 0 24px 64px rgba(0, 0, 0, 0.08);
+    --shadow-inner: inset 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .dark {
-    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.35);
-    --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.4);
-    --shadow-2xl: 0 20px 60px rgba(0, 0, 0, 0.5);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.12);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.25), 0 8px 32px rgba(0, 0, 0, 0.2);
+    --shadow-xl: 0 8px 24px rgba(0, 0, 0, 0.3), 0 16px 48px rgba(0, 0, 0, 0.25);
+    --shadow-2xl: 0 12px 36px rgba(0, 0, 0, 0.35), 0 24px 64px rgba(0, 0, 0, 0.3);
 }
 
 /* ============================================
@@ -244,34 +244,43 @@
 
 /* 输入框 */
 :root {
-    --input-radius: var(--radius-md);
-    --input-border: 2px solid var(--color-border);
+    --input-radius: 0;
+    --input-border: none;
     --input-transition: var(--transition-normal-out);
-    --input-focus-shadow: 0 0 0 4px rgba(45, 212, 168, 0.1);
+    --input-focus-shadow: none;
+    --input-error-focus-shadow: none;
+    --input-success-focus-shadow: none;
+    --input-disabled-opacity: 0.5;
 }
 
 .dark {
-    --input-focus-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
+    --input-focus-shadow: 0 0 0 4px rgba(120, 120, 120, 0.15);
 }
 
 /* 卡片 */
 :root {
     --card-radius: var(--radius-lg);
     --card-padding: var(--spacing-5);
-    --card-shadow: var(--shadow-md);
-    --card-border: 1px solid var(--color-border);
+    --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
+    --card-border: 1px solid rgba(0, 0, 0, 0.06);
     --card-bg: var(--color-bg-card);
-    --card-transition: var(--transition-slow-out);
-    --card-hover-transform: translateY(-4px);
-    --card-hover-shadow: var(--shadow-xl);
-    --card-active-transform: scale(0.98);
+    --card-transition: all 280ms cubic-bezier(0.4, 0, 0.2, 1);
+    --card-hover-transform: translateY(-2px);
+    --card-hover-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 8px 32px rgba(0, 0, 0, 0.04);
+    --card-active-transform: scale(0.99);
+}
+
+.dark {
+    --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.15);
+    --card-border: 1px solid rgba(255, 255, 255, 0.08);
+    --card-hover-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
 /* 模态框 */
 :root {
-    --modal-radius: var(--radius-xl);
-    --modal-padding: var(--spacing-8);
-    --modal-shadow: var(--shadow-2xl);
+    --modal-radius: var(--radius-md);
+    --modal-padding: var(--spacing-6);
+    --modal-shadow: var(--shadow-md);
     --modal-bg: var(--color-bg-card);
     --modal-sm: 320px;
     --modal-md: 480px;
@@ -311,7 +320,7 @@
 }
 
 .dark {
-    --dropdown-item-hover-bg: rgba(212, 175, 55, 0.1);
+    --dropdown-item-hover-bg: rgba(120, 120, 120, 0.1);
 }
 
 /* 提示 */

@@ -1,0 +1,257 @@
+/* src/components/data/CollectionSelector/collection-selector.css */
+
+.collection-selector {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 60vh;
+}
+
+.collection-selector__list {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0 calc(-1 * var(--modal-padding));
+  padding: 0 var(--spacing-2);
+}
+
+.collection-selector__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-3) var(--spacing-3);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition-fast-out);
+}
+
+.collection-selector__item:hover {
+  background: var(--color-bg-hover);
+}
+
+.collection-selector__item-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex: 1;
+  min-width: 0;
+}
+
+.collection-selector__item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.collection-selector__item-icon--active {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.collection-selector__item-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.collection-selector__item-name {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collection-selector__item-desc {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  margin-top: var(--spacing-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collection-selector__item-count {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-1);
+}
+
+.collection-selector__item-action {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  flex-shrink: 0;
+}
+
+.collection-selector__check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  color: white;
+}
+
+.collection-selector__menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  opacity: 0;
+  transition: var(--transition-fast-out);
+}
+
+.collection-selector__item:hover .collection-selector__menu-btn {
+  opacity: 1;
+}
+
+.collection-selector__menu-btn:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text);
+}
+
+/* 标题栏添加按钮 */
+.collection-selector__header-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: var(--transition-fast-out);
+}
+
+.collection-selector__header-add:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text);
+}
+
+.collection-selector__header-add--active {
+  background: var(--color-primary-50);
+  color: var(--color-primary);
+  transform: rotate(45deg);
+}
+
+/* 创建表单 */
+.collection-selector__create-form {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--modal-padding);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.collection-selector__create-input {
+  flex: 1;
+}
+
+.collection-selector__create-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: var(--transition-fast-out);
+}
+
+.collection-selector__create-btn:hover:not(:disabled) {
+  background: var(--color-primary-dark);
+}
+
+.collection-selector__create-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 操作菜单 */
+.collection-selector__dropdown {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: var(--z-index-dropdown);
+  min-width: 120px;
+  padding: var(--spacing-1);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.collection-selector__dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  width: 100%;
+  padding: var(--spacing-2) var(--spacing-3);
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: var(--transition-fast-out);
+}
+
+.collection-selector__dropdown-item:hover {
+  background: var(--color-bg-hover);
+}
+
+.collection-selector__dropdown-item--danger {
+  color: var(--color-error);
+}
+
+.collection-selector__dropdown-item--danger:hover {
+  background: var(--color-error-light);
+}
+
+/* 空状态提示 */
+.collection-selector__empty-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-6) var(--spacing-4);
+  color: var(--color-text-tertiary);
+}
+
+.collection-selector__empty-hint-icon {
+  margin-bottom: var(--spacing-2);
+  opacity: 0.4;
+}
+
+.collection-selector__empty-hint-text {
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+/* 加载状态 */
+.collection-selector__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-8);
+}

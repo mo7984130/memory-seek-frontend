@@ -1,0 +1,178 @@
+.select {
+  /* 组件变量 */
+  --select-height-sm: 32px;
+  --select-height-md: 40px;
+  --select-height-lg: 48px;
+
+  position: relative;
+  width: 100%;
+}
+
+/* 触发器 */
+.select__trigger {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: var(--select-height-md);
+  background: var(--color-bg-input);
+  border: var(--input-border);
+  border-radius: var(--input-radius);
+  transition: var(--input-transition);
+  cursor: pointer;
+  padding: 0 var(--spacing-4);
+  gap: var(--spacing-2);
+}
+
+.select__trigger:focus {
+  border-color: var(--color-border-focus);
+  box-shadow: var(--input-focus-shadow);
+  outline: none;
+}
+
+/* 显示值 */
+.select__value {
+  flex: 1;
+  text-align: left;
+  color: var(--color-text-primary);
+  font-size: var(--text-base);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select__placeholder {
+  color: var(--color-text-placeholder);
+}
+
+/* 图标 */
+.select__icon {
+  display: flex;
+  align-items: center;
+  color: var(--color-text-tertiary);
+  transition: transform var(--transition-fast) var(--ease-out);
+  flex-shrink: 0;
+}
+
+.select--open .select__icon {
+  transform: rotate(180deg);
+}
+
+/* 清除按钮 */
+.select__clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  padding: 0;
+  background: none;
+  border: none;
+  transition: var(--btn-transition);
+  flex-shrink: 0;
+}
+
+.select__clear:hover {
+  color: var(--color-text-secondary);
+}
+
+/* 下拉面板 */
+.select__dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: var(--spacing-1);
+  background: var(--dropdown-bg);
+  border: var(--dropdown-border);
+  border-radius: var(--dropdown-radius);
+  box-shadow: var(--dropdown-shadow);
+  z-index: var(--z-index-dropdown);
+  max-height: 240px;
+  overflow-y: auto;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: var(--dropdown-transition);
+  pointer-events: none;
+}
+
+.select--open .select__dropdown {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* 选项 */
+.select__option {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-2) var(--spacing-3);
+  cursor: pointer;
+  color: var(--color-text-primary);
+  font-size: var(--text-sm);
+  transition: var(--dropdown-transition);
+}
+
+.select__option:hover {
+  background: var(--dropdown-item-hover-bg);
+}
+
+.select__option--active {
+  background: var(--dropdown-item-active-bg);
+  color: var(--dropdown-item-active-color);
+}
+
+.select__option--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 尺寸 */
+.select--sm .select__trigger {
+  height: var(--select-height-sm);
+  padding: 0 var(--spacing-3);
+  font-size: var(--text-sm);
+}
+
+.select--md .select__trigger {
+  height: var(--select-height-md);
+  padding: 0 var(--spacing-4);
+  font-size: var(--text-base);
+}
+
+.select--lg .select__trigger {
+  height: var(--select-height-lg);
+  padding: 0 var(--spacing-5);
+  font-size: var(--text-lg);
+}
+
+/* 状态 */
+.select--error .select__trigger {
+  border-color: var(--color-danger);
+}
+
+.select--error .select__trigger:focus {
+  border-color: var(--color-danger);
+  box-shadow: 0 0 0 4px rgba(232, 93, 93, 0.1);
+}
+
+.select--success .select__trigger {
+  border-color: var(--color-success);
+}
+
+.select--success .select__trigger:focus {
+  border-color: var(--color-success);
+  box-shadow: 0 0 0 4px rgba(82, 196, 26, 0.1);
+}
+
+/* 禁用 */
+.select--disabled .select__trigger {
+  opacity: var(--btn-disabled-opacity);
+  cursor: not-allowed;
+}
+
+/* 遮罩层（点击外部关闭） */
+.select__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-index-dropdown) - 1);
+}

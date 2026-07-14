@@ -1,0 +1,142 @@
+/* src/components/photo/photo-toolbar.css */
+
+.photo-toolbar {
+  --photo-toolbar-btn-size: 36px;
+  --photo-toolbar-divider-height: 20px;
+  --photo-toolbar-zoom-min-width: 40px;
+
+  position: absolute;
+  bottom: var(--spacing-6);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-4);
+  background: rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius-full);
+  color: white;
+  z-index: var(--z-index-tooltip);
+  user-select: none;
+  max-width: calc(100vw - var(--spacing-8));
+  animation: photo-toolbar-slide-up 0.3s var(--ease-out) 0.1s both;
+}
+
+@keyframes photo-toolbar-slide-up {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.photo-toolbar__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--photo-toolbar-btn-size);
+  height: var(--photo-toolbar-btn-size);
+  border: none;
+  background: transparent;
+  color: white;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: var(--transition-fast-out);
+}
+
+.photo-toolbar__btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.photo-toolbar__btn:active {
+  transform: scale(0.9);
+}
+
+.photo-toolbar__btn--active {
+  color: var(--color-like);
+}
+
+.photo-toolbar__btn--collected {
+  color: var(--color-warning);
+}
+
+.photo-toolbar__zoom {
+  font-size: var(--text-sm);
+  min-width: var(--photo-toolbar-zoom-min-width);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.photo-toolbar__divider {
+  width: 1px;
+  height: var(--photo-toolbar-divider-height);
+  background: rgba(255, 255, 255, 0.2);
+  margin: 0 var(--spacing-1);
+}
+
+.photo-toolbar__loading {
+  animation: photo-toolbar-spin 1s linear infinite;
+}
+
+@keyframes photo-toolbar-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.photo-toolbar__btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.photo-toolbar__btn--danger:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: var(--color-danger);
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .photo-toolbar {
+    --photo-toolbar-btn-size: 32px;
+    --photo-toolbar-divider-height: 16px;
+    --photo-toolbar-zoom-min-width: 32px;
+
+    gap: var(--spacing-1);
+    padding: var(--spacing-1) var(--spacing-2);
+    bottom: var(--spacing-4);
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .photo-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .photo-toolbar__btn {
+    flex-shrink: 0;
+  }
+
+  .photo-toolbar__divider {
+    flex-shrink: 0;
+  }
+
+  .photo-toolbar__zoom {
+    font-size: var(--text-xs);
+    min-width: 28px;
+  }
+
+  /* 隐藏次要按钮 */
+  .photo-toolbar__btn[title*="重置"] {
+    display: none;
+  }
+}

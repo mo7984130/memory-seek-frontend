@@ -1,0 +1,155 @@
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--drawer-overlay-bg);
+  z-index: var(--z-index-modal-backdrop);
+  animation: fadeIn var(--transition-normal) var(--ease-out);
+}
+
+.drawer__panel {
+  position: fixed;
+  background: var(--drawer-bg);
+  transition: var(--drawer-transition);
+  z-index: var(--z-index-modal);
+  overflow-y: auto;
+}
+
+/* 方向 + 尺寸 */
+.drawer__panel--left {
+  top: 0;
+  left: 0;
+  bottom: 0;
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.1);
+}
+
+.drawer__panel--right {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.1);
+}
+
+.drawer__panel--top {
+  top: 0;
+  left: 0;
+  right: 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.drawer__panel--bottom {
+  bottom: 0;
+  left: 0;
+  right: 0;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* 水平方向尺寸 */
+.drawer__panel--left.drawer__panel--sm,
+.drawer__panel--right.drawer__panel--sm {
+  width: var(--drawer-sm);
+}
+
+.drawer__panel--left.drawer__panel--md,
+.drawer__panel--right.drawer__panel--md {
+  width: var(--drawer-md);
+}
+
+.drawer__panel--left.drawer__panel--lg,
+.drawer__panel--right.drawer__panel--lg {
+  width: var(--drawer-lg);
+}
+
+.drawer__panel--left.drawer__panel--xl,
+.drawer__panel--right.drawer__panel--xl {
+  width: var(--drawer-xl);
+}
+
+/* 垂直方向尺寸 */
+.drawer__panel--top.drawer__panel--sm,
+.drawer__panel--bottom.drawer__panel--sm {
+  height: var(--drawer-sm);
+}
+
+.drawer__panel--top.drawer__panel--md,
+.drawer__panel--bottom.drawer__panel--md {
+  height: var(--drawer-md);
+}
+
+.drawer__panel--top.drawer__panel--lg,
+.drawer__panel--bottom.drawer__panel--lg {
+  height: var(--drawer-lg);
+}
+
+.drawer__panel--top.drawer__panel--xl,
+.drawer__panel--bottom.drawer__panel--xl {
+  height: var(--drawer-xl);
+}
+
+/* 头部 */
+.drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-4) var(--spacing-5);
+  border-bottom: var(--card-border);
+}
+
+.drawer__title {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.drawer__close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  transition: var(--btn-transition);
+}
+
+.drawer__close:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+/* 内容 */
+.drawer__body {
+  padding: var(--spacing-5);
+  color: var(--color-text-primary);
+  line-height: var(--leading-normal);
+}
+
+/* 底部 */
+.drawer__footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-2);
+  padding: var(--spacing-4) var(--spacing-5);
+  border-top: var(--card-border);
+}
+
+/* 深色模式阴影 */
+.dark .drawer__panel--left {
+  box-shadow: 4px 0 16px rgba(0, 0, 0, 0.3);
+}
+
+.dark .drawer__panel--right {
+  box-shadow: -4px 0 16px rgba(0, 0, 0, 0.3);
+}
+
+.dark .drawer__panel--top {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.dark .drawer__panel--bottom {
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.3);
+}

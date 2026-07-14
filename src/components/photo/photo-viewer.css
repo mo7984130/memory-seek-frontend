@@ -1,0 +1,206 @@
+/* src/components/photo/photo-viewer.css */
+
+/* 全屏照片查看器 */
+.photo-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  outline: none;
+  animation: photo-viewer-fade-in 0.3s var(--ease-out);
+}
+
+@keyframes photo-viewer-fade-in {
+  from {
+    opacity: 0;
+    background: rgba(0, 0, 0, 0);
+    backdrop-filter: blur(0);
+    -webkit-backdrop-filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+}
+
+/* 图片包裹层（撑满可用空间，pointer-events: none 让点击穿透到 .photo-viewer） */
+.photo-viewer__image-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  background: transparent;
+  pointer-events: none;
+}
+
+/* 玻璃光扫过动画 */
+.photo-viewer__image-wrapper--refreshing::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 45%,
+    rgba(255, 255, 255, 0.5) 50%,
+    rgba(255, 255, 255, 0.3) 55%,
+    transparent 100%
+  );
+  animation: photo-viewer-glass-sweep 0.8s ease-in-out forwards;
+  pointer-events: none;
+}
+
+@keyframes photo-viewer-glass-sweep {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.photo-viewer__image {
+  object-fit: contain;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: 0;
+  transition: transform 0.2s var(--ease-out);
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: auto;
+  cursor: grab;
+  animation: photo-viewer-zoom-in 0.3s var(--ease-out);
+}
+
+@keyframes photo-viewer-zoom-in {
+  from {
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+.photo-viewer__image--dragging {
+  cursor: grabbing;
+  transition: none;
+}
+
+/* 加载提示 */
+.photo-viewer__loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+}
+
+.photo-viewer__loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: photo-viewer-spin 0.8s linear infinite;
+}
+
+@keyframes photo-viewer-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 图片加载完成动画 */
+.photo-viewer__image--loaded {
+  animation: photo-viewer-image-loaded 0.4s var(--ease-out);
+}
+
+@keyframes photo-viewer-image-loaded {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.photo-viewer__empty {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: var(--text-lg);
+}
+
+/* 删除确认弹窗（z-index 高于照片查看器） */
+.photo-viewer__modal-overlay {
+  z-index: 10000;
+}
+
+/* 删除确认弹窗 */
+.delete-confirm__text {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+  margin: 0 0 var(--spacing-6);
+}
+
+.delete-confirm__actions {
+  display: flex;
+  gap: var(--spacing-3);
+  justify-content: flex-end;
+}
+
+.delete-confirm__cancel {
+  padding: var(--spacing-2) var(--spacing-5);
+  background: transparent;
+  border: 2px solid var(--color-border);
+  border-radius: var(--btn-radius);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-family: inherit;
+  transition: var(--btn-transition);
+}
+
+.delete-confirm__cancel:hover {
+  border-color: var(--color-text-tertiary);
+}
+
+.delete-confirm__delete {
+  padding: var(--spacing-2) var(--spacing-5);
+  background: var(--color-danger);
+  color: white;
+  border: none;
+  border-radius: var(--btn-radius);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  font-family: inherit;
+  transition: var(--btn-transition);
+}
+
+.delete-confirm__delete:hover {
+  opacity: 0.9;
+}
+
+.delete-confirm__delete:disabled {
+  opacity: var(--btn-disabled-opacity);
+  cursor: not-allowed;
+}
+

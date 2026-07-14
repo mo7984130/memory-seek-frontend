@@ -9,6 +9,11 @@ lerna-debug.log*
 
 node_modules
 .DS_Store
+
+# env
+.env
+.env.*
+!.env.example
 dist
 dist-ssr
 coverage
@@ -37,3 +42,6 @@ __screenshots__/
 
 # Vite
 *.timestamp-*-*.mjs
+
+docs/superpowers
+.superpowers

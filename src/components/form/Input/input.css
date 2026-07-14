@@ -1,0 +1,125 @@
+.input {
+  /* 组件变量 */
+  --input-height-sm: 32px;
+  --input-height-md: 40px;
+  --input-height-lg: 48px;
+
+  display: flex;
+  align-items: center;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid var(--color-border);
+  border-radius: 0;
+  transition: var(--input-transition);
+  position: relative;
+}
+
+.input__field {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  line-height: var(--leading-normal);
+}
+
+.input__field::placeholder {
+  color: var(--color-text-placeholder);
+}
+
+.input__field:disabled {
+  color: var(--color-text-disabled);
+  cursor: not-allowed;
+}
+
+/* 尺寸 */
+.input--sm {
+  height: var(--input-height-sm);
+  padding: 0 var(--spacing-3);
+  font-size: var(--text-sm);
+}
+
+.input--md {
+  height: var(--input-height-md);
+  padding: 0 var(--spacing-4);
+  font-size: var(--text-base);
+}
+
+.input--lg {
+  height: var(--input-height-lg);
+  padding: 0 var(--spacing-5);
+  font-size: var(--text-lg);
+}
+
+/* 焦点 */
+.input:focus-within {
+  border-bottom-color: var(--color-border-focus);
+  box-shadow: none;
+}
+
+/* 状态 */
+.input--error {
+  border-bottom-color: var(--color-danger);
+}
+
+.input--error:focus-within {
+  border-bottom-color: var(--color-danger);
+  box-shadow: none;
+}
+
+.input--success {
+  border-bottom-color: var(--color-success);
+}
+
+.input--success:focus-within {
+  border-bottom-color: var(--color-success);
+  box-shadow: none;
+}
+
+/* 禁用 */
+.input--disabled,
+.input:has(.input__field:disabled) {
+  opacity: var(--input-disabled-opacity, 0.5);
+  cursor: not-allowed;
+}
+
+/* 前后缀 */
+.input__prefix,
+.input__suffix {
+  display: flex;
+  align-items: center;
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+
+.input__prefix {
+  margin-right: var(--spacing-2);
+}
+
+.input__suffix {
+  margin-left: var(--spacing-2);
+}
+
+/* 清除按钮 */
+.input__clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  color: var(--color-text-tertiary);
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--radius-full);
+  transition: var(--input-transition, var(--transition-fast-out));
+}
+
+.input__clear:hover {
+  color: var(--color-text-secondary);
+}

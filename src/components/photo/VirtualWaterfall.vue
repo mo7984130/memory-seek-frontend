@@ -73,7 +73,7 @@ const positionedItems = computed<PositionedItem[]>(() => {
   if (_containerWidth <= 0) return []
 
   const colWidth = (_containerWidth - (props.columnCount - 1) * props.gap) / props.columnCount
-  const heights = new Array(props.columnCount).fill(0)
+  const heights = Array.from<number>({ length: props.columnCount }).fill(0)
 
   // 分组模式
   if (props.groups && props.groups.length > 0) {

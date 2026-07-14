@@ -12,7 +12,7 @@ import router from './router'
 
 // 初始化 API 配置 — 必须在任何组件使用 API 之前
 initApiConfig({
-  baseUrl: 'https://memory-seek.driftcloud.cn/api',
+  baseUrl: import.meta.env.VITE_API_BASE_URL,
   timeout: 10000,
 })
 

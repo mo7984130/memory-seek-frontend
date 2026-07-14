@@ -2,6 +2,8 @@ import './styles/variables.css'
 import './styles/global.css'
 import './components/index.css'
 
+console.log(`Memory Seek Frontend v${__APP_VERSION__}`)
+
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { initApiConfig, setMessageHandler } from 'memory-seek-api'

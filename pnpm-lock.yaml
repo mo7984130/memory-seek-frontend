@@ -24,8 +24,8 @@ importers:
         specifier: ^1.11.21
         version: 1.11.21
       memory-seek-api:
-        specifier: file:../memory-seek-api/memory-seek-api-ts
-        version: file:../memory-seek-api/memory-seek-api-ts
+        specifier: ^0.1.0
+        version: 0.1.0
       pinia:
         specifier: ^3.0.4
         version: 3.0.4(typescript@6.0.3)(vue@3.5.39(typescript@6.0.3))
@@ -1056,8 +1056,8 @@ packages:
   mdn-data@2.0.30:
     resolution: {integrity: sha512-GaqWWShW4kv/G9IEucWScBx9G1/vsFZZJUO+tD26M8J8z3Kw5RDQjaoZe03YAClgeS/SWPOcb4nkFBTEi5DUEA==}
 
-  memory-seek-api@file:../memory-seek-api/memory-seek-api-ts:
-    resolution: {directory: ../memory-seek-api/memory-seek-api-ts, type: directory}
+  memory-seek-api@0.1.0:
+    resolution: {integrity: sha512-GjtaZ/NA7uOMOXIVRun/6s0SHnwvTccsjMF5P7pikdX3Ha98+vMWHb8wYeQU7l7qHsrkdfKzL8X1ZuvtWX8iNw==}
     engines: {node: '>=18'}
 
   memorystream@0.3.1:
@@ -2383,7 +2383,7 @@ snapshots:
 
   mdn-data@2.0.30: {}
 
-  memory-seek-api@file:../memory-seek-api/memory-seek-api-ts:
+  memory-seek-api@0.1.0:
     dependencies:
       axios: 1.18.1
     transitivePeerDependencies:

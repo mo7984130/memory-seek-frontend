@@ -1,9 +1,7 @@
 name: Release
-
 on:
   push:
     branches: [ main ]
-
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -11,32 +9,40 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
-
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
-
     - name: Setup pnpm
       uses: pnpm/action-setup@v4
       with:
         version: latest
-
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: 'lts/*'
         cache: 'pnpm'
-
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
-
     - name: Build
       run: pnpm run build
       env:
-          VITE_API_BASE_URL: https://memory-seek.driftcloud.cn/api
-
+        VITE_API_BASE_URL: https://memory-seek.driftcloud.cn/api
+    - name: Package dist
+      run: tar -czf dist.tar.gz dist/
     - name: Release
+      id: semantic
       uses: cycjimmy/semantic-release-action@v4
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        extra_plugins: |
+          @semantic-release/github
+    - name: Upload build assets
+      if: steps.semantic.outputs.new_release_published == 'true'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v${{ steps.semantic.outputs.new_release_version }}
+        files: dist.tar.gz
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

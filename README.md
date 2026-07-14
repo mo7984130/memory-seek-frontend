@@ -76,7 +76,7 @@ cp .env.example .env
 pnpm dev
 ```
 
-The dev server starts at `http://localhost:5173` by default.
+The dev server starts at `http://localhost:5173` by default. Hot Module Replacement (HMR) is enabled out of the box.
 
 ## Available Scripts
 

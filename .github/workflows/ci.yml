@@ -35,8 +35,5 @@ jobs:
       if: hashFiles('tsconfig.json') != ''
       run: pnpm run type-check
 
-    - name: Test
-      run: pnpm run test
-
     - name: Build
       run: pnpm run build

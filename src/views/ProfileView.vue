@@ -2,7 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { Camera, LogOut, Key, Edit3, Copy, Check, Ticket } from '@/components/base/Icon/icons'
 import { user, photo } from 'memory-seek-api'
-import type { UserInfo, InviterCodeResult } from 'memory-seek-api'
+import type { UserInfo, InviterCode } from 'memory-seek-api'
 import { useAuthStore } from '@/stores/auth'
 import Card from '@/components/data/Card/Card.vue'
 import Modal from '@/components/feedback/Modal/Modal.vue'
@@ -21,7 +21,7 @@ const loading = ref(true)
 const userInfo = ref<UserInfo | null>(null)
 
 // 邀请码
-const inviterCode = ref<InviterCodeResult | null>(null)
+const inviterCode = ref<InviterCode | null>(null)
 const generatingCode = ref(false)
 const copied = ref(false)
 
@@ -74,7 +74,7 @@ function loadSavedInviterCode() {
   try {
     const saved = localStorage.getItem(INVITER_CODE_KEY)
     if (saved) {
-      const parsed = JSON.parse(saved) as InviterCodeResult
+      const parsed = JSON.parse(saved) as InviterCode
       // 检查是否过期
       if (new Date(parsed.expireAt).getTime() > Date.now()) {
         inviterCode.value = parsed

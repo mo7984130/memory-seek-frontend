@@ -1,20 +1,20 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { photo } from 'memory-seek-api'
-import type { CollectionResult } from 'memory-seek-api'
+import type { Collection } from 'memory-seek-api'
 
 /**
  * 收藏夹状态管理
  */
 export const useCollectionStore = defineStore('collection', () => {
   // 状态
-  const collections = ref<CollectionResult[]>([])
+  const collections = ref<Collection[]>([])
   const loading = ref(false)
 
   /**
    * 获取收藏夹列表
    */
-  async function fetchCollections(): Promise<CollectionResult[]> {
+  async function fetchCollections(): Promise<Collection[]> {
     loading.value = true
     try {
       const response = await photo.collection.getCollectionList()
@@ -55,7 +55,7 @@ export const useCollectionStore = defineStore('collection', () => {
   /**
    * 创建收藏夹
    */
-  async function createCollection(name: string, description?: string): Promise<CollectionResult> {
+  async function createCollection(name: string, description?: string): Promise<Collection> {
     const response = await photo.collection.createCollection({ name, description })
     const newCollection = response.data
     collections.value.push(newCollection)

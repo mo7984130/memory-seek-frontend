@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
 import { photo as photoApi } from 'memory-seek-api'
-import type { CollectionResult, PhotoCollectionResult } from 'memory-seek-api'
+import type { Collection, CollectionBrief } from 'memory-seek-api'
 import { useCollectionStore } from '@/stores/collection'
 import Modal from '@/components/feedback/Modal/Modal.vue'
 import Input from '@/components/form/Input/Input.vue'
@@ -37,7 +37,7 @@ const createInputRef = ref<InstanceType<typeof Input> | null>(null)
 
 // 状态
 const loading = ref(false)
-const photoCollections = ref<PhotoCollectionResult[]>([])
+const photoCollections = ref<CollectionBrief[]>([])
 const showCreateForm = ref(false)
 const newCollectionName = ref('')
 const editingId = ref<string | null>(null)
@@ -138,7 +138,7 @@ async function createCollection() {
 /**
  * 开始编辑收藏夹
  */
-function startEdit(collection: CollectionResult) {
+function startEdit(collection: Collection) {
   editingId.value = collection.id
   editingName.value = collection.name
   activeMenuId.value = null

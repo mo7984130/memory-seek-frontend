@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { LikeIcon, PhotoIcon } from '@/components/base/Icon/icons'
-import { photo, type PhotoResult } from 'memory-seek-api'
+import { photo, type Photo } from 'memory-seek-api'
 import dayjs from 'dayjs'
 
 const props = defineProps<{
-  item: PhotoResult
+  item: Photo
 }>()
 
 const emit = defineEmits<{
-  (e: 'click', item: PhotoResult): void
-  (e: 'like', item: PhotoResult): void
+  (e: 'click', item: Photo): void
+  (e: 'like', item: Photo): void
 }>()
 
 /**

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { user as userApi } from 'memory-seek-api'
-import type { UserInfoResult } from 'memory-seek-api'
+import type { UserBrief } from 'memory-seek-api'
 import { useAuthStore } from './auth'
 
 const MAX_CACHE_SIZE = 200
@@ -12,7 +12,7 @@ const MAX_CACHE_SIZE = 200
  * LRU 策略：超过上限时淘汰最早写入的条目
  */
 export const useUserStore = defineStore('user', () => {
-  const cache = ref(new Map<string, UserInfoResult>())
+  const cache = ref(new Map<string, UserBrief>())
   const loadingIds = new Set<string>()
 
   /**
@@ -21,7 +21,7 @@ export const useUserStore = defineStore('user', () => {
   function initSelf() {
     const auth = useAuthStore()
     if (!auth.user) return
-    const self: UserInfoResult = {
+    const self: UserBrief = {
       userId: auth.user.id,
       nickname: auth.user.nickname,
       avatarToken: auth.user.avatarToken ?? null,
@@ -54,7 +54,7 @@ export const useUserStore = defineStore('user', () => {
   /**
    * 写入单条，超限淘汰最早的
    */
-  function set(userId: string, info: UserInfoResult) {
+  function set(userId: string, info: UserBrief) {
     // 已存在则先删除再插入，保持最新在末尾
     if (cache.value.has(userId)) {
       cache.value.delete(userId)

@@ -1,6 +1,7 @@
 <!-- src/components/photo/PhotoViewer.vue -->
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { photo as photoApi } from 'memory-seek-api'
 import type { Face, Person, Photo } from 'memory-seek-api'
 import { useAuthStore } from '@/stores/auth'
@@ -29,6 +30,8 @@ const emit = defineEmits<{
 
 const authStore = useAuthStore()
 const toast = useToast()
+const route = useRoute()
+const router = useRouter()
 
 // ---- 状态 ----
 const zoom = ref(1)
@@ -322,6 +325,19 @@ function handleFaceContextMenu(event: MouseEvent, face: Face) {
   contextMenuX.value = event.clientX
   contextMenuY.value = event.clientY
   contextMenuVisible.value = true
+}
+
+/** 点击人脸跳转到人物详情;当前人物(人物详情页内)只关闭查看器 */
+function handleFaceClick(face: Face) {
+  if (!face.personId) {
+    toast.info('该人脸尚未分配人物')
+    return
+  }
+  close()
+  if (route.name === 'person-detail' && route.params.id === face.personId) {
+    return
+  }
+  router.push({ name: 'person-detail', params: { id: face.personId } })
 }
 
 function closeFaceContextMenu() {
@@ -689,6 +705,7 @@ onBeforeUnmount(() => {
             class="photo-viewer__face-box"
             :class="{ 'photo-viewer__face-box--active': activeFace?.id === face.id }"
             :style="faceBoxStyle(face)"
+            @click="handleFaceClick(face)"
             @contextmenu="handleFaceContextMenu($event, face)"
           >
             <span class="photo-viewer__face-label">{{ face.personName || '未分配' }}</span>

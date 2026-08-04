@@ -74,7 +74,7 @@ function getPhotoById(id: string | number): Photo | undefined {
 /**
  * 加载人物信息：
  * 优先取列表页通过路由 state 传入的人物对象（免请求、即时渲染），
- * 兜底拉取人物列表按 id 查找（支持直接刷新/直达链接）
+ * 兜底分页拉取人物列表按 id 查找（支持直接刷新/直达链接/从照片墙跳转）
  * @returns 是否找到该人物
  */
 async function loadPerson(): Promise<boolean> {
@@ -84,8 +84,16 @@ async function loadPerson(): Promise<boolean> {
     return true
   }
   try {
-    const res = await photo.person.getPersons({ size: 100 })
-    person.value = res.data.records.find((p) => p.id === personId) ?? null
+    const all: Person[] = []
+    let cursor: string | null = null
+    for (;;) {
+      const res = await photo.person.getPersons({ cursor, size: 32 })
+      const page = res.data
+      all.push(...page.records)
+      if (!page.hasMore || !page.nextCursor) break
+      cursor = page.nextCursor
+    }
+    person.value = all.find((p) => p.id === personId) ?? null
     return !!person.value
   } catch (error) {
     console.error('加载人物信息失败:', error)

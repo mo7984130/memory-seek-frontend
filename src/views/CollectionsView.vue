@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus, FolderOpen } from '@/components/base/Icon/icons'
 import { photo } from 'memory-seek-api'
-import type { CollectionResult } from 'memory-seek-api'
+import type { Collection } from 'memory-seek-api'
 import IconButton from '@/components/actions/IconButton/IconButton.vue'
 import Button from '@/components/actions/Button/Button.vue'
 import Card from '@/components/data/Card/Card.vue'
@@ -16,7 +16,7 @@ const router = useRouter()
 const toast = useToast()
 
 const loading = ref(false)
-const collections = ref<CollectionResult[]>([])
+const collections = ref<Collection[]>([])
 const showCreateModal = ref(false)
 const newCollectionName = ref('')
 const newCollectionDesc = ref('')
@@ -74,7 +74,7 @@ async function loadCollections() {
 /**
  * 进入收藏夹详情
  */
-function enterCollection(collection: CollectionResult) {
+function enterCollection(collection: Collection) {
   router.push(`/collections/${collection.id}`)
 }
 

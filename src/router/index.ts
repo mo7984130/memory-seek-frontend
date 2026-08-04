@@ -3,6 +3,16 @@ import { AuthStorage } from 'memory-seek-api'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
+  /**
+   * 滚动行为：
+   * - 后退/前进时恢复之前的滚动位置
+   * - 普通导航回到顶部（同时禁用浏览器刷新后的原生滚动恢复，
+   *   由“回到上次浏览位置”按钮统一接管）
+   */
+  scrollBehavior(_to, _from, savedPosition) {
+    if (savedPosition) return savedPosition
+    return { top: 0 }
+  },
   routes: [
     {
       path: '/login',
@@ -30,6 +40,18 @@ const router = createRouter({
           name: 'photos',
           component: () => import('@/views/PhotoWaterfallView.vue'),
           meta: { title: '照片墙' },
+        },
+        {
+          path: 'persons',
+          name: 'persons',
+          component: () => import('@/views/PersonsView.vue'),
+          meta: { title: '人物' },
+        },
+        {
+          path: 'persons/:id',
+          name: 'person-detail',
+          component: () => import('@/views/PersonDetailView.vue'),
+          meta: { title: '人物' },
         },
         {
           path: 'likes',

@@ -1,102 +1,45 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { useIntersectionObserver } from '@vueuse/core'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { photo } from 'memory-seek-api'
-import type { PhotoResult } from 'memory-seek-api'
-import { useWaterfallPersistence } from '@/composables/useWaterfallPersistence'
-import VirtualWaterfall, { type WaterfallGroup } from '@/components/photo/VirtualWaterfall.vue'
+import type { Photo } from 'memory-seek-api'
+import { useWaterfallPage } from '@/composables/useWaterfallPage'
+import VirtualWaterfall from '@/components/photo/VirtualWaterfall.vue'
+import LastPositionButton from '@/components/photo/LastPositionButton.vue'
 import PhotoCard from '@/components/photo/PhotoCard.vue'
 import PhotoViewer from '@/components/photo/PhotoViewer.vue'
 import Spinner from '@/components/base/Spinner/Spinner.vue'
+import BackToTop from '@/components/actions/BackToTop/BackToTop.vue'
 
-// 使用持久化 composable
-const waterfall = useWaterfallPersistence('likes')
+// 瀑布流页面（布局/加载/持久化/自动恢复）
+const page = useWaterfallPage({
+  storageKey: 'likes',
+  fetch: async ({ cursor }) =>
+    (await photo.like.getLikedPhotos({ cursor, size: 20 })).data,
+})
 
-// 本地 UI 状态
-const containerRef = ref<HTMLElement | null>(null)
-const sentinelRef = ref<HTMLElement | null>(null)
-const columnCount = ref(4)
-const containerWidth = ref(0)
-const loading = ref(false)
-const total = ref(0)
+const {
+  waterfall,
+  columnCount,
+  containerWidth,
+  loading,
+  groups,
+  handleTopItemChange,
+  restoreToLastPosition,
+  initialize,
+  dispose,
+} = page
+
+const waterfallViewRef = ref<InstanceType<typeof VirtualWaterfall> | null>(null)
 
 // 照片查看器状态
 const viewerVisible = ref(false)
-const selectedPhoto = ref<PhotoResult | null>(null)
+const selectedPhoto = ref<Photo | null>(null)
 
-/**
- * 计算列数和容器宽度
- */
-function handleResize() {
-  if (!containerRef.value) return
-  const style = getComputedStyle(containerRef.value)
-  const paddingLeft = parseInt(style.paddingLeft) || 0
-  const paddingRight = parseInt(style.paddingRight) || 0
-  containerWidth.value = containerRef.value.clientWidth - paddingLeft - paddingRight
-
-  if (containerWidth.value < 640) {
-    columnCount.value = 2
-  } else if (containerWidth.value < 1024) {
-    columnCount.value = 3
-  } else if (containerWidth.value < 1440) {
-    columnCount.value = 4
-  } else {
-    columnCount.value = 5
-  }
-}
-
-/**
- * 按月分组
- */
-const groups = computed<WaterfallGroup[]>(() => {
-  if (!waterfall.allPhotos.value.length) return []
-
-  const map = new Map<string, typeof waterfall.allPhotos.value>()
-  for (const photo of waterfall.allPhotos.value) {
-    const key = photo.createdAt.substring(0, 7)
-    if (!map.has(key)) map.set(key, [])
-    map.get(key)!.push(photo)
-  }
-
-  return Array.from(map.entries()).map(([key, photos]) => ({
-    key,
-    label: `${key.split('-')[0]}年${parseInt(key.split('-')[1]!)}月`,
-    items: photos,
-  }))
-})
-
-/**
- * 获取点赞照片列表
- */
-async function fetchPhotos() {
-  if (loading.value || !waterfall.hasMore.value) return
-
-  loading.value = true
-  console.log('[LikesView] 开始获取照片', { cursor: waterfall.cursor.value })
-
-  try {
-    const response = await photo.like.getLikedPhotos({
-      cursor: waterfall.cursor.value,
-      size: 20,
-    })
-    const { records, nextCursor, hasMore: more } = response.data
-
-    waterfall.appendPhotos(records, nextCursor ?? undefined, more)
-    if (!waterfall.cursor.value) {
-      total.value = waterfall.allPhotos.value.length
-    }
-  } catch (error) {
-    console.error('[LikesView] 获取点赞照片失败:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
-function getPhotoById(id: string | number): PhotoResult | undefined {
+function getPhotoById(id: string | number): Photo | undefined {
   return waterfall.allPhotos.value.find((p) => p.id === id)
 }
 
-function handlePhotoClick(photoItem: PhotoResult) {
+function handlePhotoClick(photoItem: Photo) {
   selectedPhoto.value = photoItem
   viewerVisible.value = true
 }
@@ -115,7 +58,7 @@ function handleDelete(photoId: string) {
   waterfall.removePhoto(photoId)
 }
 
-async function handleLike(photoItem: PhotoResult) {
+async function handleLike(photoItem: Photo) {
   const photoId = photoItem.id as string
 
   // 在点赞页面，取消点赞需要从列表中移除
@@ -127,38 +70,17 @@ async function handleLike(photoItem: PhotoResult) {
   }
 }
 
-// 触底加载
-useIntersectionObserver(sentinelRef, (entries) => {
-  const isIntersecting = entries[0]?.isIntersecting || false
-  if (isIntersecting && !loading.value && waterfall.hasMore.value) {
-    fetchPhotos()
-  }
-})
-
-onMounted(async () => {
-  handleResize()
-  window.addEventListener('resize', handleResize)
-
-  // 检查是否有缓存状态
-  const restored = waterfall.onMount()
-  if (restored) {
-    console.log('[LikesView] 已恢复缓存状态，跳过加载')
-    return
-  }
-
-  // 首次加载
-  console.log('[LikesView] 首次加载')
-  fetchPhotos()
+onMounted(() => {
+  initialize(() => waterfallViewRef.value)
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleResize)
-  waterfall.onUnmount()
+  dispose()
 })
 </script>
 
 <template>
-  <div class="likes-view" ref="containerRef">
+  <div class="likes-view" :ref="page.containerRef">
     <div class="likes-view__header">
       <span class="likes-view__count" v-if="waterfall.allPhotos.value.length > 0">
         {{ waterfall.allPhotos.value.length }} 张照片
@@ -167,10 +89,12 @@ onBeforeUnmount(() => {
 
     <div class="waterfall-container">
       <VirtualWaterfall
+        ref="waterfallViewRef"
         :groups="groups"
         :column-count="columnCount"
         :container-width="containerWidth"
         :gap="16"
+        @top-item-change="handleTopItemChange"
       >
         <template #default="{ item }">
           <PhotoCard
@@ -182,7 +106,7 @@ onBeforeUnmount(() => {
         </template>
       </VirtualWaterfall>
 
-      <div ref="sentinelRef" class="load-sentinel">
+      <div :ref="page.sentinelRef" class="load-sentinel">
         <Spinner v-if="loading" />
         <span v-else-if="!waterfall.hasMore.value && waterfall.allPhotos.value.length > 0" class="load-sentinel__text">
           已经到底啦 ~
@@ -192,6 +116,12 @@ onBeforeUnmount(() => {
         </span>
       </div>
     </div>
+
+    <!-- 回到上次浏览位置（按钮触发恢复） -->
+    <LastPositionButton storage-key="likes" @restore="restoreToLastPosition" />
+
+    <!-- 回到顶部 -->
+    <BackToTop />
 
     <PhotoViewer
       v-model="viewerVisible"

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useIntersectionObserver } from '@vueuse/core'
 import { ArrowLeft, Pencil, Trash2 } from '@/components/base/Icon/icons'
 import { photo } from 'memory-seek-api'
-import type { PhotoResult, CollectionResult } from 'memory-seek-api'
-import VirtualWaterfall, { type WaterfallGroup } from '@/components/photo/VirtualWaterfall.vue'
+import type { Photo, Collection } from 'memory-seek-api'
+import { useWaterfallPage } from '@/composables/useWaterfallPage'
+import VirtualWaterfall from '@/components/photo/VirtualWaterfall.vue'
+import LastPositionButton from '@/components/photo/LastPositionButton.vue'
 import PhotoCard from '@/components/photo/PhotoCard.vue'
 import PhotoViewer from '@/components/photo/PhotoViewer.vue'
 import IconButton from '@/components/actions/IconButton/IconButton.vue'
@@ -13,6 +14,7 @@ import Button from '@/components/actions/Button/Button.vue'
 import Spinner from '@/components/base/Spinner/Spinner.vue'
 import Modal from '@/components/feedback/Modal/Modal.vue'
 import Input from '@/components/form/Input/Input.vue'
+import BackToTop from '@/components/actions/BackToTop/BackToTop.vue'
 import { useToast } from '@/components/feedback/Toast/toast'
 
 const route = useRoute()
@@ -21,20 +23,33 @@ const toast = useToast()
 
 const collectionId = route.params.id as string
 
-// 本地状态
-const containerRef = ref<HTMLElement | null>(null)
-const sentinelRef = ref<HTMLElement | null>(null)
-const collection = ref<CollectionResult | null>(null)
-const allPhotos = ref<PhotoResult[]>([])
-const cursor = ref<string | undefined>(undefined)
-const hasMore = ref(true)
-const columnCount = ref(4)
-const containerWidth = ref(0)
-const loading = ref(false)
+// 瀑布流页面（布局/加载/持久化/自动恢复，每个收藏夹独立存储）
+const page = useWaterfallPage({
+  storageKey: `collection-${collectionId}`,
+  fetch: async ({ cursor }) =>
+    (await photo.collection.getCollectionPhotos(collectionId, { cursor, size: 20 })).data,
+})
+
+const {
+  waterfall,
+  columnCount,
+  containerWidth,
+  loading,
+  groups,
+  handleTopItemChange,
+  restoreToLastPosition,
+  initialize,
+  dispose,
+} = page
+
+const waterfallViewRef = ref<InstanceType<typeof VirtualWaterfall> | null>(null)
+
+// 收藏夹信息
+const collection = ref<Collection | null>(null)
 
 // 照片查看器状态
 const viewerVisible = ref(false)
-const selectedPhoto = ref<PhotoResult | null>(null)
+const selectedPhoto = ref<Photo | null>(null)
 
 // 编辑弹窗
 const showEditModal = ref(false)
@@ -45,47 +60,6 @@ const saving = ref(false)
 // 删除确认
 const showDeleteConfirm = ref(false)
 const deleting = ref(false)
-
-/**
- * 计算列数和容器宽度
- */
-function handleResize() {
-  if (!containerRef.value) return
-  const style = getComputedStyle(containerRef.value)
-  const paddingLeft = parseInt(style.paddingLeft) || 0
-  const paddingRight = parseInt(style.paddingRight) || 0
-  containerWidth.value = containerRef.value.clientWidth - paddingLeft - paddingRight
-
-  if (containerWidth.value < 640) {
-    columnCount.value = 2
-  } else if (containerWidth.value < 1024) {
-    columnCount.value = 3
-  } else if (containerWidth.value < 1440) {
-    columnCount.value = 4
-  } else {
-    columnCount.value = 5
-  }
-}
-
-/**
- * 按月分组
- */
-const groups = computed<WaterfallGroup[]>(() => {
-  if (!allPhotos.value.length) return []
-
-  const map = new Map<string, typeof allPhotos.value>()
-  for (const photo of allPhotos.value) {
-    const key = photo.createdAt.substring(0, 7)
-    if (!map.has(key)) map.set(key, [])
-    map.get(key)!.push(photo)
-  }
-
-  return Array.from(map.entries()).map(([key, photos]) => ({
-    key,
-    label: `${key.split('-')[0]}年${parseInt(key.split('-')[1]!)}月`,
-    items: photos,
-  }))
-})
 
 /**
  * 加载收藏夹信息
@@ -99,61 +73,35 @@ async function loadCollection() {
   }
 }
 
-/**
- * 获取收藏夹照片
- */
-async function fetchPhotos() {
-  if (loading.value || !hasMore.value) return
-
-  loading.value = true
-
-  try {
-    const response = await photo.collection.getCollectionPhotos(collectionId, {
-      cursor: cursor.value,
-      size: 20,
-    })
-    const { records, nextCursor, hasMore: more } = response.data
-
-    allPhotos.value.push(...records)
-    cursor.value = nextCursor ?? undefined
-    hasMore.value = more
-  } catch (error) {
-    console.error('[CollectionDetailView] 获取收藏夹照片失败:', error)
-  } finally {
-    loading.value = false
-  }
+function getPhotoById(id: string | number): Photo | undefined {
+  return waterfall.allPhotos.value.find((p) => p.id === id)
 }
 
-function getPhotoById(id: string | number): PhotoResult | undefined {
-  return allPhotos.value.find((p) => p.id === id)
-}
-
-function handlePhotoClick(photoItem: PhotoResult) {
+function handlePhotoClick(photoItem: Photo) {
   selectedPhoto.value = photoItem
   viewerVisible.value = true
 }
 
 function handleLikeChange(photoId: string, isLiked: boolean) {
-  const target = allPhotos.value.find((p) => p.id === photoId)
-  if (target) target.isLiked = isLiked
+  waterfall.updatePhotoLike(photoId, isLiked)
   if (selectedPhoto.value?.id === photoId) {
     selectedPhoto.value.isLiked = isLiked
   }
 }
 
 function handlePhotoDelete(photoId: string) {
-  allPhotos.value = allPhotos.value.filter((p) => p.id !== photoId)
+  waterfall.removePhoto(photoId)
   if (collection.value) {
     collection.value.photoCount = Math.max(0, collection.value.photoCount - 1)
   }
 }
 
-async function handleLike(photoItem: PhotoResult) {
+async function handleLike(photoItem: Photo) {
   const photoId = photoItem.id as string
   const wasLiked = photoItem.isLiked ?? false
 
-  const target = allPhotos.value.find((p) => p.id === photoId)
-  if (target) target.isLiked = !wasLiked
+  // 乐观更新
+  waterfall.updatePhotoLike(photoId, !wasLiked)
 
   try {
     if (wasLiked) {
@@ -162,7 +110,8 @@ async function handleLike(photoItem: PhotoResult) {
       await photo.like.likePhoto(photoId)
     }
   } catch (error) {
-    if (target) target.isLiked = wasLiked
+    // 回滚
+    waterfall.updatePhotoLike(photoId, wasLiked)
     console.error('[CollectionDetailView] 点赞操作失败:', error)
   }
 }
@@ -226,28 +175,18 @@ async function handleDelete() {
   }
 }
 
-// 触底加载
-useIntersectionObserver(sentinelRef, (entries) => {
-  const isIntersecting = entries[0]?.isIntersecting || false
-  if (isIntersecting && !loading.value && hasMore.value) {
-    fetchPhotos()
-  }
-})
-
 onMounted(() => {
-  handleResize()
-  window.addEventListener('resize', handleResize)
   loadCollection()
-  fetchPhotos()
+  initialize(() => waterfallViewRef.value)
 })
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleResize)
+  dispose()
 })
 </script>
 
 <template>
-  <div class="collection-detail" ref="containerRef">
+  <div class="collection-detail" :ref="page.containerRef">
     <!-- 头部 -->
     <div class="collection-detail__header">
       <IconButton class="collection-detail__back" @click="goBack">
@@ -272,10 +211,12 @@ onBeforeUnmount(() => {
     <!-- 照片瀑布流 -->
     <div class="waterfall-container">
       <VirtualWaterfall
+        ref="waterfallViewRef"
         :groups="groups"
         :column-count="columnCount"
         :container-width="containerWidth"
         :gap="16"
+        @top-item-change="handleTopItemChange"
       >
         <template #default="{ item }">
           <PhotoCard
@@ -287,16 +228,25 @@ onBeforeUnmount(() => {
         </template>
       </VirtualWaterfall>
 
-      <div ref="sentinelRef" class="load-sentinel">
+      <div :ref="page.sentinelRef" class="load-sentinel">
         <Spinner v-if="loading" />
-        <span v-else-if="!hasMore && allPhotos.length > 0" class="load-sentinel__text">
+        <span v-else-if="!waterfall.hasMore.value && waterfall.allPhotos.value.length > 0" class="load-sentinel__text">
           已经到底啦 ~
         </span>
-        <span v-else-if="!loading && allPhotos.length === 0" class="load-sentinel__text">
+        <span v-else-if="!loading && waterfall.allPhotos.value.length === 0" class="load-sentinel__text">
           收藏夹里还没有照片
         </span>
       </div>
     </div>
+
+    <!-- 回到上次浏览位置（按钮触发恢复） -->
+    <LastPositionButton
+      :storage-key="`collection-${collectionId}`"
+      @restore="restoreToLastPosition"
+    />
+
+    <!-- 回到顶部 -->
+    <BackToTop />
 
     <!-- 照片查看器 -->
     <PhotoViewer

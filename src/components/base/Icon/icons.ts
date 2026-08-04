@@ -48,6 +48,9 @@ import {
   Calendar,
   Mail,
   Shield,
+  UserRound,
+  History,
+  ArrowUp,
 } from '@lucide/vue'
 
 export {
@@ -86,6 +89,9 @@ export {
   Calendar,
   Mail,
   Shield,
+  UserRound,
+  History,
+  ArrowUp,
 }
 
 /* ============================================
@@ -104,3 +110,6 @@ export const CommentIcon = MessageCircle
 
 /** 照片 - 图片图标 */
 export const PhotoIcon = ImageIcon
+
+/** 人脸识别 - 人形图标 */
+export const FaceIcon = UserRound

@@ -232,7 +232,31 @@ function scrollToGroup(groupKey: string) {
   })
 }
 
-defineExpose({ scrollToGroup })
+/**
+ * 滚动到指定照片（用于恢复浏览位置）
+ */
+function scrollToItem(photoId: string | number) {
+  const item = positionedItems.value.find(
+    p => p.type === 'item' && p.id === photoId,
+  )
+  if (!item) {
+    console.warn(`scrollToItem: 未找到照片 ${photoId}`)
+    return
+  }
+
+  if (!waterfallRef.value) {
+    console.warn('scrollToItem: 容器 ref 未就绪')
+    return
+  }
+  const containerRect = waterfallRef.value.getBoundingClientRect()
+  const scrollTop = containerRect.top + window.scrollY + item.renderTop
+  window.scrollTo({
+    top: scrollTop,
+    behavior: 'auto',
+  })
+}
+
+defineExpose({ scrollToGroup, scrollToItem })
 
 onMounted(() => {
   window.addEventListener('scroll', handleScroll, { passive: true })
@@ -258,12 +282,16 @@ onBeforeUnmount(() => {
         transform: `translate3d(${item.renderLeft}px, ${item.renderTop}px, 0)`,
       }"
     >
-      <!-- 分组标题 -->
+      <!-- 分组标题（默认渲染纯文本，页面可传 #header 插槽自定义） -->
       <slot
         v-if="item.type === 'header'"
         name="header"
         :group="{ key: item.groupKey, label: item.groupLabel }"
-      />
+      >
+        <div class="waterfall-group-header">
+          <span class="waterfall-group-header__label">{{ item.groupLabel }}</span>
+        </div>
+      </slot>
       <!-- 照片卡片 -->
       <slot v-else :item="item" />
     </div>
@@ -286,5 +314,18 @@ onBeforeUnmount(() => {
 
 .waterfall-item--header {
   z-index: 1;
+}
+
+.waterfall-group-header {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: var(--spacing-2) 0;
+}
+
+.waterfall-group-header__label {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
 }
 </style>

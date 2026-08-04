@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
 import { photo } from 'memory-seek-api'
-import type { PhotoCommentResult } from 'memory-seek-api'
+import type { Comment } from 'memory-seek-api'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
 import dayjs from 'dayjs'
@@ -26,7 +26,7 @@ const emit = defineEmits<{
 const authStore = useAuthStore()
 const userStore = useUserStore()
 
-const comments = ref<PhotoCommentResult[]>([])
+const comments = ref<Comment[]>([])
 const loading = ref(false)
 const sending = ref(false)
 const newComment = ref('')
@@ -95,7 +95,7 @@ async function handleSend() {
 /**
  * 切换评论点赞
  */
-async function handleToggleLike(comment: PhotoCommentResult) {
+async function handleToggleLike(comment: Comment) {
   try {
     if (comment.isLiked) {
       await photo.comment.unlikeComment(props.photoId, comment.id)
@@ -114,14 +114,14 @@ async function handleToggleLike(comment: PhotoCommentResult) {
 /**
  * 是否是自己的评论
  */
-function isOwnComment(comment: PhotoCommentResult): boolean {
+function isOwnComment(comment: Comment): boolean {
   return comment.userId === authStore.userId
 }
 
 /**
  * 删除评论
  */
-async function handleDeleteComment(comment: PhotoCommentResult) {
+async function handleDeleteComment(comment: Comment) {
   try {
     await photo.comment.deleteComment(props.photoId, comment.id)
     comments.value = comments.value.filter((c) => c.id !== comment.id)

@@ -1,6 +1,6 @@
 <!-- src/components/photo/PhotoToolbar.vue -->
 <script setup lang="ts">
-import { ZoomIn, ZoomOut, RotateCw, Maximize2, Heart, Bookmark, MessageCircle, PhotoIcon, Download, LoadingIcon, Trash2, FaceIcon } from '@/components/base/Icon/icons'
+import { ZoomIn, ZoomOut, RotateCw, Maximize2, Heart, Bookmark, MessageCircle, PhotoIcon, Download, LoadingIcon, Trash2, FaceIcon, Tag } from '@/components/base/Icon/icons'
 import './photo-toolbar.css'
 
 interface Props {
@@ -13,6 +13,7 @@ interface Props {
   hasOriginalToken?: boolean
   isOwner?: boolean
   showFaces?: boolean
+  showFaceLabels?: boolean
 }
 
 defineProps<Props>()
@@ -29,6 +30,7 @@ const emit = defineEmits<{
   'download': []
   'delete': []
   'toggle-faces': []
+  'toggle-face-labels': []
 }>()
 
 function handleZoomIn() {
@@ -73,6 +75,10 @@ function handleDelete() {
 
 function handleToggleFaces() {
   emit('toggle-faces')
+}
+
+function handleToggleFaceLabels() {
+  emit('toggle-face-labels')
 }
 </script>
 
@@ -138,6 +144,16 @@ function handleToggleFaces() {
       title="人脸 (F)"
     >
       <FaceIcon :size="20" />
+    </button>
+    <button
+      v-if="showFaces"
+      class="photo-toolbar__btn"
+      :class="{ 'photo-toolbar__btn--active': showFaceLabels }"
+      type="button"
+      @click="handleToggleFaceLabels"
+      title="显示/隐藏人物名称"
+    >
+      <Tag :size="20" />
     </button>
     <template v-if="isOwner">
       <div class="photo-toolbar__divider" />

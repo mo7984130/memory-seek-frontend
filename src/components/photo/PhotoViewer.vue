@@ -48,6 +48,8 @@ const loadingOriginal = ref(false)
 const refreshing = ref(false)
 const showDeleteConfirm = ref(false)
 const deleting = ref(false)
+// 人脸显示时是否展示人物名称
+const showFaceLabels = ref(true)
 
 // ---- 人脸状态 ----
 const showFaces = ref(false)
@@ -279,6 +281,11 @@ function toggleFaces() {
   if (showFaces.value && !facesLoaded.value) {
     loadFaces()
   }
+}
+
+// ---- 人脸名称显示开关 ----
+function toggleFaceLabels() {
+  showFaceLabels.value = !showFaceLabels.value
 }
 
 // ---- 拉取人脸列表 ----
@@ -627,6 +634,7 @@ function resetState() {
   activeFace.value = null
   showChangeBelongingDialog.value = false
   showRenameDialog.value = false
+  showFaceLabels.value = true
 }
 
 // 监听弹窗打开，添加键盘和拖拽事件
@@ -708,7 +716,7 @@ onBeforeUnmount(() => {
             @click="handleFaceClick(face)"
             @contextmenu="handleFaceContextMenu($event, face)"
           >
-            <span class="photo-viewer__face-label">{{ face.personName || '未分配' }}</span>
+            <span v-show="showFaceLabels" class="photo-viewer__face-label">{{ face.personName || '未分配' }}</span>
           </div>
         </div>
       </div>
@@ -728,6 +736,7 @@ onBeforeUnmount(() => {
         :has-original-token="hasOriginalToken"
         :is-owner="isOwner"
         :show-faces="showFaces"
+        :show-face-labels="showFaceLabels"
         @zoom-in="zoomIn"
         @zoom-out="zoomOut"
         @rotate="rotate"
@@ -739,6 +748,7 @@ onBeforeUnmount(() => {
         @download="downloadOriginal"
         @delete="showDeleteConfirm = true"
         @toggle-faces="toggleFaces"
+        @toggle-face-labels="toggleFaceLabels"
       />
 
       <!-- 侧边评论抽屉 -->

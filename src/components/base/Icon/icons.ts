@@ -51,6 +51,7 @@ import {
   UserRound,
   History,
   ArrowUp,
+  Tag,
 } from '@lucide/vue'
 
 export {
@@ -92,6 +93,7 @@ export {
   UserRound,
   History,
   ArrowUp,
+  Tag,
 }
 
 /* ============================================

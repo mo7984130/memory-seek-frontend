@@ -16,10 +16,12 @@ import Modal from '@/components/feedback/Modal/Modal.vue'
 import Input from '@/components/form/Input/Input.vue'
 import BackToTop from '@/components/actions/BackToTop/BackToTop.vue'
 import { useToast } from '@/components/feedback/Toast/toast'
+import { useGoBack } from '@/composables/useGoBack'
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const { goBack } = useGoBack('/persons')
 
 const personId = route.params.id as string
 
@@ -135,10 +137,6 @@ async function handleLike(photoItem: Photo) {
     waterfall.updatePhotoLike(photoId, wasLiked)
     console.error('[PersonDetailView] 点赞操作失败:', error)
   }
-}
-
-function goBack() {
-  router.push('/persons')
 }
 
 // ---- 改名 ----

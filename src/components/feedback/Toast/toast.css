@@ -4,8 +4,8 @@
   top: var(--spacing-4);
   left: 50%;
   transform: translateX(-50%);
-  /* 高于照片查看器(9999)及其内部弹窗(10000)，确保全局可见 */
-  z-index: 11000;
+  /* 全局最高层，确保任何弹窗/查看器之上都可见 */
+  z-index: var(--z-index-toast);
   display: flex;
   flex-direction: column;
   align-items: center;

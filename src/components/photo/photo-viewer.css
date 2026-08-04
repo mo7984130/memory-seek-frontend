@@ -2,9 +2,16 @@
 
 /* 全屏照片查看器 */
 .photo-viewer {
+  /* 查看器内部浮层层级（仅在本元素的堆叠上下文内生效） */
+  --photo-viewer-z-loading: 10;
+  --photo-viewer-z-face-overlay: 20;
+  --photo-viewer-z-toolbar: 30;
+  --photo-viewer-z-comments: 40;
+  --photo-viewer-z-face-menu: 50;
+
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: var(--z-index-photo-viewer);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -108,7 +115,7 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 1;
+  z-index: var(--photo-viewer-z-loading);
 }
 
 .photo-viewer__loading-spinner {
@@ -138,7 +145,7 @@
   left: 50%;
   pointer-events: none;
   transition: transform 0.2s var(--ease-out);
-  z-index: 2;
+  z-index: var(--photo-viewer-z-face-overlay);
 }
 
 .photo-viewer__face-box {
@@ -183,7 +190,7 @@
 
 .photo-viewer__face-menu {
   position: fixed;
-  z-index: 30;
+  z-index: var(--photo-viewer-z-face-menu);
   min-width: 132px;
   padding: 4px;
   background: var(--color-bg-card);
@@ -304,9 +311,9 @@
   font-size: var(--text-lg);
 }
 
-/* 删除确认弹窗（z-index 高于照片查看器） */
+/* 查看器内打开的弹窗（Modal Teleport 到 body，需高于查看器本身） */
 .photo-viewer__modal-overlay {
-  z-index: 10000;
+  z-index: var(--z-index-photo-viewer-modal-backdrop);
 }
 
 /* 删除确认弹窗 */

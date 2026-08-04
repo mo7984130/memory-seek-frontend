@@ -1,6 +1,6 @@
 <!-- src/components/photo/PhotoToolbar.vue -->
 <script setup lang="ts">
-import { ZoomIn, ZoomOut, RotateCw, Maximize2, Heart, Bookmark, MessageCircle, PhotoIcon, Download, LoadingIcon, Trash2 } from '@/components/base/Icon/icons'
+import { ZoomIn, ZoomOut, RotateCw, Maximize2, Heart, Bookmark, MessageCircle, PhotoIcon, Download, LoadingIcon, Trash2, FaceIcon } from '@/components/base/Icon/icons'
 import './photo-toolbar.css'
 
 interface Props {
@@ -12,6 +12,7 @@ interface Props {
   loadingOriginal?: boolean
   hasOriginalToken?: boolean
   isOwner?: boolean
+  showFaces?: boolean
 }
 
 defineProps<Props>()
@@ -27,6 +28,7 @@ const emit = defineEmits<{
   'view-original': []
   'download': []
   'delete': []
+  'toggle-faces': []
 }>()
 
 function handleZoomIn() {
@@ -67,6 +69,10 @@ function handleDownload() {
 
 function handleDelete() {
   emit('delete')
+}
+
+function handleToggleFaces() {
+  emit('toggle-faces')
 }
 </script>
 
@@ -123,6 +129,15 @@ function handleDelete() {
     </button>
     <button class="photo-toolbar__btn" type="button" @click="handleDownload" title="下载 (D)">
       <Download :size="20" />
+    </button>
+    <button
+      class="photo-toolbar__btn"
+      :class="{ 'photo-toolbar__btn--active': showFaces }"
+      type="button"
+      @click="handleToggleFaces"
+      title="人脸 (F)"
+    >
+      <FaceIcon :size="20" />
     </button>
     <template v-if="isOwner">
       <div class="photo-toolbar__divider" />

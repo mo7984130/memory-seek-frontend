@@ -42,6 +42,18 @@ const router = createRouter({
           meta: { title: '照片墙' },
         },
         {
+          path: 'persons',
+          name: 'persons',
+          component: () => import('@/views/PersonsView.vue'),
+          meta: { title: '人物' },
+        },
+        {
+          path: 'persons/:id',
+          name: 'person-detail',
+          component: () => import('@/views/PersonDetailView.vue'),
+          meta: { title: '人物' },
+        },
+        {
           path: 'likes',
           name: 'likes',
           component: () => import('@/views/LikesView.vue'),

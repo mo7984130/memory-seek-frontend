@@ -2,18 +2,20 @@
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { photo as photoApi } from 'memory-seek-api'
-import type { PhotoResult } from 'memory-seek-api'
+import type { Face, Person, Photo } from 'memory-seek-api'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/components/feedback/Toast/toast'
 import Modal from '@/components/feedback/Modal/Modal.vue'
 import CollectionSelector from '@/components/data/CollectionSelector/CollectionSelector.vue'
 import PhotoToolbar from './PhotoToolbar.vue'
 import PhotoComments from './PhotoComments.vue'
+import Input from '@/components/form/Input/Input.vue'
+import Button from '@/components/actions/Button/Button.vue'
 import './photo-viewer.css'
 
 interface Props {
   modelValue: boolean
-  photo: PhotoResult | null
+  photo: Photo | null
 }
 
 const props = defineProps<Props>()
@@ -22,6 +24,7 @@ const emit = defineEmits<{
   'update:modelValue': [value: boolean]
   'like': [photoId: string, isLiked: boolean]
   'delete': [photoId: string]
+  'faces-updated': []
 }>()
 
 const authStore = useAuthStore()
@@ -42,6 +45,28 @@ const loadingOriginal = ref(false)
 const refreshing = ref(false)
 const showDeleteConfirm = ref(false)
 const deleting = ref(false)
+
+// ---- 人脸状态 ----
+const showFaces = ref(false)
+const faces = ref<Face[]>([])
+const facesLoaded = ref(false)
+const loadingFaces = ref(false)
+const facesError = ref(false)
+
+// ---- 人脸操作状态 ----
+const contextMenuVisible = ref(false)
+const contextMenuX = ref(0)
+const contextMenuY = ref(0)
+const activeFace = ref<Face | null>(null)
+const showChangeBelongingDialog = ref(false)
+const showRenameDialog = ref(false)
+const changingBelonging = ref(false)
+const renaming = ref(false)
+const renameName = ref('')
+const persons = ref<Person[]>([])
+const personsLoaded = ref(false)
+const personKeyword = ref('')
+const targetPersonId = ref('')
 
 // 拖拽状态
 const isDragging = ref(false)
@@ -136,6 +161,16 @@ function handleImageLoad(event: Event) {
 // ---- 监听 photo 变化，重置加载状态 ----
 watch(() => props.photo, () => {
   imageLoading.value = true
+  // 切换照片时重置人脸状态
+  showFaces.value = false
+  faces.value = []
+  facesLoaded.value = false
+  loadingFaces.value = false
+  facesError.value = false
+  // 重置人脸操作状态
+  closeFaceContextMenu()
+  showChangeBelongingDialog.value = false
+  showRenameDialog.value = false
 })
 
 // ---- 旋转控制（每次 90°） ----
@@ -224,7 +259,163 @@ function toggleCollect() {
 // ---- 评论抽屉切换 ----
 function toggleComments() {
   showComments.value = !showComments.value
+  // 评论与人脸框互斥
+  if (showComments.value) {
+    showFaces.value = false
+  }
 }
+
+// ---- 人脸框开关 ----
+function toggleFaces() {
+  showFaces.value = !showFaces.value
+  // 人脸框与评论互斥
+  if (showFaces.value) {
+    showComments.value = false
+  }
+  // 首次打开时拉取人脸数据
+  if (showFaces.value && !facesLoaded.value) {
+    loadFaces()
+  }
+}
+
+// ---- 拉取人脸列表 ----
+async function loadFaces() {
+  if (!props.photo || loadingFaces.value) return
+  loadingFaces.value = true
+  facesError.value = false
+  try {
+    faces.value = (await photoApi.face.getFaces(props.photo.id)).data
+    facesLoaded.value = true
+    // 开启人脸模式但未检测到人脸时，给出轻提示
+    if (faces.value.length === 0) {
+      toast.info('未检测到人脸')
+    }
+  } catch (error) {
+    console.error('获取人脸失败:', error)
+    facesError.value = true
+    toast.error('人脸信息加载失败')
+  } finally {
+    loadingFaces.value = false
+  }
+}
+
+// ---- 人脸框坐标 ----
+/**
+ * 人脸框样式：百分比定位（overlay 与图片同尺寸同 transform，缩放/旋转/拖拽由 CSS transform 统一处理，
+ * 因此 bbox 直接使用原始归一化坐标，无需再按旋转角度换算，否则会双重旋转）
+ */
+function faceBoxStyle(face: Face) {
+  const b = face.bbox
+  return {
+    left: `${(b.x1 * 100).toFixed(3)}%`,
+    top: `${(b.y1 * 100).toFixed(3)}%`,
+    width: `${((b.x2 - b.x1) * 100).toFixed(3)}%`,
+    height: `${((b.y2 - b.y1) * 100).toFixed(3)}%`,
+  }
+}
+
+// ---- 人脸操作 ----
+function handleFaceContextMenu(event: MouseEvent, face: Face) {
+  event.preventDefault()
+  event.stopPropagation()
+  activeFace.value = face
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
+  contextMenuVisible.value = true
+}
+
+function closeFaceContextMenu() {
+  contextMenuVisible.value = false
+}
+
+/** 加载全部人物列表（供归属选择使用），分页拉全 */
+async function ensurePersonsLoaded() {
+  if (personsLoaded.value) return
+  const all: Person[] = []
+  let cursor: string | null = null
+  try {
+    for (;;) {
+      const res = await photoApi.person.getPersons({ cursor, size: 32 })
+      const page = res.data
+      all.push(...page.records)
+      if (!page.hasMore || !page.nextCursor) break
+      cursor = page.nextCursor
+    }
+    persons.value = all
+  } catch (error) {
+    console.error('加载人物列表失败:', error)
+  } finally {
+    personsLoaded.value = true
+  }
+}
+
+const filteredPersons = computed(() => {
+  const kw = personKeyword.value.trim().toLowerCase()
+  if (!kw) return persons.value
+  return persons.value.filter((p) => p.name.toLowerCase().includes(kw))
+})
+
+function openChangeBelongingDialog() {
+  closeFaceContextMenu()
+  ensurePersonsLoaded()
+  targetPersonId.value = ''
+  personKeyword.value = ''
+  showChangeBelongingDialog.value = true
+}
+
+function openRenameDialog() {
+  closeFaceContextMenu()
+  renameName.value = activeFace.value?.personName ?? ''
+  showRenameDialog.value = true
+}
+
+async function submitChangeBelonging() {
+  if (!activeFace.value || !targetPersonId.value) return
+  changingBelonging.value = true
+  try {
+    await photoApi.face.changeFaceBelonging(activeFace.value.id, targetPersonId.value)
+    toast.success('人脸归属修改成功')
+    showChangeBelongingDialog.value = false
+    await loadFaces()
+    emit('faces-updated')
+  } catch (error) {
+    console.error('修改人脸归属失败:', error)
+    toast.error('修改人脸归属失败')
+  } finally {
+    changingBelonging.value = false
+  }
+}
+
+async function submitRename() {
+  const name = renameName.value.trim()
+  if (!name) {
+    toast.warning('请输入人物名称')
+    return
+  }
+  if (!activeFace.value?.personId) return
+  renaming.value = true
+  try {
+    await photoApi.person.renamePerson(activeFace.value.personId, name)
+    toast.success('人物名称修改成功')
+    showRenameDialog.value = false
+    await loadFaces()
+    emit('faces-updated')
+  } catch (error) {
+    console.error('修改人物名称失败:', error)
+    toast.error('修改人物名称失败')
+  } finally {
+    renaming.value = false
+  }
+}
+
+// 点击其他区域关闭人脸右键菜单
+watch(contextMenuVisible, (visible) => {
+  if (visible) {
+    window.addEventListener('click', closeFaceContextMenu)
+  } else {
+    window.removeEventListener('click', closeFaceContextMenu)
+  }
+})
 
 // ---- 查看原图 ----
 function viewOriginal() {
@@ -371,6 +562,10 @@ function handleKeydown(event: KeyboardEvent) {
     case 'B':
       toggleCollect()
       break
+    case 'f':
+    case 'F':
+      toggleFaces()
+      break
   }
 }
 
@@ -405,6 +600,17 @@ function resetState() {
   showDeleteConfirm.value = false
   deleting.value = false
   isDragging.value = false
+  // 人脸状态
+  showFaces.value = false
+  faces.value = []
+  facesLoaded.value = false
+  loadingFaces.value = false
+  facesError.value = false
+  // 人脸操作状态
+  contextMenuVisible.value = false
+  activeFace.value = null
+  showChangeBelongingDialog.value = false
+  showRenameDialog.value = false
 }
 
 // 监听弹窗打开，添加键盘和拖拽事件
@@ -470,6 +676,24 @@ onBeforeUnmount(() => {
           @touchmove.prevent="handleTouchMove"
           @touchend="handleTouchEnd"
         />
+
+        <!-- 人脸框 overlay（与图片共用 transform，随缩放/旋转/拖拽同步） -->
+        <div
+          v-if="showFaces && faces.length > 0 && imageWidth > 0"
+          class="photo-viewer__face-overlay"
+          :style="{ transform: imageTransform, width: imageWidth + 'px', height: imageHeight + 'px' }"
+        >
+          <div
+            v-for="face in faces"
+            :key="face.id"
+            class="photo-viewer__face-box"
+            :class="{ 'photo-viewer__face-box--active': activeFace?.id === face.id }"
+            :style="faceBoxStyle(face)"
+            @contextmenu="handleFaceContextMenu($event, face)"
+          >
+            <span class="photo-viewer__face-label">{{ face.personName || '未分配' }}</span>
+          </div>
+        </div>
       </div>
       <div v-else class="photo-viewer__empty">
         图片加载失败
@@ -486,6 +710,7 @@ onBeforeUnmount(() => {
         :loading-original="loadingOriginal"
         :has-original-token="hasOriginalToken"
         :is-owner="isOwner"
+        :show-faces="showFaces"
         @zoom-in="zoomIn"
         @zoom-out="zoomOut"
         @rotate="rotate"
@@ -496,6 +721,7 @@ onBeforeUnmount(() => {
         @view-original="viewOriginal"
         @download="downloadOriginal"
         @delete="showDeleteConfirm = true"
+        @toggle-faces="toggleFaces"
       />
 
       <!-- 侧边评论抽屉 -->
@@ -513,6 +739,94 @@ onBeforeUnmount(() => {
         :photo-id="photo.id"
         overlay-class="photo-viewer__modal-overlay"
       />
+
+      <!-- 人脸右键菜单 -->
+      <div
+        v-if="contextMenuVisible"
+        class="photo-viewer__face-menu"
+        :style="{ left: contextMenuX + 'px', top: contextMenuY + 'px' }"
+        @click.stop
+      >
+        <button type="button" class="photo-viewer__face-menu-item" @click="openChangeBelongingDialog">
+          修改归属
+        </button>
+        <button
+          type="button"
+          class="photo-viewer__face-menu-item"
+          :disabled="!activeFace?.personId"
+          @click="openRenameDialog"
+        >
+          重命名人物
+        </button>
+      </div>
+
+      <!-- 修改人脸归属弹窗 -->
+      <Modal
+        v-model="showChangeBelongingDialog"
+        size="sm"
+        title="修改人脸归属"
+        overlay-class="photo-viewer__modal-overlay"
+      >
+        <div class="face-dialog">
+          <div class="face-dialog__field">
+            <label class="face-dialog__label">当前人物</label>
+            <Input :model-value="activeFace?.personName || '未分配'" disabled />
+          </div>
+          <div class="face-dialog__field">
+            <label class="face-dialog__label">搜索目标人物</label>
+            <Input v-model="personKeyword" placeholder="输入关键词筛选人物" />
+          </div>
+          <div class="face-dialog__list">
+            <button
+              v-for="person in filteredPersons"
+              :key="person.id"
+              type="button"
+              class="face-dialog__person"
+              :class="{ 'face-dialog__person--active': targetPersonId === person.id }"
+              @click="targetPersonId = person.id"
+            >
+              <span class="face-dialog__person-name">{{ person.name }}</span>
+              <span class="face-dialog__person-count">{{ Number(person.faceCount) }} 张照片</span>
+            </button>
+            <div v-if="filteredPersons.length === 0" class="face-dialog__empty">
+              未找到人物
+            </div>
+          </div>
+          <Button
+            type="button"
+            block
+            :loading="changingBelonging"
+            :disabled="!targetPersonId"
+            @click="submitChangeBelonging"
+          >
+            确认修改
+          </Button>
+        </div>
+      </Modal>
+
+      <!-- 重命名人物弹窗 -->
+      <Modal
+        v-model="showRenameDialog"
+        size="sm"
+        title="重命名人物"
+        overlay-class="photo-viewer__modal-overlay"
+      >
+        <div class="face-dialog">
+          <div class="face-dialog__field">
+            <label class="face-dialog__label">人物名称</label>
+            <Input v-model="renameName" placeholder="输入新的人物名称" @keydown.enter="submitRename" />
+          </div>
+          <Button
+            type="button"
+            block
+            :loading="renaming"
+            :disabled="!renameName.trim()"
+            @click="submitRename"
+          >
+            确认修改
+          </Button>
+        </div>
+      </Modal>
 
       <!-- 删除确认弹窗 -->
       <Modal v-model="showDeleteConfirm" size="sm" title="删除照片" overlay-class="photo-viewer__modal-overlay">

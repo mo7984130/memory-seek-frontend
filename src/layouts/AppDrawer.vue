@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ImageIcon, LikeIcon, FavoriteIcon, User } from '@/components/base/Icon/icons'
+import { ImageIcon, LikeIcon, FavoriteIcon, User, FaceIcon } from '@/components/base/Icon/icons'
 import Drawer from '@/components/feedback/Drawer/Drawer.vue'
 
 const props = defineProps<{
@@ -23,6 +23,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { path: '/photos', label: '照片墙', icon: ImageIcon },
+  { path: '/persons', label: '人物', icon: FaceIcon },
   { path: '/likes', label: '我喜欢', icon: LikeIcon },
   { path: '/collections', label: '收藏夹', icon: FavoriteIcon },
   { path: '/profile', label: '个人中心', icon: User },
@@ -32,6 +33,7 @@ const activePath = computed(() => {
   // 匹配当前路由或其父级
   const path = route.path
   if (path.startsWith('/collections')) return '/collections'
+  if (path.startsWith('/persons')) return '/persons'
   return path
 })
 

@@ -131,6 +131,163 @@
   animation: photo-viewer-image-loaded 0.4s var(--ease-out);
 }
 
+/* 人脸框 overlay（与图片同尺寸同 transform） */
+.photo-viewer__face-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  pointer-events: none;
+  transition: transform 0.2s var(--ease-out);
+  z-index: 2;
+}
+
+.photo-viewer__face-box {
+  position: absolute;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 6px;
+  box-sizing: border-box;
+  cursor: pointer;
+  pointer-events: auto;
+  background: transparent;
+  transition:
+    border-color 0.2s var(--ease-out),
+    background-color 0.2s var(--ease-out),
+    box-shadow 0.2s var(--ease-out);
+}
+
+.photo-viewer__face-box:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.photo-viewer__face-box--active {
+  border-color: var(--color-primary);
+  background: rgba(45, 212, 168, 0.15);
+}
+
+.photo-viewer__face-label {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  max-width: 100%;
+  padding: 1px 6px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  border-radius: 0 4px 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.photo-viewer__face-menu {
+  position: fixed;
+  z-index: 30;
+  min-width: 132px;
+  padding: 4px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+.photo-viewer__face-menu-item {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+}
+
+.photo-viewer__face-menu-item:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+}
+
+.photo-viewer__face-menu-item:disabled {
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+}
+
+.face-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+}
+
+.face-dialog__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+}
+
+.face-dialog__label {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text-secondary);
+}
+
+.face-dialog__list {
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-1);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.face-dialog__person {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2) var(--spacing-3);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
+
+.face-dialog__person:hover {
+  background: var(--color-bg-hover);
+}
+
+.face-dialog__person--active {
+  background: rgba(45, 212, 168, 0.12);
+}
+
+.dark .face-dialog__person--active {
+  background: rgba(120, 120, 120, 0.15);
+}
+
+.face-dialog__person-name {
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+}
+
+.face-dialog__person-count {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+}
+
+.face-dialog__empty {
+  padding: var(--spacing-4);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+}
+
 @keyframes photo-viewer-image-loaded {
   from {
     opacity: 0;

@@ -168,7 +168,6 @@ function formatMonth(monthKey: string): string {
       @click="panelVisible = !panelVisible"
     >
       <Bookmark :size="20" :fill="panelVisible ? 'currentColor' : 'none'" />
-      <span v-if="count > 0" class="waterfall-bookmark-panel__badge">{{ count > 99 ? '99+' : count }}</span>
     </button>
 
     <!-- 添加书签命名弹窗 -->
@@ -234,23 +233,6 @@ function formatMonth(monthKey: string): string {
 
 .waterfall-bookmark-panel__fab--active {
   background: var(--color-primary-dark);
-}
-
-.waterfall-bookmark-panel__badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
-  border-radius: var(--radius-full);
-  background: var(--color-like, #ef4444);
-  color: #fff;
-  font-size: 10px;
-  font-weight: var(--font-bold);
-  line-height: 18px;
-  text-align: center;
-  box-shadow: var(--shadow-md);
 }
 
 /* ============ 弹出面板 ============ */

@@ -1,9 +1,10 @@
 <!-- src/components/photo/PhotoViewer.vue -->
 <script setup lang="ts">
-import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { photo as photoApi } from 'memory-seek-api'
 import type { Face, Person, Photo } from 'memory-seek-api'
+import { ChevronLeft, ChevronRight, LoadingIcon } from '@/components/base/Icon/icons'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/components/feedback/Toast/toast'
 import Modal from '@/components/feedback/Modal/Modal.vue'
@@ -17,6 +18,10 @@ import './photo-viewer.css'
 interface Props {
   modelValue: boolean
   photo: Photo | null
+  /** 照片列表（用于上一张/下一张切换） */
+  photos?: Photo[]
+  /** 到达已加载列表末尾时触发加载下一页；返回是否加载到了新照片 */
+  loadMore?: () => Promise<boolean>
 }
 
 const props = defineProps<Props>()
@@ -26,6 +31,7 @@ const emit = defineEmits<{
   'like': [photoId: string, isLiked: boolean]
   'delete': [photoId: string]
   'faces-updated': []
+  'navigate': [photo: Photo]
 }>()
 
 const authStore = useAuthStore()
@@ -127,6 +133,62 @@ const isOwner = computed(() => {
   if (!props.photo || !authStore.userId) return false
   return props.photo.userId === authStore.userId
 })
+
+// ---- 上一张/下一张 ----
+
+/** 当前照片在列表中的下标；photo 不在列表中（如已删除）时为 -1 */
+const currentIndex = computed(() => {
+  const photo = props.photo
+  if (!photo || !props.photos) return -1
+  return props.photos.findIndex((p) => p.id === photo.id)
+})
+
+const hasPrev = computed(() => currentIndex.value > 0)
+
+const hasNext = computed(
+  () => props.photos != null && currentIndex.value >= 0 && currentIndex.value < props.photos.length - 1,
+)
+
+/** 触底加载下一页的进行中状态 */
+const loadingMore = ref(false)
+/** 加载下一页后是否仍有更多照片（到底后置为 false，隐藏下一张按钮） */
+const hasMoreInViewer = ref(true)
+
+/** 是否显示"下一张"按钮：列表内还有下一张，或可继续触底加载 */
+const showNext = computed(
+  () =>
+    currentIndex.value >= 0 &&
+    (hasNext.value || loadingMore.value || (!!props.loadMore && hasMoreInViewer.value)),
+)
+
+function goPrev() {
+  if (!props.photos || !hasPrev.value || loadingMore.value) return
+  emit('navigate', props.photos[currentIndex.value - 1]!)
+}
+
+async function goNext() {
+  if (loadingMore.value) return
+  if (hasNext.value) {
+    emit('navigate', props.photos![currentIndex.value + 1]!)
+    return
+  }
+  // 已到达列表末尾：尝试自动加载下一页，加载完成后再跳转到新照片
+  if (!props.loadMore || !hasMoreInViewer.value) return
+  loadingMore.value = true
+  try {
+    const loaded = await props.loadMore()
+    hasMoreInViewer.value = !!loaded
+    if (loaded && props.modelValue) {
+      // 等待父组件将新列表传入 props 后重新定位
+      await nextTick()
+      if (hasNext.value) {
+        emit('navigate', props.photos![currentIndex.value + 1]!)
+      }
+    }
+  } finally {
+    loadingMore.value = false
+  }
+}
 
 // ---- 缩放控制 ----
 function zoomIn() {
@@ -559,6 +621,12 @@ function handleKeydown(event: KeyboardEvent) {
     case 'Escape':
       close()
       break
+    case 'ArrowLeft':
+      goPrev()
+      break
+    case 'ArrowRight':
+      goNext()
+      break
     case '+':
     case '=':
       zoomIn()
@@ -623,6 +691,9 @@ function resetState() {
   showDeleteConfirm.value = false
   deleting.value = false
   isDragging.value = false
+  // 上一张/下一张状态
+  loadingMore.value = false
+  hasMoreInViewer.value = true
   // 人脸状态
   showFaces.value = false
   faces.value = []
@@ -671,16 +742,19 @@ onBeforeUnmount(() => {
       @keydown="handleKeydown"
       tabindex="0"
     >
-      <!-- 加载提示 -->
-      <div v-if="imageLoading" class="photo-viewer__loading">
+      <!-- 加载提示（切换照片 / 触底加载下一页时隐藏当前照片并显示） -->
+      <div v-if="imageLoading || loadingMore" class="photo-viewer__loading">
         <div class="photo-viewer__loading-spinner"></div>
       </div>
 
-      <!-- 图片 -->
+      <!-- 图片（加载期间用 CSS 隐藏，避免残留上一张照片；img 需保持渲染以触发加载） -->
       <div
-        v-if="imageUrl"
+        v-if="imageUrl && !loadingMore"
         class="photo-viewer__image-wrapper"
-        :class="{ 'photo-viewer__image-wrapper--refreshing': refreshing }"
+        :class="{
+          'photo-viewer__image-wrapper--refreshing': refreshing,
+          'photo-viewer__image-wrapper--hidden': imageLoading,
+        }"
       >
         <img
           :key="showOriginal ? 'original' : 'preview'"
@@ -720,9 +794,34 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </div>
-      <div v-else class="photo-viewer__empty">
+      <div
+        v-else-if="!imageLoading && !loadingMore"
+        class="photo-viewer__empty"
+      >
         图片加载失败
       </div>
+
+      <!-- 上一张/下一张 -->
+      <button
+        v-if="hasPrev"
+        class="photo-viewer__nav photo-viewer__nav--prev"
+        type="button"
+        title="上一张 (←)"
+        @click.stop="goPrev"
+      >
+        <ChevronLeft :size="32" />
+      </button>
+      <button
+        v-if="showNext"
+        class="photo-viewer__nav photo-viewer__nav--next"
+        type="button"
+        title="下一张 (→)"
+        :disabled="loadingMore"
+        @click.stop="goNext"
+      >
+        <LoadingIcon v-if="loadingMore" :size="28" class="photo-viewer__nav-loading" />
+        <ChevronRight v-else :size="32" />
+      </button>
 
       <!-- 底部工具栏 -->
       <PhotoToolbar

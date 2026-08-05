@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, FaceIcon } from '@/components/base/Icon/icons'
 import { photo } from 'memory-seek-api'
@@ -38,6 +38,7 @@ const {
   containerWidth,
   loading,
   groups,
+  fetchMore,
   handleTopItemChange,
   restoreToLastPosition,
   initialize,
@@ -106,6 +107,21 @@ async function loadPerson(): Promise<boolean> {
 function handlePhotoClick(photoItem: Photo) {
   selectedPhoto.value = photoItem
   viewerVisible.value = true
+}
+
+/** 查看器切换照片：更新当前照片并让瀑布流滚动到对应位置 */
+function handleViewerNavigate(photoItem: Photo) {
+  selectedPhoto.value = photoItem
+  nextTick(() => {
+    waterfallViewRef.value?.scrollToItem(photoItem.id, 'smooth')
+  })
+}
+
+/** 查看器触底时加载下一页；返回是否加载到了新照片 */
+async function handleLoadMore(): Promise<boolean> {
+  if (loading.value || !waterfall.hasMore.value) return false
+  const records = await fetchMore({ cursor: waterfall.cursor.value })
+  return records.length > 0
 }
 
 function handleLikeChange(photoId: string, isLiked: boolean) {
@@ -324,9 +340,12 @@ onBeforeUnmount(() => {
     <PhotoViewer
       v-model="viewerVisible"
       :photo="selectedPhoto"
+      :photos="waterfall.allPhotos.value"
+      :load-more="handleLoadMore"
       @like="handleLikeChange"
       @delete="handlePhotoDelete"
       @faces-updated="handleFacesUpdated"
+      @navigate="handleViewerNavigate"
     />
 
     <!-- 改名弹窗 -->

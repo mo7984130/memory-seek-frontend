@@ -234,8 +234,9 @@ function scrollToGroup(groupKey: string) {
 
 /**
  * 滚动到指定照片（用于恢复浏览位置）
+ * @param behavior 滚动行为，默认 'auto'（立即定位）；查看器切换照片时传 'smooth' 同步位置
  */
-function scrollToItem(photoId: string | number) {
+function scrollToItem(photoId: string | number, behavior: ScrollBehavior = 'auto') {
   const item = positionedItems.value.find(
     p => p.type === 'item' && p.id === photoId,
   )
@@ -252,7 +253,7 @@ function scrollToItem(photoId: string | number) {
   const scrollTop = containerRect.top + window.scrollY + item.renderTop
   window.scrollTo({
     top: scrollTop,
-    behavior: 'auto',
+    behavior,
   })
 }
 

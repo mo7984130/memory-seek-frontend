@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, nextTick, onMounted, onActivated, onBeforeUnmount } from 'vue'
 import { photo } from 'memory-seek-api'
 import type { Photo } from 'memory-seek-api'
 import { useWaterfallPage } from '@/composables/useWaterfallPage'
+import { useListScrollRestore } from '@/composables/useListScrollRestore'
 import VirtualWaterfall from '@/components/photo/VirtualWaterfall.vue'
 import LastPositionButton from '@/components/photo/LastPositionButton.vue'
 import PhotoCard from '@/components/photo/PhotoCard.vue'
 import PhotoViewer from '@/components/photo/PhotoViewer.vue'
 import Spinner from '@/components/base/Spinner/Spinner.vue'
 import BackToTop from '@/components/actions/BackToTop/BackToTop.vue'
+
+// 组件名（KeepAlive include 匹配）
+defineOptions({ name: 'LikesView' })
 
 // 瀑布流页面（布局/加载/持久化/自动恢复）
 const page = useWaterfallPage({
@@ -31,6 +35,9 @@ const {
 } = page
 
 const waterfallViewRef = ref<InstanceType<typeof VirtualWaterfall> | null>(null)
+
+// 返回时恢复滚动位置（KeepAlive 缓存页）
+const { restoreScroll } = useListScrollRestore()
 
 // 照片查看器状态
 const viewerVisible = ref(false)
@@ -88,6 +95,11 @@ async function handleLike(photoItem: Photo) {
 
 onMounted(() => {
   initialize(() => waterfallViewRef.value)
+})
+
+// 从其他页面返回时恢复浏览位置
+onActivated(() => {
+  restoreScroll()
 })
 
 onBeforeUnmount(() => {

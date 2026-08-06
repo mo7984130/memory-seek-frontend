@@ -17,6 +17,7 @@ import Input from '@/components/form/Input/Input.vue'
 import BackToTop from '@/components/actions/BackToTop/BackToTop.vue'
 import { useToast } from '@/components/feedback/Toast/toast'
 import { useGoBack } from '@/composables/useGoBack'
+import { markListDirty } from '@/composables/useListDirty'
 
 const route = useRoute()
 const router = useRouter()
@@ -112,6 +113,7 @@ function handlePhotoDelete(photoId: string) {
   if (collection.value) {
     collection.value.photoCount = Math.max(0, collection.value.photoCount - 1)
   }
+  markListDirty('collections')
 }
 
 async function handleLike(photoItem: Photo) {
@@ -165,6 +167,7 @@ async function handleSaveEdit() {
     }
     showEditModal.value = false
     toast.success('更新成功')
+    markListDirty('collections')
   } catch (error) {
     console.error('更新收藏夹失败:', error)
   } finally {
@@ -180,6 +183,7 @@ async function handleDelete() {
   try {
     await photo.collection.deleteCollection(collectionId)
     toast.success('收藏夹已删除')
+    markListDirty('collections')
     router.push('/collections')
   } catch (error) {
     console.error('删除收藏夹失败:', error)

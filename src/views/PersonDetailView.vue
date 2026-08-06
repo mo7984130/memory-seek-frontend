@@ -17,6 +17,7 @@ import Input from '@/components/form/Input/Input.vue'
 import BackToTop from '@/components/actions/BackToTop/BackToTop.vue'
 import { useToast } from '@/components/feedback/Toast/toast'
 import { useGoBack } from '@/composables/useGoBack'
+import { markListDirty } from '@/composables/useListDirty'
 import { usePersonSearch } from '@/composables/usePersonSearch'
 
 const route = useRoute()
@@ -188,6 +189,7 @@ async function handleRename() {
     if (person.value) person.value.name = name
     showRenameDialog.value = false
     toast.success('改名成功')
+    markListDirty('persons')
   } catch (error) {
     console.error('重命名人物失败:', error)
     toast.error('重命名失败')
@@ -210,6 +212,7 @@ async function handleMerge() {
   try {
     await photo.person.mergePerson(personId, mergeTargetId.value)
     toast.success('合并成功')
+    markListDirty('persons')
     router.push('/persons')
   } catch (error) {
     console.error('合并人物失败:', error)
@@ -225,6 +228,7 @@ async function handleDelete() {
   try {
     await photo.person.deletePerson(personId)
     toast.success('人物已删除')
+    markListDirty('persons')
     router.push('/persons')
   } catch (error) {
     console.error('删除人物失败:', error)
@@ -240,6 +244,7 @@ async function handleFacesUpdated() {
   const found = await loadPerson()
   if (!found) {
     toast.info('该人物已不存在')
+    markListDirty('persons')
     router.push('/persons')
   }
 }

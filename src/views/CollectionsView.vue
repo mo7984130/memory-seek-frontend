@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onActivated } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus, FolderOpen } from '@/components/base/Icon/icons'
 import { photo } from 'memory-seek-api'
 import type { Collection } from 'memory-seek-api'
+import { useListScrollRestore } from '@/composables/useListScrollRestore'
+import { consumeListDirty } from '@/composables/useListDirty'
 import IconButton from '@/components/actions/IconButton/IconButton.vue'
 import Button from '@/components/actions/Button/Button.vue'
 import Card from '@/components/data/Card/Card.vue'
@@ -12,8 +14,14 @@ import Input from '@/components/form/Input/Input.vue'
 import Spinner from '@/components/base/Spinner/Spinner.vue'
 import { useToast } from '@/components/feedback/Toast/toast'
 
+// 组件名（KeepAlive include 匹配）
+defineOptions({ name: 'CollectionsView' })
+
 const router = useRouter()
 const toast = useToast()
+
+// 返回时恢复滚动位置（KeepAlive 缓存页）
+const { restoreScroll } = useListScrollRestore()
 
 const loading = ref(false)
 const collections = ref<Collection[]>([])
@@ -108,6 +116,14 @@ async function handleCreate() {
 
 onMounted(() => {
   loadCollections()
+})
+
+// 从详情页返回：详情页改过收藏夹（编辑/删除/删照片）时刷新列表，随后恢复浏览位置
+onActivated(async () => {
+  if (consumeListDirty('collections')) {
+    await loadCollections()
+  }
+  await restoreScroll()
 })
 </script>
 

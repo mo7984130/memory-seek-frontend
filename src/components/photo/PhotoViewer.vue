@@ -3,7 +3,7 @@
 import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { photo as photoApi } from 'memory-seek-api'
-import type { Face, Person, Photo } from 'memory-seek-api'
+import type { Face, Photo } from 'memory-seek-api'
 import { ChevronLeft, ChevronRight, LoadingIcon } from '@/components/base/Icon/icons'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/components/feedback/Toast/toast'
@@ -13,6 +13,7 @@ import PhotoToolbar from './PhotoToolbar.vue'
 import PhotoComments from './PhotoComments.vue'
 import Input from '@/components/form/Input/Input.vue'
 import Button from '@/components/actions/Button/Button.vue'
+import { usePersonSearch } from '@/composables/usePersonSearch'
 import './photo-viewer.css'
 
 interface Props {
@@ -74,10 +75,19 @@ const showRenameDialog = ref(false)
 const changingBelonging = ref(false)
 const renaming = ref(false)
 const renameName = ref('')
-const persons = ref<Person[]>([])
-const personsLoaded = ref(false)
-const personKeyword = ref('')
 const targetPersonId = ref('')
+
+// 归属目标人物（游标分页搜索）
+const {
+  keyword: personKeyword,
+  persons,
+  loading: personsLoading,
+  loaded: personsLoaded,
+  hasMore: personsHasMore,
+  reload: reloadPersons,
+  reset: resetPersons,
+  onScroll: onPersonsScroll,
+} = usePersonSearch()
 
 // 拖拽状态
 const isDragging = ref(false)
@@ -413,38 +423,11 @@ function closeFaceContextMenu() {
   contextMenuVisible.value = false
 }
 
-/** 加载全部人物列表（供归属选择使用），分页拉全 */
-async function ensurePersonsLoaded() {
-  if (personsLoaded.value) return
-  const all: Person[] = []
-  let cursor: string | null = null
-  try {
-    for (;;) {
-      const res = await photoApi.person.getPersons({ cursor, size: 32 })
-      const page = res.data
-      all.push(...page.records)
-      if (!page.hasMore || !page.nextCursor) break
-      cursor = page.nextCursor
-    }
-    persons.value = all
-  } catch (error) {
-    console.error('加载人物列表失败:', error)
-  } finally {
-    personsLoaded.value = true
-  }
-}
-
-const filteredPersons = computed(() => {
-  const kw = personKeyword.value.trim().toLowerCase()
-  if (!kw) return persons.value
-  return persons.value.filter((p) => p.name.toLowerCase().includes(kw))
-})
-
 function openChangeBelongingDialog() {
   closeFaceContextMenu()
-  ensurePersonsLoaded()
+  resetPersons()
+  reloadPersons()
   targetPersonId.value = ''
-  personKeyword.value = ''
   showChangeBelongingDialog.value = true
 }
 
@@ -914,9 +897,9 @@ onBeforeUnmount(() => {
             <label class="face-dialog__label">搜索目标人物</label>
             <Input v-model="personKeyword" placeholder="输入关键词筛选人物" />
           </div>
-          <div class="face-dialog__list">
+          <div class="face-dialog__list" @scroll="onPersonsScroll">
             <button
-              v-for="person in filteredPersons"
+              v-for="person in persons"
               :key="person.id"
               type="button"
               class="face-dialog__person"
@@ -926,8 +909,12 @@ onBeforeUnmount(() => {
               <span class="face-dialog__person-name">{{ person.name }}</span>
               <span class="face-dialog__person-count">{{ Number(person.faceCount) }} 张照片</span>
             </button>
-            <div v-if="filteredPersons.length === 0" class="face-dialog__empty">
+            <div v-if="personsLoading" class="face-dialog__empty">加载中...</div>
+            <div v-else-if="personsLoaded && persons.length === 0" class="face-dialog__empty">
               未找到人物
+            </div>
+            <div v-else-if="!personsHasMore && persons.length > 0" class="face-dialog__empty">
+              已经到底啦 ~
             </div>
           </div>
           <Button

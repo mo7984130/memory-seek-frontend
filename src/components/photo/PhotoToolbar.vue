@@ -104,7 +104,7 @@ function handleToggleFaceLabels() {
       :class="{ 'photo-toolbar__btn--active': isFavorited }"
       type="button"
       @click="handleToggleFavorite"
-      title="喜欢"
+      title="喜欢 (L)"
     >
       <Heart :size="20" :fill="isFavorited ? 'var(--color-like)' : 'none'" />
     </button>
@@ -117,7 +117,7 @@ function handleToggleFaceLabels() {
     >
       <Bookmark :size="20" :fill="isCollected ? 'var(--color-warning)' : 'none'" />
     </button>
-    <button class="photo-toolbar__btn" type="button" @click="handleToggleComments" title="评论">
+    <button class="photo-toolbar__btn" type="button" @click="handleToggleComments" title="评论 (C)">
       <MessageCircle :size="20" />
     </button>
     <div class="photo-toolbar__divider" />
@@ -151,7 +151,7 @@ function handleToggleFaceLabels() {
       :class="{ 'photo-toolbar__btn--active': showFaceLabels }"
       type="button"
       @click="handleToggleFaceLabels"
-      title="显示/隐藏人物名称"
+      title="显示/隐藏人物名称 (T)"
     >
       <Tag :size="20" />
     </button>

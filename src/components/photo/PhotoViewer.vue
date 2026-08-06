@@ -657,6 +657,18 @@ function handleKeydown(event: KeyboardEvent) {
     case 'F':
       toggleFaces()
       break
+    case 'l':
+    case 'L':
+      toggleFavorite()
+      break
+    case 'c':
+    case 'C':
+      toggleComments()
+      break
+    case 't':
+    case 'T':
+      toggleFaceLabels()
+      break
   }
 }
 

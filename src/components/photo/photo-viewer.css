@@ -288,6 +288,19 @@
   cursor: not-allowed;
 }
 
+.photo-viewer__face-menu-item--danger {
+  color: var(--color-danger, #ef4444);
+}
+
+.photo-viewer__face-menu-item--danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-danger, #ef4444);
+}
+
+.photo-viewer__face-menu-item--danger:disabled {
+  color: var(--color-text-tertiary);
+}
+
 .face-dialog {
   display: flex;
   flex-direction: column;

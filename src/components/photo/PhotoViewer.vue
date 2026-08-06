@@ -23,9 +23,13 @@ interface Props {
   photos?: Photo[]
   /** 到达已加载列表末尾时触发加载下一页；返回是否加载到了新照片 */
   loadMore?: () => Promise<boolean>
+  /** 打开查看器时自动开启人脸框（默认关闭，保持现有页面行为） */
+  initialShowFaces?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  initialShowFaces: false,
+})
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
@@ -72,8 +76,11 @@ const contextMenuY = ref(0)
 const activeFace = ref<Face | null>(null)
 const showChangeBelongingDialog = ref(false)
 const showRenameDialog = ref(false)
+const showDeleteFaceConfirm = ref(false)
 const changingBelonging = ref(false)
 const renaming = ref(false)
+const unassigning = ref(false)
+const deletingFace = ref(false)
 const renameName = ref('')
 const targetPersonId = ref('')
 
@@ -239,7 +246,7 @@ function handleImageLoad(event: Event) {
 watch(() => props.photo, () => {
   imageLoading.value = true
   // 切换照片时重置人脸状态
-  showFaces.value = false
+  showFaces.value = props.initialShowFaces
   faces.value = []
   facesLoaded.value = false
   loadingFaces.value = false
@@ -248,6 +255,11 @@ watch(() => props.photo, () => {
   closeFaceContextMenu()
   showChangeBelongingDialog.value = false
   showRenameDialog.value = false
+  showDeleteFaceConfirm.value = false
+  // 自动开启人脸框：加载该照片的人脸
+  if (props.initialShowFaces && !facesLoaded.value) {
+    loadFaces()
+  }
 })
 
 // ---- 旋转控制（每次 90°） ----
@@ -476,6 +488,48 @@ async function submitRename() {
   }
 }
 
+/** 取消人脸归属（将人脸重新变为未分配） */
+async function submitUnassign() {
+  if (!activeFace.value?.personId) return
+  unassigning.value = true
+  try {
+    await photoApi.face.changeFaceBelonging(activeFace.value.id, null)
+    toast.success('已取消人脸归属')
+    closeFaceContextMenu()
+    await loadFaces()
+    emit('faces-updated')
+  } catch (error) {
+    console.error('取消人脸归属失败:', error)
+    toast.error('取消人脸归属失败')
+  } finally {
+    unassigning.value = false
+  }
+}
+
+/** 打开删除人脸确认弹窗 */
+function openDeleteFaceConfirm() {
+  closeFaceContextMenu()
+  showDeleteFaceConfirm.value = true
+}
+
+/** 删除人脸（仅未归属人物的人脸可删除） */
+async function submitDeleteFace() {
+  if (!activeFace.value) return
+  deletingFace.value = true
+  try {
+    await photoApi.face.deleteFace(activeFace.value.id)
+    toast.success('人脸已删除')
+    showDeleteFaceConfirm.value = false
+    await loadFaces()
+    emit('faces-updated')
+  } catch (error) {
+    console.error('删除人脸失败:', error)
+    toast.error('删除人脸失败')
+  } finally {
+    deletingFace.value = false
+  }
+}
+
 // 点击其他区域关闭人脸右键菜单
 watch(contextMenuVisible, (visible) => {
   if (visible) {
@@ -690,7 +744,7 @@ function resetState() {
   loadingMore.value = false
   hasMoreInViewer.value = true
   // 人脸状态
-  showFaces.value = false
+  showFaces.value = props.initialShowFaces
   faces.value = []
   facesLoaded.value = false
   loadingFaces.value = false
@@ -700,7 +754,12 @@ function resetState() {
   activeFace.value = null
   showChangeBelongingDialog.value = false
   showRenameDialog.value = false
+  showDeleteFaceConfirm.value = false
   showFaceLabels.value = true
+  // 自动开启人脸框：加载该照片的人脸
+  if (props.initialShowFaces && props.photo) {
+    loadFaces()
+  }
 }
 
 // 监听弹窗打开，添加键盘和拖拽事件
@@ -879,6 +938,22 @@ onBeforeUnmount(() => {
         >
           重命名人物
         </button>
+        <button
+          type="button"
+          class="photo-viewer__face-menu-item"
+          :disabled="!activeFace?.personId"
+          @click="submitUnassign"
+        >
+          {{ unassigning ? '取消中...' : '取消归属' }}
+        </button>
+        <button
+          type="button"
+          class="photo-viewer__face-menu-item photo-viewer__face-menu-item--danger"
+          :disabled="!!activeFace?.personId"
+          @click="openDeleteFaceConfirm"
+        >
+          删除人脸
+        </button>
       </div>
 
       <!-- 修改人脸归属弹窗 -->
@@ -965,6 +1040,23 @@ onBeforeUnmount(() => {
             </button>
             <button class="delete-confirm__delete" type="button" :disabled="deleting" @click="handleDelete">
               {{ deleting ? '删除中...' : '删除' }}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <!-- 删除人脸确认弹窗 -->
+      <Modal v-model="showDeleteFaceConfirm" size="sm" title="删除人脸" overlay-class="photo-viewer__modal-overlay">
+        <div class="delete-confirm">
+          <p class="delete-confirm__text">
+            确定要删除这张人脸吗？此操作不可撤销，且仅未归属人物的人脸可删除。
+          </p>
+          <div class="delete-confirm__actions">
+            <button class="delete-confirm__cancel" type="button" @click="showDeleteFaceConfirm = false">
+              取消
+            </button>
+            <button class="delete-confirm__delete" type="button" :disabled="deletingFace" @click="submitDeleteFace">
+              {{ deletingFace ? '删除中...' : '删除' }}
             </button>
           </div>
         </div>

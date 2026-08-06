@@ -82,6 +82,12 @@ const router = createRouter({
           meta: { title: '人物' },
         },
         {
+          path: 'unassigned-faces',
+          name: 'unassigned-faces',
+          component: () => import('@/views/UnassignedFacesView.vue'),
+          meta: { title: '未分配人脸' },
+        },
+        {
           path: 'likes',
           name: 'likes',
           component: () => import('@/views/LikesView.vue'),

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ImageIcon, LikeIcon, FavoriteIcon, User, FaceIcon } from '@/components/base/Icon/icons'
+import { ImageIcon, LikeIcon, FavoriteIcon, User, FaceIcon, ChevronDownIcon } from '@/components/base/Icon/icons'
 import Drawer from '@/components/feedback/Drawer/Drawer.vue'
 
 const props = defineProps<{
@@ -29,13 +29,36 @@ const navItems: NavItem[] = [
   { path: '/profile', label: '个人中心', icon: User },
 ]
 
+// "更多"折叠菜单：当前路由在其分组内时默认展开
+const moreItems: NavItem[] = [
+  { path: '/unassigned-faces', label: '未分配人脸', icon: FaceIcon },
+]
+
 const activePath = computed(() => {
   // 匹配当前路由或其父级
   const path = route.path
   if (path.startsWith('/collections')) return '/collections'
   if (path.startsWith('/persons')) return '/persons'
+  if (path.startsWith('/unassigned-faces')) return '/unassigned-faces'
   return path
 })
+
+// "更多"分组内是否有选中项
+const moreActive = computed(() => moreItems.some((item) => activePath.value === item.path))
+
+// 展开状态：进入分组内自动展开，离开后自动折叠
+const moreOpen = ref(moreActive.value)
+
+watch(
+  () => route.path,
+  () => {
+    if (moreActive.value) {
+      moreOpen.value = true
+    } else {
+      moreOpen.value = false
+    }
+  },
+)
 
 function navigateTo(path: string) {
   router.push(path)
@@ -72,6 +95,39 @@ function navigateTo(path: string) {
           <component :is="item.icon" :size="20" />
           <span>{{ item.label }}</span>
         </button>
+
+        <!-- 更多 -->
+        <div class="app-drawer__more">
+          <button
+            class="app-drawer__nav-item"
+            :class="{ 'app-drawer__nav-item--active': moreActive }"
+            type="button"
+            :aria-expanded="moreOpen"
+            @click="moreOpen = !moreOpen"
+          >
+            <span>更多</span>
+            <ChevronDownIcon
+              :size="16"
+              class="app-drawer__more-caret"
+              :class="{ 'app-drawer__more-caret--open': moreOpen }"
+            />
+          </button>
+          <Transition name="app-drawer-more">
+            <div v-if="moreOpen" class="app-drawer__more-list">
+              <button
+                v-for="item in moreItems"
+                :key="item.path"
+                class="app-drawer__nav-item app-drawer__more-item"
+                :class="{ 'app-drawer__nav-item--active': activePath === item.path }"
+                type="button"
+                @click="navigateTo(item.path)"
+              >
+                <component :is="item.icon" :size="20" />
+                <span>{{ item.label }}</span>
+              </button>
+            </div>
+          </Transition>
+        </div>
       </nav>
 
       <!-- 底部版本 -->
@@ -156,5 +212,53 @@ function navigateTo(path: string) {
   font-size: var(--text-xs);
   color: var(--color-text-tertiary);
   text-align: center;
+}
+
+.app-drawer__more {
+  margin-top: var(--spacing-1);
+  width: 100%;
+}
+
+.app-drawer__more > .app-drawer__nav-item {
+  width: 100%;
+}
+
+.app-drawer__nav-item > span {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.app-drawer__more-caret {
+  margin-left: auto;
+  color: var(--color-text-tertiary);
+  transition: transform var(--transition-fast) var(--ease-out);
+}
+
+.app-drawer__more-caret--open {
+  transform: rotate(180deg);
+}
+
+.app-drawer__more-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.app-drawer__more-item {
+  margin-left: var(--spacing-4);
+}
+
+/* 更多子菜单进入/离开动画 */
+.app-drawer-more-enter-active,
+.app-drawer-more-leave-active {
+  transition:
+    opacity var(--transition-fast) var(--ease-out),
+    transform var(--transition-fast) var(--ease-out);
+}
+
+.app-drawer-more-enter-from,
+.app-drawer-more-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 </style>

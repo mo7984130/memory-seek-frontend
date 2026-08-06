@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ImageIcon, LikeIcon, FavoriteIcon, User, FaceIcon, ChevronDownIcon } from '@/components/base/Icon/icons'
+import { ImageIcon, LikeIcon, FavoriteIcon, User, FaceIcon, MoreVertical } from '@/components/base/Icon/icons'
 import Drawer from '@/components/feedback/Drawer/Drawer.vue'
 
 const props = defineProps<{
@@ -105,12 +105,8 @@ function navigateTo(path: string) {
             :aria-expanded="moreOpen"
             @click="moreOpen = !moreOpen"
           >
+            <MoreVertical :size="16" />
             <span>更多</span>
-            <ChevronDownIcon
-              :size="16"
-              class="app-drawer__more-caret"
-              :class="{ 'app-drawer__more-caret--open': moreOpen }"
-            />
           </button>
           <Transition name="app-drawer-more">
             <div v-if="moreOpen" class="app-drawer__more-list">
@@ -226,16 +222,6 @@ function navigateTo(path: string) {
 .app-drawer__nav-item > span {
   flex-shrink: 0;
   white-space: nowrap;
-}
-
-.app-drawer__more-caret {
-  margin-left: auto;
-  color: var(--color-text-tertiary);
-  transition: transform var(--transition-fast) var(--ease-out);
-}
-
-.app-drawer__more-caret--open {
-  transform: rotate(180deg);
 }
 
 .app-drawer__more-list {

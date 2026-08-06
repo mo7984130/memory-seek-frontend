@@ -121,7 +121,12 @@ onMounted(() => {
 // 从详情页返回：详情页改过人物（改名/删除/合并）时刷新列表，随后恢复浏览位置
 onActivated(async () => {
   if (consumeListDirty('persons')) {
+    // 记录离开时已加载的数量，刷新后补足到相同数量，保证高度足够恢复滚动位置
+    const targetCount = persons.value.length
     await reload()
+    while (hasMore.value && persons.value.length < targetCount) {
+      await fetchPage()
+    }
   }
   await restoreScroll()
 })

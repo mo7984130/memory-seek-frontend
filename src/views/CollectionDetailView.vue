@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, Pencil, Trash2 } from '@/components/base/Icon/icons'
 import { photo } from 'memory-seek-api'
@@ -16,10 +16,13 @@ import Modal from '@/components/feedback/Modal/Modal.vue'
 import Input from '@/components/form/Input/Input.vue'
 import BackToTop from '@/components/actions/BackToTop/BackToTop.vue'
 import { useToast } from '@/components/feedback/Toast/toast'
+import { useGoBack } from '@/composables/useGoBack'
+import { markListDirty } from '@/composables/useListDirty'
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const { goBack } = useGoBack('/collections')
 
 const collectionId = route.params.id as string
 
@@ -36,6 +39,7 @@ const {
   containerWidth,
   loading,
   groups,
+  fetchMore,
   handleTopItemChange,
   restoreToLastPosition,
   initialize,
@@ -82,6 +86,21 @@ function handlePhotoClick(photoItem: Photo) {
   viewerVisible.value = true
 }
 
+/** 查看器切换照片：更新当前照片并让瀑布流滚动到对应位置 */
+function handleViewerNavigate(photoItem: Photo) {
+  selectedPhoto.value = photoItem
+  nextTick(() => {
+    waterfallViewRef.value?.scrollToItem(photoItem.id, 'smooth')
+  })
+}
+
+/** 查看器触底时加载下一页；返回是否加载到了新照片 */
+async function handleLoadMore(): Promise<boolean> {
+  if (loading.value || !waterfall.hasMore.value) return false
+  const records = await fetchMore({ cursor: waterfall.cursor.value })
+  return records.length > 0
+}
+
 function handleLikeChange(photoId: string, isLiked: boolean) {
   waterfall.updatePhotoLike(photoId, isLiked)
   if (selectedPhoto.value?.id === photoId) {
@@ -94,6 +113,7 @@ function handlePhotoDelete(photoId: string) {
   if (collection.value) {
     collection.value.photoCount = Math.max(0, collection.value.photoCount - 1)
   }
+  markListDirty('collections')
 }
 
 async function handleLike(photoItem: Photo) {
@@ -114,10 +134,6 @@ async function handleLike(photoItem: Photo) {
     waterfall.updatePhotoLike(photoId, wasLiked)
     console.error('[CollectionDetailView] 点赞操作失败:', error)
   }
-}
-
-function goBack() {
-  router.push('/collections')
 }
 
 /**
@@ -151,6 +167,7 @@ async function handleSaveEdit() {
     }
     showEditModal.value = false
     toast.success('更新成功')
+    markListDirty('collections')
   } catch (error) {
     console.error('更新收藏夹失败:', error)
   } finally {
@@ -166,6 +183,7 @@ async function handleDelete() {
   try {
     await photo.collection.deleteCollection(collectionId)
     toast.success('收藏夹已删除')
+    markListDirty('collections')
     router.push('/collections')
   } catch (error) {
     console.error('删除收藏夹失败:', error)
@@ -252,8 +270,11 @@ onBeforeUnmount(() => {
     <PhotoViewer
       v-model="viewerVisible"
       :photo="selectedPhoto"
+      :photos="waterfall.allPhotos.value"
+      :load-more="handleLoadMore"
       @like="handleLikeChange"
       @delete="handlePhotoDelete"
+      @navigate="handleViewerNavigate"
     />
 
     <!-- 编辑弹窗 -->

@@ -388,16 +388,37 @@
 
 /* ============================================
    13. Z-index 层级
+   ============================================
+   所有浮层/弹窗一律使用这里的变量，禁止硬编码数值，
+   避免互相遮挡的 bug。层叠顺序（低 → 高）：
+
+   dropdown(1000) → sticky(1020) → fixed(1030)
+   → modal-backdrop(1040) → modal(1050)
+   → popover(1060) → tooltip(1070)
+   → photo-viewer(2000) → photo-viewer-modal(2010/2020)
+   → toast(3000，永远最高)
    ============================================ */
 
 :root {
+    /* 基础浮层 */
     --z-index-dropdown: 1000;
     --z-index-sticky: 1020;
     --z-index-fixed: 1030;
+
+    /* 弹窗/抽屉（Teleport 到 body） */
     --z-index-modal-backdrop: 1040;
     --z-index-modal: 1050;
     --z-index-popover: 1060;
     --z-index-tooltip: 1070;
+
+    /* 全屏照片查看器（覆盖顶栏/普通弹窗） */
+    --z-index-photo-viewer: 2000;
+    /* 查看器内打开的弹窗：Modal Teleport 到 body，需高于查看器本身 */
+    --z-index-photo-viewer-modal-backdrop: 2010;
+    --z-index-photo-viewer-modal: 2020;
+
+    /* 全局 Toast：永远最高，置顶可见 */
+    --z-index-toast: 3000;
 }
 
 /* ============================================

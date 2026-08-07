@@ -18,7 +18,7 @@
   backdrop-filter: blur(12px);
   border-radius: var(--radius-full);
   color: white;
-  z-index: var(--z-index-tooltip);
+  z-index: var(--photo-viewer-z-toolbar);
   user-select: none;
   max-width: calc(100vw - var(--spacing-8));
   animation: photo-toolbar-slide-up 0.3s var(--ease-out) 0.1s both;

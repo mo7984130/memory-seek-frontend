@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft, FaceIcon } from '@/components/base/Icon/icons'
 import { photo } from 'memory-seek-api'
@@ -16,10 +16,14 @@ import Modal from '@/components/feedback/Modal/Modal.vue'
 import Input from '@/components/form/Input/Input.vue'
 import BackToTop from '@/components/actions/BackToTop/BackToTop.vue'
 import { useToast } from '@/components/feedback/Toast/toast'
+import { useGoBack } from '@/composables/useGoBack'
+import { markListDirty } from '@/composables/useListDirty'
+import { usePersonSearch } from '@/composables/usePersonSearch'
 
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const { goBack } = useGoBack('/persons')
 
 const personId = route.params.id as string
 
@@ -36,6 +40,7 @@ const {
   containerWidth,
   loading,
   groups,
+  fetchMore,
   handleTopItemChange,
   restoreToLastPosition,
   initialize,
@@ -58,10 +63,20 @@ const renaming = ref(false)
 
 // 合并弹窗
 const showMergeDialog = ref(false)
-const mergePersons = ref<Person[]>([])
-const mergeKeyword = ref('')
 const mergeTargetId = ref('')
 const merging = ref(false)
+
+// 合并目标人物（游标分页搜索，排除当前人物）
+const {
+  keyword: mergeKeyword,
+  persons: mergePersons,
+  loading: mergeLoading,
+  loaded: mergeLoaded,
+  hasMore: mergeHasMore,
+  reload: reloadMerge,
+  reset: resetMerge,
+  onScroll: onMergeScroll,
+} = usePersonSearch({ excludeId: () => personId })
 
 // 删除确认
 const showDeleteConfirm = ref(false)
@@ -74,7 +89,7 @@ function getPhotoById(id: string | number): Photo | undefined {
 /**
  * 加载人物信息：
  * 优先取列表页通过路由 state 传入的人物对象（免请求、即时渲染），
- * 兜底拉取人物列表按 id 查找（支持直接刷新/直达链接）
+ * 兜底分页拉取人物列表按 id 查找（支持直接刷新/直达链接/从照片墙跳转）
  * @returns 是否找到该人物
  */
 async function loadPerson(): Promise<boolean> {
@@ -84,9 +99,20 @@ async function loadPerson(): Promise<boolean> {
     return true
   }
   try {
-    const res = await photo.person.getPersons({ size: 100 })
-    person.value = res.data.records.find((p) => p.id === personId) ?? null
-    return !!person.value
+    let cursor: string | null = null
+    for (;;) {
+      const res = await photo.person.getPersons({ cursor, size: 32 })
+      const page = res.data
+      const found = page.records.find((p) => p.id === personId)
+      if (found) {
+        person.value = found
+        return true
+      }
+      if (!page.hasMore || !page.nextCursor) break
+      cursor = page.nextCursor
+    }
+    person.value = null
+    return false
   } catch (error) {
     console.error('加载人物信息失败:', error)
     return person.value !== null
@@ -96,6 +122,21 @@ async function loadPerson(): Promise<boolean> {
 function handlePhotoClick(photoItem: Photo) {
   selectedPhoto.value = photoItem
   viewerVisible.value = true
+}
+
+/** 查看器切换照片：更新当前照片并让瀑布流滚动到对应位置 */
+function handleViewerNavigate(photoItem: Photo) {
+  selectedPhoto.value = photoItem
+  nextTick(() => {
+    waterfallViewRef.value?.scrollToItem(photoItem.id, 'smooth')
+  })
+}
+
+/** 查看器触底时加载下一页；返回是否加载到了新照片 */
+async function handleLoadMore(): Promise<boolean> {
+  if (loading.value || !waterfall.hasMore.value) return false
+  const records = await fetchMore({ cursor: waterfall.cursor.value })
+  return records.length > 0
 }
 
 function handleLikeChange(photoId: string, isLiked: boolean) {
@@ -129,10 +170,6 @@ async function handleLike(photoItem: Photo) {
   }
 }
 
-function goBack() {
-  router.push('/persons')
-}
-
 // ---- 改名 ----
 function openRenameDialog() {
   if (!person.value) return
@@ -152,6 +189,7 @@ async function handleRename() {
     if (person.value) person.value.name = name
     showRenameDialog.value = false
     toast.success('改名成功')
+    markListDirty('persons')
   } catch (error) {
     console.error('重命名人物失败:', error)
     toast.error('重命名失败')
@@ -161,33 +199,12 @@ async function handleRename() {
 }
 
 // ---- 合并 ----
-async function openMergeDialog() {
+function openMergeDialog() {
   showMergeDialog.value = true
   mergeTargetId.value = ''
-  mergeKeyword.value = ''
-
-  // 拉取全部人物（排除当前人物）
-  const all: Person[] = []
-  let cursor: string | null = null
-  try {
-    for (;;) {
-      const res = await photo.person.getPersons({ cursor, size: 32 })
-      const page = res.data
-      all.push(...page.records)
-      if (!page.hasMore || !page.nextCursor) break
-      cursor = page.nextCursor
-    }
-  } catch (error) {
-    console.error('加载人物列表失败:', error)
-  }
-  mergePersons.value = all.filter((p) => p.id !== personId)
+  resetMerge()
+  reloadMerge()
 }
-
-const filteredMergePersons = computed(() => {
-  const kw = mergeKeyword.value.trim().toLowerCase()
-  if (!kw) return mergePersons.value
-  return mergePersons.value.filter((p) => p.name.toLowerCase().includes(kw))
-})
 
 async function handleMerge() {
   if (!mergeTargetId.value) return
@@ -195,6 +212,7 @@ async function handleMerge() {
   try {
     await photo.person.mergePerson(personId, mergeTargetId.value)
     toast.success('合并成功')
+    markListDirty('persons')
     router.push('/persons')
   } catch (error) {
     console.error('合并人物失败:', error)
@@ -210,6 +228,7 @@ async function handleDelete() {
   try {
     await photo.person.deletePerson(personId)
     toast.success('人物已删除')
+    markListDirty('persons')
     router.push('/persons')
   } catch (error) {
     console.error('删除人物失败:', error)
@@ -225,6 +244,7 @@ async function handleFacesUpdated() {
   const found = await loadPerson()
   if (!found) {
     toast.info('该人物已不存在')
+    markListDirty('persons')
     router.push('/persons')
   }
 }
@@ -318,9 +338,12 @@ onBeforeUnmount(() => {
     <PhotoViewer
       v-model="viewerVisible"
       :photo="selectedPhoto"
+      :photos="waterfall.allPhotos.value"
+      :load-more="handleLoadMore"
       @like="handleLikeChange"
       @delete="handlePhotoDelete"
       @faces-updated="handleFacesUpdated"
+      @navigate="handleViewerNavigate"
     />
 
     <!-- 改名弹窗 -->
@@ -343,9 +366,9 @@ onBeforeUnmount(() => {
           将「{{ person?.name }}」合并到目标人物，合并后当前人物将被删除。
         </p>
         <Input v-model="mergeKeyword" placeholder="输入关键词筛选人物" />
-        <div class="person-detail__merge-list">
+        <div class="person-detail__merge-list" @scroll="onMergeScroll">
           <button
-            v-for="p in filteredMergePersons"
+            v-for="p in mergePersons"
             :key="p.id"
             type="button"
             class="person-detail__merge-item"
@@ -355,8 +378,12 @@ onBeforeUnmount(() => {
             <span>{{ p.name }}</span>
             <span class="person-detail__merge-count">{{ Number(p.faceCount) }} 张照片</span>
           </button>
-          <div v-if="filteredMergePersons.length === 0" class="person-detail__merge-empty">
+          <div v-if="mergeLoading" class="person-detail__merge-empty">加载中...</div>
+          <div v-else-if="mergeLoaded && mergePersons.length === 0" class="person-detail__merge-empty">
             未找到其他人物
+          </div>
+          <div v-else-if="!mergeHasMore && mergePersons.length > 0" class="person-detail__merge-empty">
+            已经到底啦 ~
           </div>
         </div>
         <Button type="button" block :loading="merging" :disabled="!mergeTargetId" @click="handleMerge">

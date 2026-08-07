@@ -160,8 +160,15 @@ const visibleItems = computed(() => {
 watch(visibleItems, (filtered) => {
   if (filtered.length === 0) return
 
-  const topItem = filtered.reduce((prev, curr) =>
-    prev.renderTop < curr.renderTop ? prev : curr,
+  // 优先取视口内（不含 buffer）最靠上的元素，
+  // 避免顶部照片滞后于视口上方 buffer 区域导致位置锚点不准
+  const viewportStart = scrollY.value
+  const viewportEnd = scrollY.value + windowHeight.value
+  const inViewport = filtered.filter(
+    (p) => p.renderTop + p.renderHeight > viewportStart && p.renderTop < viewportEnd,
+  )
+  const topItem = (inViewport.length > 0 ? inViewport : filtered).reduce(
+    (prev, curr) => (prev.renderTop < curr.renderTop ? prev : curr),
   )
 
   let currentGroupKey = ''
@@ -181,6 +188,14 @@ watch(visibleItems, (filtered) => {
 
   if (topItem.type === 'item') {
     emit('top-item-change', topItem as unknown as WaterfallItem)
+  } else {
+    // 视口顶部是分组标题时，取其下方视口内最近的照片作为"顶部照片"
+    const firstPhoto = inViewport
+      .filter((p) => p.type === 'item' && p.renderTop >= topItem.renderTop)
+      .reduce((prev, curr) => (prev && prev.renderTop <= curr.renderTop ? prev : curr), null as PositionedItem | null)
+    if (firstPhoto) {
+      emit('top-item-change', firstPhoto as unknown as WaterfallItem)
+    }
   }
 })
 
@@ -234,8 +249,9 @@ function scrollToGroup(groupKey: string) {
 
 /**
  * 滚动到指定照片（用于恢复浏览位置）
+ * @param behavior 滚动行为，默认 'auto'（立即定位）；查看器切换照片时传 'smooth' 同步位置
  */
-function scrollToItem(photoId: string | number) {
+function scrollToItem(photoId: string | number, behavior: ScrollBehavior = 'auto') {
   const item = positionedItems.value.find(
     p => p.type === 'item' && p.id === photoId,
   )
@@ -252,7 +268,7 @@ function scrollToItem(photoId: string | number) {
   const scrollTop = containerRect.top + window.scrollY + item.renderTop
   window.scrollTo({
     top: scrollTop,
-    behavior: 'auto',
+    behavior,
   })
 }
 

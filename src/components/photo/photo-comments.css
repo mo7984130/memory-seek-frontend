@@ -14,7 +14,7 @@
   background: var(--color-bg-card);
   transform: translateX(100%);
   transition: transform 0.3s var(--ease-out);
-  z-index: 10;
+  z-index: var(--photo-viewer-z-comments);
   display: flex;
   flex-direction: column;
   box-shadow: var(--photo-comments-shadow);

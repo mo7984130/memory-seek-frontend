@@ -12,13 +12,13 @@ import Spinner from '@/components/base/Spinner/Spinner.vue'
 import BackToTop from '@/components/actions/BackToTop/BackToTop.vue'
 
 // 组件名（KeepAlive include 匹配）
-defineOptions({ name: 'LikesView' })
+defineOptions({ name: 'UnassignedFacesView' })
 
 // 瀑布流页面（布局/加载/持久化/自动恢复）
 const page = useWaterfallPage({
-  storageKey: 'likes',
+  storageKey: 'unassigned',
   fetch: async ({ cursor }) =>
-    (await photo.like.getLikedPhotos({ cursor, size: 20 })).data,
+    (await photo.face.getUnassignedFacePhotos({ cursor, size: 20 })).data,
 })
 
 const {
@@ -68,10 +68,6 @@ async function handleLoadMore(): Promise<boolean> {
 }
 
 function handleLikeChange(photoId: string, isLiked: boolean) {
-  if (!isLiked) {
-    // 在点赞页面，取消点赞需要从列表中移除
-    waterfall.removePhoto(photoId)
-  }
   if (selectedPhoto.value?.id === photoId) {
     selectedPhoto.value.isLiked = isLiked
   }
@@ -81,15 +77,27 @@ function handleDelete(photoId: string) {
   waterfall.removePhoto(photoId)
 }
 
+/** 人脸变更（分配/取消/删除）后，若当前照片已不含未分配人脸则从列表移除 */
+async function handleFacesUpdated() {
+  const photoItem = selectedPhoto.value
+  if (!photoItem) return
+  try {
+    const faces = (await photo.face.getFaces(photoItem.id)).data
+    if (!faces.some((f) => !f.personId)) {
+      waterfall.removePhoto(photoItem.id)
+    }
+  } catch (error) {
+    console.error('[UnassignedFacesView] 刷新人脸状态失败:', error)
+  }
+}
+
 async function handleLike(photoItem: Photo) {
   const photoId = photoItem.id as string
-
-  // 在点赞页面，取消点赞需要从列表中移除
   try {
     await photo.like.unlikePhoto(photoId)
     waterfall.removePhoto(photoId)
   } catch (error) {
-    console.error('[LikesView] 取消点赞失败:', error)
+    console.error('[UnassignedFacesView] 取消点赞失败:', error)
   }
 }
 
@@ -108,9 +116,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="likes-view" :ref="page.containerRef">
-    <div class="likes-view__header">
-      <span class="likes-view__count" v-if="waterfall.allPhotos.value.length > 0">
+  <div class="unassigned-view" :ref="page.containerRef">
+    <div class="unassigned-view__header">
+      <span class="unassigned-view__count" v-if="waterfall.allPhotos.value.length > 0">
         {{ waterfall.allPhotos.value.length }} 张照片
       </span>
     </div>
@@ -140,13 +148,13 @@ onBeforeUnmount(() => {
           已经到底啦 ~
         </span>
         <span v-else-if="!loading && waterfall.allPhotos.value.length === 0" class="load-sentinel__text">
-          还没有点赞的照片
+          没有未分配人脸的照片
         </span>
       </div>
     </div>
 
     <!-- 回到上次浏览位置（按钮触发恢复） -->
-    <LastPositionButton storage-key="likes" @restore="restoreToLastPosition" />
+    <LastPositionButton storage-key="unassigned" @restore="restoreToLastPosition" />
 
     <!-- 回到顶部 -->
     <BackToTop />
@@ -156,26 +164,28 @@ onBeforeUnmount(() => {
       :photo="selectedPhoto"
       :photos="waterfall.allPhotos.value"
       :load-more="handleLoadMore"
+      initial-show-faces
       @like="handleLikeChange"
       @delete="handleDelete"
       @navigate="handleViewerNavigate"
+      @faces-updated="handleFacesUpdated"
     />
   </div>
 </template>
 
 <style scoped>
-.likes-view {
+.unassigned-view {
   padding: var(--spacing-6) var(--spacing-4);
   min-height: 100vh;
 }
 
-.likes-view__header {
+.unassigned-view__header {
   margin: var(--spacing-5) 0;
   padding-left: var(--spacing-3);
   border-left: 4px solid var(--color-primary);
 }
 
-.likes-view__count {
+.unassigned-view__count {
   font-size: var(--text-sm);
   color: var(--color-text-tertiary);
   margin-left: var(--spacing-2);
@@ -219,11 +229,11 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 768px) {
-  .likes-view {
+  .unassigned-view {
     padding: var(--spacing-4) var(--spacing-2);
   }
 
-  .likes-view__header {
+  .unassigned-view__header {
     margin: var(--spacing-4) 0;
   }
 }

@@ -2,9 +2,17 @@
 
 /* 全屏照片查看器 */
 .photo-viewer {
+  /* 查看器内部浮层层级（仅在本元素的堆叠上下文内生效） */
+  --photo-viewer-z-loading: 10;
+  --photo-viewer-z-face-overlay: 20;
+  --photo-viewer-z-nav: 25;
+  --photo-viewer-z-toolbar: 30;
+  --photo-viewer-z-comments: 40;
+  --photo-viewer-z-face-menu: 50;
+
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: var(--z-index-photo-viewer);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -63,6 +71,12 @@
   pointer-events: none;
 }
 
+/* 照片加载期间隐藏（不残留上一张照片） */
+.photo-viewer__image-wrapper--hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
 @keyframes photo-viewer-glass-sweep {
   0% {
     left: -100%;
@@ -108,7 +122,7 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 1;
+  z-index: var(--photo-viewer-z-loading);
 }
 
 .photo-viewer__loading-spinner {
@@ -131,6 +145,65 @@
   animation: photo-viewer-image-loaded 0.4s var(--ease-out);
 }
 
+/* 上一张/下一张导航按钮 */
+.photo-viewer__nav {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: var(--photo-viewer-z-nav);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  cursor: pointer;
+  transition:
+    background-color 0.2s var(--ease-out),
+    transform 0.2s var(--ease-out);
+  user-select: none;
+}
+
+.photo-viewer__nav:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.photo-viewer__nav:active {
+  transform: translateY(-50%) scale(0.92);
+}
+
+.photo-viewer__nav--prev {
+  left: var(--spacing-4);
+}
+
+.photo-viewer__nav--next {
+  right: var(--spacing-4);
+}
+
+.photo-viewer__nav:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.photo-viewer__nav-loading {
+  animation: photo-viewer-nav-spin 1s linear infinite;
+}
+
+@keyframes photo-viewer-nav-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* 人脸框 overlay（与图片同尺寸同 transform） */
 .photo-viewer__face-overlay {
   position: absolute;
@@ -138,12 +211,12 @@
   left: 50%;
   pointer-events: none;
   transition: transform 0.2s var(--ease-out);
-  z-index: 2;
+  z-index: var(--photo-viewer-z-face-overlay);
 }
 
 .photo-viewer__face-box {
   position: absolute;
-  border: 2px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 6px;
   box-sizing: border-box;
   cursor: pointer;
@@ -167,23 +240,21 @@
 .photo-viewer__face-label {
   position: absolute;
   left: 0;
-  bottom: 0;
-  max-width: 100%;
+  bottom: 100%;
+  margin-bottom: 2px;
   padding: 1px 6px;
   font-size: 11px;
   line-height: 1.6;
   color: #fff;
   background: rgba(0, 0, 0, 0.55);
-  border-radius: 0 4px 0 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  border-radius: 4px 4px 0 0;
   white-space: nowrap;
   pointer-events: none;
 }
 
 .photo-viewer__face-menu {
   position: fixed;
-  z-index: 30;
+  z-index: var(--photo-viewer-z-face-menu);
   min-width: 132px;
   padding: 4px;
   background: var(--color-bg-card);
@@ -213,6 +284,19 @@
 .photo-viewer__face-menu-item:disabled {
   color: var(--color-text-tertiary);
   cursor: not-allowed;
+}
+
+.photo-viewer__face-menu-item--danger {
+  color: var(--color-danger, #ef4444);
+}
+
+.photo-viewer__face-menu-item--danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-danger, #ef4444);
+}
+
+.photo-viewer__face-menu-item--danger:disabled {
+  color: var(--color-text-tertiary);
 }
 
 .face-dialog {
@@ -304,9 +388,9 @@
   font-size: var(--text-lg);
 }
 
-/* 删除确认弹窗（z-index 高于照片查看器） */
+/* 查看器内打开的弹窗（Modal Teleport 到 body，需高于查看器本身） */
 .photo-viewer__modal-overlay {
-  z-index: 10000;
+  z-index: var(--z-index-photo-viewer-modal-backdrop);
 }
 
 /* 删除确认弹窗 */

@@ -1,8 +1,10 @@
 <!-- src/components/photo/PhotoViewer.vue -->
 <script setup lang="ts">
-import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { photo as photoApi } from 'memory-seek-api'
-import type { Face, Person, Photo } from 'memory-seek-api'
+import type { Face, Photo } from 'memory-seek-api'
+import { ChevronLeft, ChevronRight, LoadingIcon } from '@/components/base/Icon/icons'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/components/feedback/Toast/toast'
 import Modal from '@/components/feedback/Modal/Modal.vue'
@@ -11,24 +13,36 @@ import PhotoToolbar from './PhotoToolbar.vue'
 import PhotoComments from './PhotoComments.vue'
 import Input from '@/components/form/Input/Input.vue'
 import Button from '@/components/actions/Button/Button.vue'
+import { usePersonSearch } from '@/composables/usePersonSearch'
 import './photo-viewer.css'
 
 interface Props {
   modelValue: boolean
   photo: Photo | null
+  /** 照片列表（用于上一张/下一张切换） */
+  photos?: Photo[]
+  /** 到达已加载列表末尾时触发加载下一页；返回是否加载到了新照片 */
+  loadMore?: () => Promise<boolean>
+  /** 打开查看器时自动开启人脸框（默认关闭，保持现有页面行为） */
+  initialShowFaces?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  initialShowFaces: false,
+})
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
   'like': [photoId: string, isLiked: boolean]
   'delete': [photoId: string]
   'faces-updated': []
+  'navigate': [photo: Photo]
 }>()
 
 const authStore = useAuthStore()
 const toast = useToast()
+const route = useRoute()
+const router = useRouter()
 
 // ---- 状态 ----
 const zoom = ref(1)
@@ -45,6 +59,8 @@ const loadingOriginal = ref(false)
 const refreshing = ref(false)
 const showDeleteConfirm = ref(false)
 const deleting = ref(false)
+// 人脸显示时是否展示人物名称
+const showFaceLabels = ref(true)
 
 // ---- 人脸状态 ----
 const showFaces = ref(false)
@@ -60,13 +76,25 @@ const contextMenuY = ref(0)
 const activeFace = ref<Face | null>(null)
 const showChangeBelongingDialog = ref(false)
 const showRenameDialog = ref(false)
+const showDeleteFaceConfirm = ref(false)
 const changingBelonging = ref(false)
 const renaming = ref(false)
+const unassigning = ref(false)
+const deletingFace = ref(false)
 const renameName = ref('')
-const persons = ref<Person[]>([])
-const personsLoaded = ref(false)
-const personKeyword = ref('')
 const targetPersonId = ref('')
+
+// 归属目标人物（游标分页搜索）
+const {
+  keyword: personKeyword,
+  persons,
+  loading: personsLoading,
+  loaded: personsLoaded,
+  hasMore: personsHasMore,
+  reload: reloadPersons,
+  reset: resetPersons,
+  onScroll: onPersonsScroll,
+} = usePersonSearch()
 
 // 拖拽状态
 const isDragging = ref(false)
@@ -123,6 +151,62 @@ const isOwner = computed(() => {
   return props.photo.userId === authStore.userId
 })
 
+// ---- 上一张/下一张 ----
+
+/** 当前照片在列表中的下标；photo 不在列表中（如已删除）时为 -1 */
+const currentIndex = computed(() => {
+  const photo = props.photo
+  if (!photo || !props.photos) return -1
+  return props.photos.findIndex((p) => p.id === photo.id)
+})
+
+const hasPrev = computed(() => currentIndex.value > 0)
+
+const hasNext = computed(
+  () => props.photos != null && currentIndex.value >= 0 && currentIndex.value < props.photos.length - 1,
+)
+
+/** 触底加载下一页的进行中状态 */
+const loadingMore = ref(false)
+/** 加载下一页后是否仍有更多照片（到底后置为 false，隐藏下一张按钮） */
+const hasMoreInViewer = ref(true)
+
+/** 是否显示"下一张"按钮：列表内还有下一张，或可继续触底加载 */
+const showNext = computed(
+  () =>
+    currentIndex.value >= 0 &&
+    (hasNext.value || loadingMore.value || (!!props.loadMore && hasMoreInViewer.value)),
+)
+
+function goPrev() {
+  if (!props.photos || !hasPrev.value || loadingMore.value) return
+  emit('navigate', props.photos[currentIndex.value - 1]!)
+}
+
+async function goNext() {
+  if (loadingMore.value) return
+  if (hasNext.value) {
+    emit('navigate', props.photos![currentIndex.value + 1]!)
+    return
+  }
+  // 已到达列表末尾：尝试自动加载下一页，加载完成后再跳转到新照片
+  if (!props.loadMore || !hasMoreInViewer.value) return
+  loadingMore.value = true
+  try {
+    const loaded = await props.loadMore()
+    hasMoreInViewer.value = !!loaded
+    if (loaded && props.modelValue) {
+      // 等待父组件将新列表传入 props 后重新定位
+      await nextTick()
+      if (hasNext.value) {
+        emit('navigate', props.photos![currentIndex.value + 1]!)
+      }
+    }
+  } finally {
+    loadingMore.value = false
+  }
+}
+
 // ---- 缩放控制 ----
 function zoomIn() {
   const step = baseZoom.value * ZOOM_RATIO_STEP
@@ -162,7 +246,7 @@ function handleImageLoad(event: Event) {
 watch(() => props.photo, () => {
   imageLoading.value = true
   // 切换照片时重置人脸状态
-  showFaces.value = false
+  showFaces.value = props.initialShowFaces
   faces.value = []
   facesLoaded.value = false
   loadingFaces.value = false
@@ -171,6 +255,11 @@ watch(() => props.photo, () => {
   closeFaceContextMenu()
   showChangeBelongingDialog.value = false
   showRenameDialog.value = false
+  showDeleteFaceConfirm.value = false
+  // 自动开启人脸框：加载该照片的人脸
+  if (props.initialShowFaces && !facesLoaded.value) {
+    loadFaces()
+  }
 })
 
 // ---- 旋转控制（每次 90°） ----
@@ -278,6 +367,11 @@ function toggleFaces() {
   }
 }
 
+// ---- 人脸名称显示开关 ----
+function toggleFaceLabels() {
+  showFaceLabels.value = !showFaceLabels.value
+}
+
 // ---- 拉取人脸列表 ----
 async function loadFaces() {
   if (!props.photo || loadingFaces.value) return
@@ -324,42 +418,28 @@ function handleFaceContextMenu(event: MouseEvent, face: Face) {
   contextMenuVisible.value = true
 }
 
+/** 点击人脸跳转到人物详情;当前人物(人物详情页内)只关闭查看器 */
+function handleFaceClick(face: Face) {
+  if (!face.personId) {
+    toast.info('该人脸尚未分配人物')
+    return
+  }
+  close()
+  if (route.name === 'person-detail' && route.params.id === face.personId) {
+    return
+  }
+  router.push({ name: 'person-detail', params: { id: face.personId } })
+}
+
 function closeFaceContextMenu() {
   contextMenuVisible.value = false
 }
 
-/** 加载全部人物列表（供归属选择使用），分页拉全 */
-async function ensurePersonsLoaded() {
-  if (personsLoaded.value) return
-  const all: Person[] = []
-  let cursor: string | null = null
-  try {
-    for (;;) {
-      const res = await photoApi.person.getPersons({ cursor, size: 32 })
-      const page = res.data
-      all.push(...page.records)
-      if (!page.hasMore || !page.nextCursor) break
-      cursor = page.nextCursor
-    }
-    persons.value = all
-  } catch (error) {
-    console.error('加载人物列表失败:', error)
-  } finally {
-    personsLoaded.value = true
-  }
-}
-
-const filteredPersons = computed(() => {
-  const kw = personKeyword.value.trim().toLowerCase()
-  if (!kw) return persons.value
-  return persons.value.filter((p) => p.name.toLowerCase().includes(kw))
-})
-
 function openChangeBelongingDialog() {
   closeFaceContextMenu()
-  ensurePersonsLoaded()
+  resetPersons()
+  reloadPersons()
   targetPersonId.value = ''
-  personKeyword.value = ''
   showChangeBelongingDialog.value = true
 }
 
@@ -405,6 +485,48 @@ async function submitRename() {
     toast.error('修改人物名称失败')
   } finally {
     renaming.value = false
+  }
+}
+
+/** 取消人脸归属（将人脸重新变为未分配） */
+async function submitUnassign() {
+  if (!activeFace.value?.personId) return
+  unassigning.value = true
+  try {
+    await photoApi.face.changeFaceBelonging(activeFace.value.id, null)
+    toast.success('已取消人脸归属')
+    closeFaceContextMenu()
+    await loadFaces()
+    emit('faces-updated')
+  } catch (error) {
+    console.error('取消人脸归属失败:', error)
+    toast.error('取消人脸归属失败')
+  } finally {
+    unassigning.value = false
+  }
+}
+
+/** 打开删除人脸确认弹窗 */
+function openDeleteFaceConfirm() {
+  closeFaceContextMenu()
+  showDeleteFaceConfirm.value = true
+}
+
+/** 删除人脸（仅未归属人物的人脸可删除） */
+async function submitDeleteFace() {
+  if (!activeFace.value) return
+  deletingFace.value = true
+  try {
+    await photoApi.face.deleteFace(activeFace.value.id)
+    toast.success('人脸已删除')
+    showDeleteFaceConfirm.value = false
+    await loadFaces()
+    emit('faces-updated')
+  } catch (error) {
+    console.error('删除人脸失败:', error)
+    toast.error('删除人脸失败')
+  } finally {
+    deletingFace.value = false
   }
 }
 
@@ -536,6 +658,12 @@ function handleKeydown(event: KeyboardEvent) {
     case 'Escape':
       close()
       break
+    case 'ArrowLeft':
+      goPrev()
+      break
+    case 'ArrowRight':
+      goNext()
+      break
     case '+':
     case '=':
       zoomIn()
@@ -565,6 +693,18 @@ function handleKeydown(event: KeyboardEvent) {
     case 'f':
     case 'F':
       toggleFaces()
+      break
+    case 'l':
+    case 'L':
+      toggleFavorite()
+      break
+    case 'c':
+    case 'C':
+      toggleComments()
+      break
+    case 't':
+    case 'T':
+      toggleFaceLabels()
       break
   }
 }
@@ -600,8 +740,11 @@ function resetState() {
   showDeleteConfirm.value = false
   deleting.value = false
   isDragging.value = false
+  // 上一张/下一张状态
+  loadingMore.value = false
+  hasMoreInViewer.value = true
   // 人脸状态
-  showFaces.value = false
+  showFaces.value = props.initialShowFaces
   faces.value = []
   facesLoaded.value = false
   loadingFaces.value = false
@@ -611,6 +754,12 @@ function resetState() {
   activeFace.value = null
   showChangeBelongingDialog.value = false
   showRenameDialog.value = false
+  showDeleteFaceConfirm.value = false
+  showFaceLabels.value = true
+  // 自动开启人脸框：加载该照片的人脸
+  if (props.initialShowFaces && props.photo) {
+    loadFaces()
+  }
 }
 
 // 监听弹窗打开，添加键盘和拖拽事件
@@ -647,16 +796,19 @@ onBeforeUnmount(() => {
       @keydown="handleKeydown"
       tabindex="0"
     >
-      <!-- 加载提示 -->
-      <div v-if="imageLoading" class="photo-viewer__loading">
+      <!-- 加载提示（切换照片 / 触底加载下一页时隐藏当前照片并显示） -->
+      <div v-if="imageLoading || loadingMore" class="photo-viewer__loading">
         <div class="photo-viewer__loading-spinner"></div>
       </div>
 
-      <!-- 图片 -->
+      <!-- 图片（加载期间用 CSS 隐藏，避免残留上一张照片；img 需保持渲染以触发加载） -->
       <div
-        v-if="imageUrl"
+        v-if="imageUrl && !loadingMore"
         class="photo-viewer__image-wrapper"
-        :class="{ 'photo-viewer__image-wrapper--refreshing': refreshing }"
+        :class="{
+          'photo-viewer__image-wrapper--refreshing': refreshing,
+          'photo-viewer__image-wrapper--hidden': imageLoading,
+        }"
       >
         <img
           :key="showOriginal ? 'original' : 'preview'"
@@ -689,15 +841,41 @@ onBeforeUnmount(() => {
             class="photo-viewer__face-box"
             :class="{ 'photo-viewer__face-box--active': activeFace?.id === face.id }"
             :style="faceBoxStyle(face)"
+            @click="handleFaceClick(face)"
             @contextmenu="handleFaceContextMenu($event, face)"
           >
-            <span class="photo-viewer__face-label">{{ face.personName || '未分配' }}</span>
+            <span v-show="showFaceLabels" class="photo-viewer__face-label">{{ face.personName || '未分配' }}</span>
           </div>
         </div>
       </div>
-      <div v-else class="photo-viewer__empty">
+      <div
+        v-else-if="!imageLoading && !loadingMore"
+        class="photo-viewer__empty"
+      >
         图片加载失败
       </div>
+
+      <!-- 上一张/下一张 -->
+      <button
+        v-if="hasPrev"
+        class="photo-viewer__nav photo-viewer__nav--prev"
+        type="button"
+        title="上一张 (←)"
+        @click.stop="goPrev"
+      >
+        <ChevronLeft :size="32" />
+      </button>
+      <button
+        v-if="showNext"
+        class="photo-viewer__nav photo-viewer__nav--next"
+        type="button"
+        title="下一张 (→)"
+        :disabled="loadingMore"
+        @click.stop="goNext"
+      >
+        <LoadingIcon v-if="loadingMore" :size="28" class="photo-viewer__nav-loading" />
+        <ChevronRight v-else :size="32" />
+      </button>
 
       <!-- 底部工具栏 -->
       <PhotoToolbar
@@ -711,6 +889,7 @@ onBeforeUnmount(() => {
         :has-original-token="hasOriginalToken"
         :is-owner="isOwner"
         :show-faces="showFaces"
+        :show-face-labels="showFaceLabels"
         @zoom-in="zoomIn"
         @zoom-out="zoomOut"
         @rotate="rotate"
@@ -722,6 +901,7 @@ onBeforeUnmount(() => {
         @download="downloadOriginal"
         @delete="showDeleteConfirm = true"
         @toggle-faces="toggleFaces"
+        @toggle-face-labels="toggleFaceLabels"
       />
 
       <!-- 侧边评论抽屉 -->
@@ -758,6 +938,22 @@ onBeforeUnmount(() => {
         >
           重命名人物
         </button>
+        <button
+          type="button"
+          class="photo-viewer__face-menu-item"
+          :disabled="!activeFace?.personId"
+          @click="submitUnassign"
+        >
+          {{ unassigning ? '取消中...' : '取消归属' }}
+        </button>
+        <button
+          type="button"
+          class="photo-viewer__face-menu-item photo-viewer__face-menu-item--danger"
+          :disabled="!!activeFace?.personId"
+          @click="openDeleteFaceConfirm"
+        >
+          删除人脸
+        </button>
       </div>
 
       <!-- 修改人脸归属弹窗 -->
@@ -776,9 +972,9 @@ onBeforeUnmount(() => {
             <label class="face-dialog__label">搜索目标人物</label>
             <Input v-model="personKeyword" placeholder="输入关键词筛选人物" />
           </div>
-          <div class="face-dialog__list">
+          <div class="face-dialog__list" @scroll="onPersonsScroll">
             <button
-              v-for="person in filteredPersons"
+              v-for="person in persons"
               :key="person.id"
               type="button"
               class="face-dialog__person"
@@ -788,8 +984,12 @@ onBeforeUnmount(() => {
               <span class="face-dialog__person-name">{{ person.name }}</span>
               <span class="face-dialog__person-count">{{ Number(person.faceCount) }} 张照片</span>
             </button>
-            <div v-if="filteredPersons.length === 0" class="face-dialog__empty">
+            <div v-if="personsLoading" class="face-dialog__empty">加载中...</div>
+            <div v-else-if="personsLoaded && persons.length === 0" class="face-dialog__empty">
               未找到人物
+            </div>
+            <div v-else-if="!personsHasMore && persons.length > 0" class="face-dialog__empty">
+              已经到底啦 ~
             </div>
           </div>
           <Button
@@ -840,6 +1040,23 @@ onBeforeUnmount(() => {
             </button>
             <button class="delete-confirm__delete" type="button" :disabled="deleting" @click="handleDelete">
               {{ deleting ? '删除中...' : '删除' }}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <!-- 删除人脸确认弹窗 -->
+      <Modal v-model="showDeleteFaceConfirm" size="sm" title="删除人脸" overlay-class="photo-viewer__modal-overlay">
+        <div class="delete-confirm">
+          <p class="delete-confirm__text">
+            确定要删除这张人脸吗？此操作不可撤销，且仅未归属人物的人脸可删除。
+          </p>
+          <div class="delete-confirm__actions">
+            <button class="delete-confirm__cancel" type="button" @click="showDeleteFaceConfirm = false">
+              取消
+            </button>
+            <button class="delete-confirm__delete" type="button" :disabled="deletingFace" @click="submitDeleteFace">
+              {{ deletingFace ? '删除中...' : '删除' }}
             </button>
           </div>
         </div>

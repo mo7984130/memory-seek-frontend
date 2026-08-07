@@ -1,15 +1,43 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { AuthStorage } from 'memory-seek-api'
 
+/**
+ * 被 KeepAlive 缓存的列表路由 name（滚动位置由页面自行恢复）
+ */
+export const KEEP_ALIVE_ROUTE_NAMES = [
+  'photos',
+  'persons',
+  'unassigned-faces',
+  'likes',
+  'collections',
+]
+
+/**
+ * 被 KeepAlive 缓存的列表组件名（AppLayout 中 include 匹配用）
+ */
+export const KEEP_ALIVE_COMPONENT_NAMES = [
+  'PhotoWaterfallView',
+  'PersonsView',
+  'UnassignedFacesView',
+  'LikesView',
+  'CollectionsView',
+]
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   /**
    * 滚动行为：
+   * - 被 KeepAlive 缓存的列表页不在此处恢复滚动（返回 `false`），
+   *   由页面在激活时用 useListScrollRestore 自行恢复浏览位置，
+   *   避免这里强制回顶覆盖缓存页的滚动位置
    * - 后退/前进时恢复之前的滚动位置
    * - 普通导航回到顶部（同时禁用浏览器刷新后的原生滚动恢复，
-   *   由“回到上次浏览位置”按钮统一接管）
+   *   由"回到上次浏览位置"按钮统一接管）
    */
-  scrollBehavior(_to, _from, savedPosition) {
+  scrollBehavior(to, _from, savedPosition) {
+    if (typeof to.name === 'string' && KEEP_ALIVE_ROUTE_NAMES.includes(to.name)) {
+      return false
+    }
     if (savedPosition) return savedPosition
     return { top: 0 }
   },
@@ -52,6 +80,12 @@ const router = createRouter({
           name: 'person-detail',
           component: () => import('@/views/PersonDetailView.vue'),
           meta: { title: '人物' },
+        },
+        {
+          path: 'unassigned-faces',
+          name: 'unassigned-faces',
+          component: () => import('@/views/UnassignedFacesView.vue'),
+          meta: { title: '未分配人脸' },
         },
         {
           path: 'likes',

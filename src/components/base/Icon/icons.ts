@@ -51,6 +51,9 @@ import {
   UserRound,
   History,
   ArrowUp,
+  Tag,
+  ChevronLeft,
+  ChevronRight,
 } from '@lucide/vue'
 
 export {
@@ -92,6 +95,9 @@ export {
   UserRound,
   History,
   ArrowUp,
+  Tag,
+  ChevronLeft,
+  ChevronRight,
 }
 
 /* ============================================

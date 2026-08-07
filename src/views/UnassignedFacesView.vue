@@ -84,20 +84,6 @@ function handleDelete(photoId: string) {
   waterfall.removePhoto(photoId);
 }
 
-/** 人脸变更（分配/取消/删除）后，若当前照片已不含未分配人脸则从列表移除 */
-async function handleFacesUpdated() {
-  const photoItem = selectedPhoto.value;
-  if (!photoItem) return;
-  try {
-    const faces = (await photo.face.getFaces(photoItem.id)).data;
-    if (!faces.some((f) => !f.personId)) {
-      waterfall.removePhoto(photoItem.id);
-    }
-  } catch (error) {
-    console.error("[UnassignedFacesView] 刷新人脸状态失败:", error);
-  }
-}
-
 async function handleLike(photoItem: Photo) {
   const photoId = photoItem.id as string;
   try {
@@ -146,7 +132,7 @@ onBeforeUnmount(() => {
           <li>点击照片进入查看器，人脸框会自动标出</li>
           <li>右键人脸框，可分配归属、重命名或删除</li>
           <li>不认识的未分配人脸，可直接删除</li>
-          <li>处理完所有未分配人脸后，照片会自动移出本页</li>
+          <li>处理完所有未分配人脸后，照片仍会保留在本页，刷新后不再显示</li>
         </ol>
       </div>
       <IconButton
@@ -215,7 +201,6 @@ onBeforeUnmount(() => {
       @like="handleLikeChange"
       @delete="handleDelete"
       @navigate="handleViewerNavigate"
-      @faces-updated="handleFacesUpdated"
     />
   </div>
 </template>

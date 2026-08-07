@@ -223,7 +223,7 @@ onActivated(async () => {
             v-model="keyword"
             clearable
             size="md"
-            placeholder="搜索人物姓名或首字母"
+            :placeholder="`搜索人物姓名或首字母（最多 ${validation.RULES.searchKeyword.max} 字）`"
             @keydown.esc="closeSearch"
           >
             <template #prefix>

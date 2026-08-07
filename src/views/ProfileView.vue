@@ -440,7 +440,7 @@ onMounted(() => {
           <label class="modal-form__label">新昵称</label>
           <Input
             v-model="newNickname"
-            placeholder="输入新昵称"
+            :placeholder="`输入新昵称（${validation.RULES.nickname.min}-${validation.RULES.nickname.max} 位）`"
             @keydown.enter="handleSaveNickname"
           />
         </div>
@@ -471,7 +471,7 @@ onMounted(() => {
           <Input
             v-model="newPassword"
             type="password"
-            placeholder="输入新密码（至少 6 位）"
+            :placeholder="`输入新密码（${validation.RULES.password.min}-${validation.RULES.password.max} 位）`"
           />
         </div>
         <div class="modal-form__field">

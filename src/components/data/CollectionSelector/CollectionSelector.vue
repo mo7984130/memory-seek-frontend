@@ -269,7 +269,7 @@ watch(showCreateForm, async (show) => {
           <Input
             ref="createInputRef"
             v-model="newCollectionName"
-            placeholder="输入收藏夹名称"
+            :placeholder="`输入收藏夹名称（${validation.RULES.collectionName.min}-${validation.RULES.collectionName.max} 字）`"
             size="sm"
             class="collection-selector__create-input"
             @keydown.enter="createCollection"

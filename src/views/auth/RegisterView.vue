@@ -165,7 +165,11 @@ function handleLogin() {
       <form class="register-form" @submit.prevent="handleRegister">
         <!-- 用户名输入框 -->
         <div class="register-form__field">
-          <Input v-model="username" placeholder="用户名" size="lg">
+          <Input
+            v-model="username"
+            :placeholder="`用户名（${validation.RULES.username.min}-${validation.RULES.username.max} 位）`"
+            size="lg"
+          >
             <template #prefix>
               <User :size="18" class="register-form__icon" />
             </template>
@@ -174,7 +178,11 @@ function handleLogin() {
 
         <!-- 昵称输入框 -->
         <div class="register-form__field">
-          <Input v-model="nickname" placeholder="昵称" size="lg">
+          <Input
+            v-model="nickname"
+            :placeholder="`昵称（${validation.RULES.nickname.min}-${validation.RULES.nickname.max} 位）`"
+            size="lg"
+          >
             <template #prefix>
               <User :size="18" class="register-form__icon" />
             </template>
@@ -192,7 +200,11 @@ function handleLogin() {
 
         <!-- 邮箱验证码 -->
         <div class="register-form__field">
-          <Input v-model="emailCode" placeholder="邮箱验证码" size="lg">
+          <Input
+            v-model="emailCode"
+            :placeholder="`邮箱验证码（${validation.RULES.emailVerifyCodeLength} 位）`"
+            size="lg"
+          >
             <template #prefix>
               <Shield :size="18" class="register-form__icon" />
             </template>
@@ -219,7 +231,7 @@ function handleLogin() {
           <Input
             v-model="password"
             type="password"
-            placeholder="密码（至少 6 位）"
+            :placeholder="`密码（${validation.RULES.password.min}-${validation.RULES.password.max} 位）`"
             size="lg"
           >
             <template #prefix>
@@ -244,7 +256,11 @@ function handleLogin() {
 
         <!-- 邀请码 -->
         <div class="register-form__field">
-          <Input v-model="inviterCode" placeholder="邀请码" size="lg">
+          <Input
+            v-model="inviterCode"
+            :placeholder="`邀请码（${validation.RULES.inviterCodeLength} 位）`"
+            size="lg"
+          >
             <template #prefix>
               <Shield :size="18" class="register-form__icon" />
             </template>

@@ -1018,6 +1018,7 @@ onBeforeUnmount(() => {
           <div class="face-dialog__field">
             <label class="face-dialog__label">搜索目标人物</label>
             <Input v-model="personKeyword" placeholder="输入关键词筛选人物" />
+            <p class="face-dialog__hint">支持姓名或首字母搜索</p>
           </div>
           <div class="face-dialog__list" @scroll="onPersonsScroll">
             <button

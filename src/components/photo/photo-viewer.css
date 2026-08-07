@@ -317,6 +317,12 @@
   color: var(--color-text-secondary);
 }
 
+.face-dialog__hint {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+}
+
 .face-dialog__list {
   max-height: 240px;
   overflow-y: auto;

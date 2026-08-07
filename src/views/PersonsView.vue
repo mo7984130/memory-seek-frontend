@@ -219,6 +219,7 @@ onActivated(async () => {
               <SearchIcon :size="16" class="persons-view__search-icon" />
             </template>
           </Input>
+          <span class="persons-view__search-hint">支持姓名或首字母搜索</span>
         </div>
       </Transition>
       <button
@@ -257,6 +258,14 @@ onActivated(async () => {
 .persons-view__search-panel {
   display: flex;
   align-items: center;
+  flex-direction: column;
+  gap: var(--spacing-1);
+}
+
+.persons-view__search-hint {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
 }
 
 .persons-view__search-btn {

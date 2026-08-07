@@ -404,6 +404,7 @@ onBeforeUnmount(() => {
           将「{{ person?.name }}」合并到目标人物，合并后当前人物将被删除。
         </p>
         <Input v-model="mergeKeyword" placeholder="输入关键词筛选人物" />
+        <p class="person-detail__merge-hint">支持姓名或首字母搜索</p>
         <div class="person-detail__merge-list" @scroll="onMergeScroll">
           <button
             v-for="p in mergePersons"
@@ -560,6 +561,13 @@ onBeforeUnmount(() => {
   color: var(--color-text-secondary);
   line-height: var(--leading-relaxed);
   margin: 0;
+}
+
+.person-detail__merge-hint {
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+  line-height: var(--leading-relaxed);
+  margin: calc(var(--spacing-1) * -1) 0 0;
 }
 
 .person-detail__merge-list {

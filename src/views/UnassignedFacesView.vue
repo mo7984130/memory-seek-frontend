@@ -10,9 +10,14 @@ import PhotoCard from '@/components/photo/PhotoCard.vue'
 import PhotoViewer from '@/components/photo/PhotoViewer.vue'
 import Spinner from '@/components/base/Spinner/Spinner.vue'
 import BackToTop from '@/components/actions/BackToTop/BackToTop.vue'
+import IconButton from '@/components/actions/IconButton/IconButton.vue'
+import { FaceIcon, CloseIcon } from '@/components/base/Icon/icons'
 
 // 组件名（KeepAlive include 匹配）
 defineOptions({ name: 'UnassignedFacesView' })
+
+// 页面顶部引导卡片（每次进入默认显示，本次进入内可关闭）
+const showGuide = ref(true)
 
 // 瀑布流页面（布局/加载/持久化/自动恢复）
 const page = useWaterfallPage({
@@ -123,6 +128,32 @@ onBeforeUnmount(() => {
       </span>
     </div>
 
+    <div v-if="showGuide" class="unassigned-view__guide">
+      <div class="unassigned-view__guide-icon">
+        <FaceIcon :size="22" />
+      </div>
+      <div class="unassigned-view__guide-body">
+        <div class="unassigned-view__guide-title">未分配人脸</div>
+        <div class="unassigned-view__guide-desc">
+          这里收录了已识别出人脸、但尚未分配人物的照片。
+        </div>
+        <ol class="unassigned-view__guide-steps">
+          <li>点击照片进入查看器，人脸框会自动标出</li>
+          <li>右键人脸框，可分配归属、重命名或删除</li>
+          <li>不认识的未分配人脸，可直接删除</li>
+          <li>处理完所有未分配人脸后，照片会自动移出本页</li>
+        </ol>
+      </div>
+      <IconButton
+        class="unassigned-view__guide-close"
+        size="sm"
+        aria-label="关闭引导提示"
+        @click="showGuide = false"
+      >
+        <CloseIcon :size="16" />
+      </IconButton>
+    </div>
+
     <div class="waterfall-container">
       <VirtualWaterfall
         ref="waterfallViewRef"
@@ -191,6 +222,65 @@ onBeforeUnmount(() => {
   margin-left: var(--spacing-2);
 }
 
+.unassigned-view__guide {
+  position: relative;
+  display: flex;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
+  padding: var(--spacing-5) var(--spacing-6);
+  background: var(--color-primary-50);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.unassigned-view__guide-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  color: var(--color-primary);
+  background: var(--color-bg-card);
+}
+
+.unassigned-view__guide-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.unassigned-view__guide-title {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-primary);
+}
+
+.unassigned-view__guide-desc {
+  margin-top: var(--spacing-1);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+.unassigned-view__guide-steps {
+  margin: var(--spacing-3) 0 0;
+  padding-left: var(--spacing-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+.unassigned-view__guide-close {
+  position: absolute;
+  top: var(--spacing-2);
+  right: var(--spacing-2);
+  color: var(--color-text-tertiary);
+}
+
 .waterfall-container {
   position: relative;
   width: 100%;
@@ -235,6 +325,16 @@ onBeforeUnmount(() => {
 
   .unassigned-view__header {
     margin: var(--spacing-4) 0;
+  }
+
+  .unassigned-view__guide {
+    padding: var(--spacing-4);
+    gap: var(--spacing-3);
+  }
+
+  .unassigned-view__guide-icon {
+    width: 36px;
+    height: 36px;
   }
 }
 </style>

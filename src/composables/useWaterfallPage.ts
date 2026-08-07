@@ -44,12 +44,19 @@ export interface UseWaterfallPageOptions {
   }) => Promise<WaterfallPageFetchResult>;
   /** 照片墙：获取时间线月度统计 */
   fetchTimeline?: () => Promise<MonthStat[]>;
+  /**
+   * 是否维护"最远浏览位置"自动书签（默认 true）。
+   * 关闭后不自动创建/更新自动书签（已有书签不受影响）。
+   */
+  enableAutoBookmark?: boolean;
 }
 
 export function useWaterfallPage(options: UseWaterfallPageOptions) {
   const waterfall = useWaterfallPersistence(options.storageKey);
   // 位置书签（含自动维护的"最远浏览位置"书签）
   const bookmarkStore = useWaterfallBookmarks(options.storageKey);
+  // "最远浏览位置"自动书签是否开启
+  const autoBookmarkEnabled = options.enableAutoBookmark !== false;
 
   // ======== 布局 ========
   const containerRef = ref<HTMLElement | null>(null);
@@ -133,7 +140,7 @@ export function useWaterfallPage(options: UseWaterfallPageOptions) {
         waterfall.appendPhotos(records, nextCursor ?? undefined, hasMore);
       }
       // 加载照片成功后确保"最远浏览位置"自动书签存在（被删除重置后在此重新生成）
-      ensureAutoBookmark();
+      if (autoBookmarkEnabled) ensureAutoBookmark();
       return records;
     } catch (error) {
       console.error(
@@ -198,6 +205,7 @@ export function useWaterfallPage(options: UseWaterfallPageOptions) {
     topItemId.value = item.id;
     waterfall.capturePosition(item.id);
     // 滚动跟踪：自动书签已存在时更新到更远位置（不在此生成）
+    if (!autoBookmarkEnabled) return;
     const anchor = getTopAnchor();
     if (anchor) bookmarkStore.updateAutoBookmark(anchor);
   }

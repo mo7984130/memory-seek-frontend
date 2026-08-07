@@ -28,8 +28,10 @@ const { goBack } = useGoBack("/persons");
 const personId = route.params.id as string;
 
 // 瀑布流页面（布局/加载/持久化/自动恢复，每个人物独立存储）
+// 人物照片界面不维护"最远浏览位置"自动书签
 const page = useWaterfallPage({
   storageKey: `person-${personId}`,
+  enableAutoBookmark: false,
   fetch: async ({ cursor }) =>
     (await photo.person.getPersonPhotos(personId, { cursor, size: 20 })).data,
 });

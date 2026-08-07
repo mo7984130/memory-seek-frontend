@@ -114,6 +114,12 @@ const router = createRouter({
           component: () => import("@/views/ProfileView.vue"),
           meta: { title: "个人中心" },
         },
+        {
+          path: "admin/behaviors",
+          name: "admin-behaviors",
+          component: () => import("@/views/admin/BehaviorAdminView.vue"),
+          meta: { title: "行为审计", requiresAdmin: true },
+        },
       ],
     },
     {
@@ -141,6 +147,12 @@ router.beforeEach((to) => {
   const requiresAuth = to.matched.some((r) => r.meta.requiresAuth);
   if (requiresAuth && !isAuthenticated) {
     return "/login";
+  }
+
+  // 需要管理员的页面（后端管理员用户 ID 硬编码为 1）
+  const requiresAdmin = to.matched.some((r) => r.meta.requiresAdmin);
+  if (requiresAdmin && AuthStorage.getUserId() !== "1") {
+    return "/photos";
   }
 
   // 需要游客的页面（已登录时不能访问）

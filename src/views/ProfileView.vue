@@ -8,6 +8,7 @@ import {
   Copy,
   Check,
   Ticket,
+  Shield,
 } from "@/components/base/Icon/icons";
 import { user, photo } from "memory-seek-api";
 import type { UserInfo, InviterCode } from "memory-seek-api";
@@ -409,6 +410,23 @@ onMounted(() => {
           </Card>
         </div>
       </div>
+
+      <!-- 管理后台（仅管理员可见） -->
+      <div v-if="authStore.isAdmin" class="admin-section">
+        <h3 class="section-title">管理后台</h3>
+        <Card
+          shadow="sm"
+          padding="none"
+          hoverable
+          class="admin-card"
+          @click="$router.push('/admin/behaviors')"
+        >
+          <div class="admin-btn">
+            <Shield :size="18" />
+            <span>行为审计</span>
+          </div>
+        </Card>
+      </div>
     </template>
 
     <!-- 编辑昵称弹窗 -->
@@ -691,6 +709,26 @@ onMounted(() => {
 
 .security-btn--danger {
   color: var(--color-danger);
+}
+
+/* 管理后台 */
+.admin-section {
+  margin-bottom: var(--spacing-6);
+}
+
+.admin-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  font-size: var(--text-base);
+  color: var(--color-primary);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.admin-card:hover {
+  border-color: var(--color-primary);
 }
 
 /* 弹窗表单 */

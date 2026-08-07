@@ -19,6 +19,8 @@ export const useAuthStore = defineStore("auth", () => {
   const user = computed(() => userInfo.value);
   const userId = computed(() => userInfo.value?.id ?? AuthStorage.getUserId());
   const isAuthenticated = computed(() => AuthStorage.getAccessToken() != null);
+  // 后端硬编码管理员用户 ID 为 1（UserId::ADMIN_ID）
+  const isAdmin = computed(() => AuthStorage.getUserId() === "1");
   const nickname = computed(
     () => userInfo.value?.nickname ?? userInfo.value?.username ?? "",
   );
@@ -83,6 +85,7 @@ export const useAuthStore = defineStore("auth", () => {
     user,
     userId,
     isAuthenticated,
+    isAdmin,
     nickname,
     loading,
     hydrate,

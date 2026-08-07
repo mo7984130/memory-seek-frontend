@@ -216,7 +216,7 @@
 
 .photo-viewer__face-box {
   position: absolute;
-  border: 2px solid rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 6px;
   box-sizing: border-box;
   cursor: pointer;
@@ -240,16 +240,14 @@
 .photo-viewer__face-label {
   position: absolute;
   left: 0;
-  bottom: 0;
-  max-width: 100%;
+  bottom: 100%;
+  margin-bottom: 2px;
   padding: 1px 6px;
   font-size: 11px;
   line-height: 1.6;
   color: #fff;
   background: rgba(0, 0, 0, 0.55);
-  border-radius: 0 4px 0 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  border-radius: 4px 4px 0 0;
   white-space: nowrap;
   pointer-events: none;
 }

@@ -10,7 +10,7 @@ import {
   Ticket,
   Shield,
 } from "@/components/base/Icon/icons";
-import { user, photo } from "memory-seek-api";
+import { user, photo, validation } from "memory-seek-api";
 import type { UserInfo, InviterCode } from "memory-seek-api";
 import { useAuthStore } from "@/stores/auth";
 import Card from "@/components/data/Card/Card.vue";
@@ -191,11 +191,13 @@ function openNicknameEdit() {
  * 保存昵称
  */
 async function handleSaveNickname() {
-  const nickname = newNickname.value.trim();
-  if (!nickname) {
-    toast.warning("请输入昵称");
+  const error = validation.validateNewNickname(newNickname.value);
+  if (error) {
+    toast.warning(error);
     return;
   }
+
+  const nickname = newNickname.value.trim();
 
   savingNickname.value = true;
   try {
@@ -226,20 +228,22 @@ function openPasswordChange() {
  * 保存密码
  */
 async function handleSavePassword() {
-  if (!oldPassword.value) {
+  const oldPasswordError = validation.validatePassword(oldPassword.value);
+  if (oldPasswordError) {
     toast.warning("请输入当前密码");
     return;
   }
-  if (!newPassword.value) {
-    toast.warning("请输入新密码");
+  const newPasswordError = validation.validatePassword(newPassword.value);
+  if (newPasswordError) {
+    toast.warning(newPasswordError);
     return;
   }
-  if (newPassword.value !== confirmPassword.value) {
-    toast.warning("两次输入的密码不一致");
-    return;
-  }
-  if (newPassword.value.length < 6) {
-    toast.warning("密码长度不能少于 6 位");
+  const confirmError = validation.validateConfirmPassword(
+    newPassword.value,
+    confirmPassword.value,
+  );
+  if (confirmError) {
+    toast.warning(confirmError);
     return;
   }
 

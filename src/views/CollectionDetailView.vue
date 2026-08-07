@@ -2,7 +2,7 @@
 import { ref, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ArrowLeft, Pencil, Trash2 } from "@/components/base/Icon/icons";
-import { photo } from "memory-seek-api";
+import { photo, validation } from "memory-seek-api";
 import type { Photo, Collection } from "memory-seek-api";
 import { useWaterfallPage } from "@/composables/useWaterfallPage";
 import VirtualWaterfall from "@/components/photo/VirtualWaterfall.vue";
@@ -152,8 +152,14 @@ function openEdit() {
  * 保存编辑
  */
 async function handleSaveEdit() {
-  if (!editName.value.trim()) {
-    toast.warning("请输入收藏夹名称");
+  const nameError = validation.validateCollectionName(editName.value);
+  if (nameError) {
+    toast.warning(nameError);
+    return;
+  }
+  const descError = validation.validateCollectionDesc(editDesc.value);
+  if (descError) {
+    toast.warning(descError);
     return;
   }
 

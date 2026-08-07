@@ -2,7 +2,7 @@
 import { ref, onMounted, onActivated, nextTick, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useDebounceFn, useIntersectionObserver } from "@vueuse/core";
-import { photo } from "memory-seek-api";
+import { photo, validation } from "memory-seek-api";
 import type { Person } from "memory-seek-api";
 import { useListScrollRestore } from "@/composables/useListScrollRestore";
 import { consumeListDirty } from "@/composables/useListDirty";
@@ -10,11 +10,13 @@ import { FaceIcon, SearchIcon } from "@/components/base/Icon/icons";
 import Card from "@/components/data/Card/Card.vue";
 import Input from "@/components/form/Input/Input.vue";
 import Spinner from "@/components/base/Spinner/Spinner.vue";
+import { useToast } from "@/components/feedback/Toast/toast";
 
 // 组件名（KeepAlive include 匹配）
 defineOptions({ name: "PersonsView" });
 
 const router = useRouter();
+const toast = useToast();
 
 // 返回时恢复滚动位置（KeepAlive 缓存页）
 const { restoreScroll } = useListScrollRestore();
@@ -63,10 +65,19 @@ async function fetchPage() {
   if (loading.value || !hasMore.value) return;
   loading.value = true;
   try {
-    const kw = keyword.value.trim();
-    const res = kw
-      ? await photo.person.searchPersons(kw, { cursor: cursor.value })
-      : await photo.person.getPersons({ cursor: cursor.value });
+  const kw = keyword.value.trim();
+  if (kw) {
+    const keywordError = validation.validateSearchKeyword(keyword.value);
+    if (keywordError) {
+      hasMore.value = false;
+      persons.value = [];
+      toast.warning(keywordError);
+      return;
+    }
+  }
+  const res = kw
+    ? await photo.person.searchPersons(kw, { cursor: cursor.value })
+    : await photo.person.getPersons({ cursor: cursor.value });
     const page = res.data;
     persons.value.push(...page.records);
     cursor.value = page.nextCursor;

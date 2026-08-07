@@ -1,9 +1,10 @@
 <!-- src/components/data/CollectionSelector/CollectionSelector.vue -->
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from "vue";
-import { photo as photoApi } from "memory-seek-api";
+import { photo as photoApi, validation } from "memory-seek-api";
 import type { Collection, CollectionBrief } from "memory-seek-api";
 import { useCollectionStore } from "@/stores/collection";
+import { useToast } from "@/components/feedback/Toast/toast";
 import Modal from "@/components/feedback/Modal/Modal.vue";
 import Input from "@/components/form/Input/Input.vue";
 import IconButton from "@/components/actions/IconButton/IconButton.vue";
@@ -33,6 +34,7 @@ const emit = defineEmits<{
 }>();
 
 const collectionStore = useCollectionStore();
+const toast = useToast();
 const createInputRef = ref<InstanceType<typeof Input> | null>(null);
 
 // 状态
@@ -121,7 +123,11 @@ async function toggleCollection(collectionId: string) {
  * 创建新收藏夹
  */
 async function createCollection() {
-  if (!newCollectionName.value.trim()) return;
+  const error = validation.validateCollectionName(newCollectionName.value);
+  if (error) {
+    toast.warning(error);
+    return;
+  }
 
   try {
     const newCollection = await collectionStore.createCollection(
@@ -159,7 +165,13 @@ function startEdit(collection: Collection) {
  * 保存编辑
  */
 async function saveEdit() {
-  if (!editingId.value || !editingName.value.trim()) return;
+  if (!editingId.value) return;
+
+  const error = validation.validateCollectionName(editingName.value);
+  if (error) {
+    toast.warning(error);
+    return;
+  }
 
   try {
     await collectionStore.updateCollection(editingId.value, {

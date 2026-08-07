@@ -2,7 +2,7 @@
 import { ref, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ArrowLeft, FaceIcon } from "@/components/base/Icon/icons";
-import { photo } from "memory-seek-api";
+import { photo, validation } from "memory-seek-api";
 import type { Person, Photo } from "memory-seek-api";
 import { useWaterfallPage } from "@/composables/useWaterfallPage";
 import VirtualWaterfall from "@/components/photo/VirtualWaterfall.vue";
@@ -183,11 +183,13 @@ function openRenameDialog() {
 }
 
 async function handleRename() {
-  const name = renameName.value.trim();
-  if (!name) {
-    toast.warning("请输入人物名称");
+  const error = validation.validatePersonName(renameName.value);
+  if (error) {
+    toast.warning(error);
     return;
   }
+
+  const name = renameName.value.trim();
   renaming.value = true;
   try {
     await photo.person.renamePerson(personId, name);

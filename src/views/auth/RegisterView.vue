@@ -10,7 +10,7 @@ import {
   Sun,
   Moon,
 } from "@/components/base/Icon/icons";
-import { auth } from "memory-seek-api";
+import { auth, validation } from "memory-seek-api";
 import { useThemeStore } from "@/stores/theme";
 import Input from "@/components/form/Input/Input.vue";
 import Button from "@/components/actions/Button/Button.vue";
@@ -68,15 +68,9 @@ function startCountdown() {
  * 发送邮箱验证码
  */
 async function handleSendCode() {
-  if (!email.value.trim()) {
-    toast.warning("请输入邮箱");
-    return;
-  }
-
-  // 简单邮箱格式验证
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email.value)) {
-    toast.warning("请输入正确的邮箱格式");
+  const emailError = validation.validateEmail(email.value);
+  if (emailError) {
+    toast.warning(emailError);
     return;
   }
 
@@ -96,55 +90,21 @@ async function handleSendCode() {
  * 表单验证
  */
 function validateForm(): boolean {
-  if (!username.value.trim()) {
-    toast.warning("请输入用户名");
-    return false;
-  }
+  const errors = [
+    validation.validateUsername(username.value),
+    validation.validateEmail(email.value),
+    validation.validatePassword(password.value),
+    validation.validateConfirmPassword(password.value, confirmPassword.value),
+    validation.validateNickname(nickname.value),
+    validation.validateEmailVerifyCode(emailCode.value),
+    validation.validateInviterCode(inviterCode.value),
+  ];
 
-  if (username.value.length < 3 || username.value.length > 20) {
-    toast.warning("用户名长度应为 3-20 个字符");
-    return false;
-  }
-
-  if (!email.value.trim()) {
-    toast.warning("请输入邮箱");
-    return false;
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email.value)) {
-    toast.warning("请输入正确的邮箱格式");
-    return false;
-  }
-
-  if (!password.value) {
-    toast.warning("请输入密码");
-    return false;
-  }
-
-  if (password.value.length < 6) {
-    toast.warning("密码长度不能少于 6 位");
-    return false;
-  }
-
-  if (password.value !== confirmPassword.value) {
-    toast.warning("两次输入的密码不一致");
-    return false;
-  }
-
-  if (!nickname.value.trim()) {
-    toast.warning("请输入昵称");
-    return false;
-  }
-
-  if (!emailCode.value.trim()) {
-    toast.warning("请输入邮箱验证码");
-    return false;
-  }
-
-  if (!inviterCode.value.trim()) {
-    toast.warning("请输入邀请码");
-    return false;
+  for (const error of errors) {
+    if (error) {
+      toast.warning(error);
+      return false;
+    }
   }
 
   return true;

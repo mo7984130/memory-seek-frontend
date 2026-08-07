@@ -1,10 +1,11 @@
 <!-- src/components/photo/PhotoComments.vue -->
 <script setup lang="ts">
 import { ref, watch, nextTick } from "vue";
-import { photo } from "memory-seek-api";
+import { photo, validation } from "memory-seek-api";
 import type { Comment } from "memory-seek-api";
 import { useAuthStore } from "@/stores/auth";
 import { useUserStore } from "@/stores/user";
+import { useToast } from "@/components/feedback/Toast/toast";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/zh-cn";
@@ -25,6 +26,7 @@ const emit = defineEmits<{
 
 const authStore = useAuthStore();
 const userStore = useUserStore();
+const toast = useToast();
 
 const comments = ref<Comment[]>([]);
 const loading = ref(false);
@@ -72,7 +74,13 @@ async function loadComments() {
  */
 async function handleSend() {
   const content = newComment.value.trim();
-  if (!content || sending.value) return;
+  if (sending.value) return;
+
+  const error = validation.validateCommentContent(newComment.value);
+  if (error) {
+    toast.warning(error);
+    return;
+  }
 
   sending.value = true;
   try {

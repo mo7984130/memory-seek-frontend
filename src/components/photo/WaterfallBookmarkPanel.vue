@@ -2,97 +2,100 @@
      书签与加载参数（anchorTime）关联：保存当前浏览位置，点击书签从该位置重新加载照片流
      使用方式：页面提供 currentAnchor（当前顶部照片的锚点信息）并监听 jump 事件执行跳转 -->
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { Bookmark, History, Plus, X } from '@/components/base/Icon/icons'
-import { useWaterfallBookmarks, type WaterfallBookmark } from '@/composables/useWaterfallBookmarks'
-import Modal from '@/components/feedback/Modal/Modal.vue'
-import Input from '@/components/form/Input/Input.vue'
-import dayjs from 'dayjs'
+import { ref, computed } from "vue";
+import { Bookmark, History, Plus, X } from "@/components/base/Icon/icons";
+import {
+  useWaterfallBookmarks,
+  type WaterfallBookmark,
+} from "@/composables/useWaterfallBookmarks";
+import Modal from "@/components/feedback/Modal/Modal.vue";
+import Input from "@/components/form/Input/Input.vue";
+import dayjs from "dayjs";
 
 /**
  * 当前浏览位置的锚点信息（由页面根据视口顶部照片计算）
  */
 interface BookmarkAnchor {
   /** 位置标签，如 "2026年6月" */
-  label: string
+  label: string;
   /** 月份 key，如 "2026-06" */
-  monthKey: string
+  monthKey: string;
   /** 加载锚点时间（ISO 字符串） */
-  anchorTime: string
+  anchorTime: string;
   /** 更详细的时间提示，如 "2026年6月15日 14:30" */
-  detail?: string
+  detail?: string;
 }
 
 const props = withDefaults(
   defineProps<{
     /** 与页面瀑布流一致的存储键名（photos / likes / ...） */
-    storageKey: string
+    storageKey: string;
     /** 当前浏览位置的锚点信息；暂无浏览位置时为 null */
-    currentAnchor?: BookmarkAnchor | null
+    currentAnchor?: BookmarkAnchor | null;
   }>(),
   { currentAnchor: null },
-)
+);
 
 const emit = defineEmits<{
-  (e: 'jump', bookmark: WaterfallBookmark): void
-}>()
+  (e: "jump", bookmark: WaterfallBookmark): void;
+}>();
 
-const bookmarks = useWaterfallBookmarks(props.storageKey)
+const bookmarks = useWaterfallBookmarks(props.storageKey);
 
 // ---- UI 状态 ----
-const panelVisible = ref(false)
-const addModalVisible = ref(false)
-const bookmarkName = ref('')
+const panelVisible = ref(false);
+const addModalVisible = ref(false);
+const bookmarkName = ref("");
 
-const count = computed(() => bookmarks.bookmarks.value.length)
+const count = computed(() => bookmarks.bookmarks.value.length);
 
 function handleAdd() {
-  if (!props.currentAnchor) return
+  if (!props.currentAnchor) return;
   // 默认名称 = 当前位置标签，用户可修改
-  bookmarkName.value = props.currentAnchor.label
-  addModalVisible.value = true
+  bookmarkName.value = props.currentAnchor.label;
+  addModalVisible.value = true;
 }
 
 function handleConfirmAdd() {
-  if (!props.currentAnchor) return
-  const label = bookmarkName.value.trim() || props.currentAnchor.label
+  if (!props.currentAnchor) return;
+  const label = bookmarkName.value.trim() || props.currentAnchor.label;
   bookmarks.addBookmark({
     label,
     anchorTime: props.currentAnchor.anchorTime,
     monthKey: props.currentAnchor.monthKey,
-  })
-  addModalVisible.value = false
+  });
+  addModalVisible.value = false;
 }
 
 function handleNameKeydown(event: KeyboardEvent) {
-  if (event.key === 'Enter') {
-    event.preventDefault()
-    handleConfirmAdd()
+  if (event.key === "Enter") {
+    event.preventDefault();
+    handleConfirmAdd();
   }
 }
 
 function handleJump(bookmark: WaterfallBookmark) {
-  panelVisible.value = false
-  emit('jump', bookmark)
+  panelVisible.value = false;
+  emit("jump", bookmark);
 }
 
 function handleRemove(bookmark: WaterfallBookmark) {
   if (bookmark.auto) {
     // 自动书签：删除后继续浏览到更远位置会重新生成
-    bookmarks.removeAutoBookmark()
+    bookmarks.removeAutoBookmark();
   } else {
-    bookmarks.removeBookmark(bookmark.id)
+    bookmarks.removeBookmark(bookmark.id);
   }
 }
 
 function formatTime(timestamp: number): string {
-  return dayjs(timestamp).format('YYYY/MM/DD')
+  return dayjs(timestamp).format("YYYY/MM/DD");
 }
 
 /** 月份 key → "2026年6月" */
 function formatMonth(monthKey: string): string {
-  const parts = monthKey.split('-')
-  return `${parts[0]}年${parseInt(parts[1]!)}月`
+  const parts = monthKey.split("-");
+  return `${parts[0]}年${parseInt(parts[1]!)}月`;
 }
 </script>
 
@@ -113,7 +116,11 @@ function formatMonth(monthKey: string): string {
           @click="handleAdd"
         >
           <Plus :size="16" />
-          <span>{{ currentAnchor ? `在此处添加书签（${currentAnchor.detail ?? currentAnchor.label}）` : '暂无浏览位置' }}</span>
+          <span>{{
+            currentAnchor
+              ? `在此处添加书签（${currentAnchor.detail ?? currentAnchor.label}）`
+              : "暂无浏览位置"
+          }}</span>
         </button>
 
         <!-- 书签列表 -->
@@ -135,16 +142,31 @@ function formatMonth(monthKey: string): string {
                 :size="14"
                 class="waterfall-bookmark-panel__item-icon"
               />
-              <Bookmark v-else :size="14" fill="currentColor" class="waterfall-bookmark-panel__item-icon" />
-              <span class="waterfall-bookmark-panel__item-label">{{ bookmark.label }}</span>
+              <Bookmark
+                v-else
+                :size="14"
+                fill="currentColor"
+                class="waterfall-bookmark-panel__item-icon"
+              />
+              <span class="waterfall-bookmark-panel__item-label">{{
+                bookmark.label
+              }}</span>
               <span class="waterfall-bookmark-panel__item-time">
-                {{ bookmark.auto ? formatMonth(bookmark.monthKey) : formatTime(bookmark.createdAt) }}
+                {{
+                  bookmark.auto
+                    ? formatMonth(bookmark.monthKey)
+                    : formatTime(bookmark.createdAt)
+                }}
               </span>
             </button>
             <button
               class="waterfall-bookmark-panel__item-remove"
               type="button"
-              :title="bookmark.auto ? '删除自动书签（继续浏览后重新生成）' : '删除书签'"
+              :title="
+                bookmark.auto
+                  ? '删除自动书签（继续浏览后重新生成）'
+                  : '删除书签'
+              "
               @click="handleRemove(bookmark)"
             >
               <X :size="14" />
@@ -174,7 +196,11 @@ function formatMonth(monthKey: string): string {
     <Modal v-model="addModalVisible" size="sm" title="添加位置书签">
       <div class="waterfall-bookmark-panel__modal-body">
         <p class="waterfall-bookmark-panel__modal-tip">
-          将从 <strong>{{ currentAnchor ? (currentAnchor.detail ?? currentAnchor.label) : '' }}</strong> 开始加载照片
+          将从
+          <strong>{{
+            currentAnchor ? (currentAnchor.detail ?? currentAnchor.label) : ""
+          }}</strong>
+          开始加载照片
         </p>
         <Input
           v-model="bookmarkName"
@@ -184,10 +210,18 @@ function formatMonth(monthKey: string): string {
       </div>
       <template #footer>
         <div class="waterfall-bookmark-panel__modal-footer">
-          <button class="waterfall-bookmark-panel__modal-cancel" type="button" @click="addModalVisible = false">
+          <button
+            class="waterfall-bookmark-panel__modal-cancel"
+            type="button"
+            @click="addModalVisible = false"
+          >
             取消
           </button>
-          <button class="waterfall-bookmark-panel__modal-confirm" type="button" @click="handleConfirmAdd">
+          <button
+            class="waterfall-bookmark-panel__modal-confirm"
+            type="button"
+            @click="handleConfirmAdd"
+          >
             保存
           </button>
         </div>

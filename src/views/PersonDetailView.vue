@@ -1,38 +1,40 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, FaceIcon } from '@/components/base/Icon/icons'
-import { photo } from 'memory-seek-api'
-import type { Person, Photo } from 'memory-seek-api'
-import { useWaterfallPage } from '@/composables/useWaterfallPage'
-import VirtualWaterfall from '@/components/photo/VirtualWaterfall.vue'
-import LastPositionButton from '@/components/photo/LastPositionButton.vue'
-import PhotoCard from '@/components/photo/PhotoCard.vue'
-import PhotoViewer from '@/components/photo/PhotoViewer.vue'
-import IconButton from '@/components/actions/IconButton/IconButton.vue'
-import Button from '@/components/actions/Button/Button.vue'
-import Spinner from '@/components/base/Spinner/Spinner.vue'
-import Modal from '@/components/feedback/Modal/Modal.vue'
-import Input from '@/components/form/Input/Input.vue'
-import BackToTop from '@/components/actions/BackToTop/BackToTop.vue'
-import { useToast } from '@/components/feedback/Toast/toast'
-import { useGoBack } from '@/composables/useGoBack'
-import { markListDirty } from '@/composables/useListDirty'
-import { usePersonSearch } from '@/composables/usePersonSearch'
+import { ref, nextTick, onMounted, onBeforeUnmount } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { ArrowLeft, FaceIcon } from "@/components/base/Icon/icons";
+import { photo } from "memory-seek-api";
+import type { Person, Photo } from "memory-seek-api";
+import { useWaterfallPage } from "@/composables/useWaterfallPage";
+import VirtualWaterfall from "@/components/photo/VirtualWaterfall.vue";
+import LastPositionButton from "@/components/photo/LastPositionButton.vue";
+import PhotoCard from "@/components/photo/PhotoCard.vue";
+import PhotoViewer from "@/components/photo/PhotoViewer.vue";
+import IconButton from "@/components/actions/IconButton/IconButton.vue";
+import Button from "@/components/actions/Button/Button.vue";
+import Spinner from "@/components/base/Spinner/Spinner.vue";
+import Modal from "@/components/feedback/Modal/Modal.vue";
+import Input from "@/components/form/Input/Input.vue";
+import BackToTop from "@/components/actions/BackToTop/BackToTop.vue";
+import { useToast } from "@/components/feedback/Toast/toast";
+import { useGoBack } from "@/composables/useGoBack";
+import { markListDirty } from "@/composables/useListDirty";
+import { usePersonSearch } from "@/composables/usePersonSearch";
 
-const route = useRoute()
-const router = useRouter()
-const toast = useToast()
-const { goBack } = useGoBack('/persons')
+const route = useRoute();
+const router = useRouter();
+const toast = useToast();
+const { goBack } = useGoBack("/persons");
 
-const personId = route.params.id as string
+const personId = route.params.id as string;
 
 // 瀑布流页面（布局/加载/持久化/自动恢复，每个人物独立存储）
+// 人物照片界面不维护"最远浏览位置"自动书签
 const page = useWaterfallPage({
   storageKey: `person-${personId}`,
+  enableAutoBookmark: false,
   fetch: async ({ cursor }) =>
-    (await photo.person.getPersonPhotos(personId, { cursor, size: 20 })).data,
-})
+    (await photo.person.getPersonPhotos(personId, { cursor })).data,
+});
 
 const {
   waterfall,
@@ -45,26 +47,28 @@ const {
   restoreToLastPosition,
   initialize,
   dispose,
-} = page
+} = page;
 
-const waterfallViewRef = ref<InstanceType<typeof VirtualWaterfall> | null>(null)
+const waterfallViewRef = ref<InstanceType<typeof VirtualWaterfall> | null>(
+  null,
+);
 
 // 人物信息
-const person = ref<Person | null>(null)
+const person = ref<Person | null>(null);
 
 // 照片查看器状态
-const viewerVisible = ref(false)
-const selectedPhoto = ref<Photo | null>(null)
+const viewerVisible = ref(false);
+const selectedPhoto = ref<Photo | null>(null);
 
 // 改名弹窗
-const showRenameDialog = ref(false)
-const renameName = ref('')
-const renaming = ref(false)
+const showRenameDialog = ref(false);
+const renameName = ref("");
+const renaming = ref(false);
 
 // 合并弹窗
-const showMergeDialog = ref(false)
-const mergeTargetId = ref('')
-const merging = ref(false)
+const showMergeDialog = ref(false);
+const mergeTargetId = ref("");
+const merging = ref(false);
 
 // 合并目标人物（游标分页搜索，排除当前人物）
 const {
@@ -76,14 +80,14 @@ const {
   reload: reloadMerge,
   reset: resetMerge,
   onScroll: onMergeScroll,
-} = usePersonSearch({ excludeId: () => personId })
+} = usePersonSearch({ excludeId: () => personId });
 
 // 删除确认
-const showDeleteConfirm = ref(false)
-const deleting = ref(false)
+const showDeleteConfirm = ref(false);
+const deleting = ref(false);
 
 function getPhotoById(id: string | number): Photo | undefined {
-  return waterfall.allPhotos.value.find((p) => p.id === id)
+  return waterfall.allPhotos.value.find((p) => p.id === id);
 }
 
 /**
@@ -93,170 +97,171 @@ function getPhotoById(id: string | number): Photo | undefined {
  * @returns 是否找到该人物
  */
 async function loadPerson(): Promise<boolean> {
-  const statePerson = (window.history.state as { person?: Person } | null)?.person
+  const statePerson = (window.history.state as { person?: Person } | null)
+    ?.person;
   if (statePerson?.id === personId) {
-    person.value = statePerson
-    return true
+    person.value = statePerson;
+    return true;
   }
   try {
-    let cursor: string | null = null
+    let cursor: string | null = null;
     for (;;) {
-      const res = await photo.person.getPersons({ cursor, size: 32 })
-      const page = res.data
-      const found = page.records.find((p) => p.id === personId)
+      const res = await photo.person.getPersons({ cursor });
+      const page = res.data;
+      const found = page.records.find((p) => p.id === personId);
       if (found) {
-        person.value = found
-        return true
+        person.value = found;
+        return true;
       }
-      if (!page.hasMore || !page.nextCursor) break
-      cursor = page.nextCursor
+      if (!page.hasMore || !page.nextCursor) break;
+      cursor = page.nextCursor;
     }
-    person.value = null
-    return false
+    person.value = null;
+    return false;
   } catch (error) {
-    console.error('加载人物信息失败:', error)
-    return person.value !== null
+    console.error("加载人物信息失败:", error);
+    return person.value !== null;
   }
 }
 
 function handlePhotoClick(photoItem: Photo) {
-  selectedPhoto.value = photoItem
-  viewerVisible.value = true
+  selectedPhoto.value = photoItem;
+  viewerVisible.value = true;
 }
 
 /** 查看器切换照片：更新当前照片并让瀑布流滚动到对应位置 */
 function handleViewerNavigate(photoItem: Photo) {
-  selectedPhoto.value = photoItem
+  selectedPhoto.value = photoItem;
   nextTick(() => {
-    waterfallViewRef.value?.scrollToItem(photoItem.id, 'smooth')
-  })
+    waterfallViewRef.value?.scrollToItem(photoItem.id, "smooth");
+  });
 }
 
 /** 查看器触底时加载下一页；返回是否加载到了新照片 */
 async function handleLoadMore(): Promise<boolean> {
-  if (loading.value || !waterfall.hasMore.value) return false
-  const records = await fetchMore({ cursor: waterfall.cursor.value })
-  return records.length > 0
+  if (loading.value || !waterfall.hasMore.value) return false;
+  const records = await fetchMore({ cursor: waterfall.cursor.value });
+  return records.length > 0;
 }
 
 function handleLikeChange(photoId: string, isLiked: boolean) {
-  waterfall.updatePhotoLike(photoId, isLiked)
+  waterfall.updatePhotoLike(photoId, isLiked);
   if (selectedPhoto.value?.id === photoId) {
-    selectedPhoto.value.isLiked = isLiked
+    selectedPhoto.value.isLiked = isLiked;
   }
 }
 
 function handlePhotoDelete(photoId: string) {
-  waterfall.removePhoto(photoId)
+  waterfall.removePhoto(photoId);
 }
 
 async function handleLike(photoItem: Photo) {
-  const photoId = photoItem.id as string
-  const wasLiked = photoItem.isLiked ?? false
+  const photoId = photoItem.id as string;
+  const wasLiked = photoItem.isLiked ?? false;
 
   // 乐观更新
-  waterfall.updatePhotoLike(photoId, !wasLiked)
+  waterfall.updatePhotoLike(photoId, !wasLiked);
 
   try {
     if (wasLiked) {
-      await photo.like.unlikePhoto(photoId)
+      await photo.like.unlikePhoto(photoId);
     } else {
-      await photo.like.likePhoto(photoId)
+      await photo.like.likePhoto(photoId);
     }
   } catch (error) {
     // 回滚
-    waterfall.updatePhotoLike(photoId, wasLiked)
-    console.error('[PersonDetailView] 点赞操作失败:', error)
+    waterfall.updatePhotoLike(photoId, wasLiked);
+    console.error("[PersonDetailView] 点赞操作失败:", error);
   }
 }
 
 // ---- 改名 ----
 function openRenameDialog() {
-  if (!person.value) return
-  renameName.value = person.value.name
-  showRenameDialog.value = true
+  if (!person.value) return;
+  renameName.value = person.value.name;
+  showRenameDialog.value = true;
 }
 
 async function handleRename() {
-  const name = renameName.value.trim()
+  const name = renameName.value.trim();
   if (!name) {
-    toast.warning('请输入人物名称')
-    return
+    toast.warning("请输入人物名称");
+    return;
   }
-  renaming.value = true
+  renaming.value = true;
   try {
-    await photo.person.renamePerson(personId, name)
-    if (person.value) person.value.name = name
-    showRenameDialog.value = false
-    toast.success('改名成功')
-    markListDirty('persons')
+    await photo.person.renamePerson(personId, name);
+    if (person.value) person.value.name = name;
+    showRenameDialog.value = false;
+    toast.success("改名成功");
+    markListDirty("persons");
   } catch (error) {
-    console.error('重命名人物失败:', error)
-    toast.error('重命名失败')
+    console.error("重命名人物失败:", error);
+    toast.error("重命名失败");
   } finally {
-    renaming.value = false
+    renaming.value = false;
   }
 }
 
 // ---- 合并 ----
 function openMergeDialog() {
-  showMergeDialog.value = true
-  mergeTargetId.value = ''
-  resetMerge()
-  reloadMerge()
+  showMergeDialog.value = true;
+  mergeTargetId.value = "";
+  resetMerge();
+  reloadMerge();
 }
 
 async function handleMerge() {
-  if (!mergeTargetId.value) return
-  merging.value = true
+  if (!mergeTargetId.value) return;
+  merging.value = true;
   try {
-    await photo.person.mergePerson(personId, mergeTargetId.value)
-    toast.success('合并成功')
-    markListDirty('persons')
-    router.push('/persons')
+    await photo.person.mergePerson(personId, mergeTargetId.value);
+    toast.success("合并成功");
+    markListDirty("persons");
+    router.push("/persons");
   } catch (error) {
-    console.error('合并人物失败:', error)
-    toast.error('合并失败')
+    console.error("合并人物失败:", error);
+    toast.error("合并失败");
   } finally {
-    merging.value = false
+    merging.value = false;
   }
 }
 
 // ---- 删除 ----
 async function handleDelete() {
-  deleting.value = true
+  deleting.value = true;
   try {
-    await photo.person.deletePerson(personId)
-    toast.success('人物已删除')
-    markListDirty('persons')
-    router.push('/persons')
+    await photo.person.deletePerson(personId);
+    toast.success("人物已删除");
+    markListDirty("persons");
+    router.push("/persons");
   } catch (error) {
-    console.error('删除人物失败:', error)
-    toast.error('删除失败')
+    console.error("删除人物失败:", error);
+    toast.error("删除失败");
   } finally {
-    deleting.value = false
-    showDeleteConfirm.value = false
+    deleting.value = false;
+    showDeleteConfirm.value = false;
   }
 }
 
 /** 照片查看器内人脸操作后刷新人物信息；人物已不存在则返回列表 */
 async function handleFacesUpdated() {
-  const found = await loadPerson()
+  const found = await loadPerson();
   if (!found) {
-    toast.info('该人物已不存在')
-    markListDirty('persons')
-    router.push('/persons')
+    toast.info("该人物已不存在");
+    markListDirty("persons");
+    router.push("/persons");
   }
 }
 
 onMounted(() => {
-  loadPerson()
-  initialize(() => waterfallViewRef.value)
-})
+  loadPerson();
+  initialize(() => waterfallViewRef.value);
+});
 
 onBeforeUnmount(() => {
-  dispose()
-})
+  dispose();
+});
 </script>
 
 <template>
@@ -276,19 +281,34 @@ onBeforeUnmount(() => {
         <FaceIcon v-else :size="24" class="person-detail__avatar-icon" />
       </div>
       <div class="person-detail__info">
-        <div class="person-detail__name">{{ person?.name ?? '加载中...' }}</div>
+        <div class="person-detail__name">{{ person?.name ?? "加载中..." }}</div>
         <div class="person-detail__count" v-if="person">
           {{ Number(person.faceCount) }} 张照片
         </div>
       </div>
       <div class="person-detail__actions">
-        <Button variant="outline" size="sm" type="button" @click="openRenameDialog">
+        <Button
+          variant="outline"
+          size="sm"
+          type="button"
+          @click="openRenameDialog"
+        >
           改名
         </Button>
-        <Button variant="outline" size="sm" type="button" @click="openMergeDialog">
+        <Button
+          variant="outline"
+          size="sm"
+          type="button"
+          @click="openMergeDialog"
+        >
           合并
         </Button>
-        <Button variant="danger" size="sm" type="button" @click="showDeleteConfirm = true">
+        <Button
+          variant="danger"
+          size="sm"
+          type="button"
+          @click="showDeleteConfirm = true"
+        >
           删除
         </Button>
       </div>
@@ -316,10 +336,18 @@ onBeforeUnmount(() => {
 
       <div :ref="page.sentinelRef" class="load-sentinel">
         <Spinner v-if="loading" />
-        <span v-else-if="!waterfall.hasMore.value && waterfall.allPhotos.value.length > 0" class="load-sentinel__text">
+        <span
+          v-else-if="
+            !waterfall.hasMore.value && waterfall.allPhotos.value.length > 0
+          "
+          class="load-sentinel__text"
+        >
           已经到底啦 ~
         </span>
-        <span v-else-if="!loading && waterfall.allPhotos.value.length === 0" class="load-sentinel__text">
+        <span
+          v-else-if="!loading && waterfall.allPhotos.value.length === 0"
+          class="load-sentinel__text"
+        >
           该人物还没有照片
         </span>
       </div>
@@ -351,9 +379,19 @@ onBeforeUnmount(() => {
       <div class="person-detail__dialog">
         <div class="person-detail__dialog-field">
           <label class="person-detail__dialog-label">人物名称</label>
-          <Input v-model="renameName" placeholder="输入新名称" @keydown.enter="handleRename" />
+          <Input
+            v-model="renameName"
+            placeholder="输入新名称"
+            @keydown.enter="handleRename"
+          />
         </div>
-        <Button type="button" block :loading="renaming" :disabled="!renameName.trim()" @click="handleRename">
+        <Button
+          type="button"
+          block
+          :loading="renaming"
+          :disabled="!renameName.trim()"
+          @click="handleRename"
+        >
           保存
         </Button>
       </div>
@@ -372,21 +410,39 @@ onBeforeUnmount(() => {
             :key="p.id"
             type="button"
             class="person-detail__merge-item"
-            :class="{ 'person-detail__merge-item--active': mergeTargetId === p.id }"
+            :class="{
+              'person-detail__merge-item--active': mergeTargetId === p.id,
+            }"
             @click="mergeTargetId = p.id"
           >
             <span>{{ p.name }}</span>
-            <span class="person-detail__merge-count">{{ Number(p.faceCount) }} 张照片</span>
+            <span class="person-detail__merge-count"
+              >{{ Number(p.faceCount) }} 张照片</span
+            >
           </button>
-          <div v-if="mergeLoading" class="person-detail__merge-empty">加载中...</div>
-          <div v-else-if="mergeLoaded && mergePersons.length === 0" class="person-detail__merge-empty">
+          <div v-if="mergeLoading" class="person-detail__merge-empty">
+            加载中...
+          </div>
+          <div
+            v-else-if="mergeLoaded && mergePersons.length === 0"
+            class="person-detail__merge-empty"
+          >
             未找到其他人物
           </div>
-          <div v-else-if="!mergeHasMore && mergePersons.length > 0" class="person-detail__merge-empty">
+          <div
+            v-else-if="!mergeHasMore && mergePersons.length > 0"
+            class="person-detail__merge-empty"
+          >
             已经到底啦 ~
           </div>
         </div>
-        <Button type="button" block :loading="merging" :disabled="!mergeTargetId" @click="handleMerge">
+        <Button
+          type="button"
+          block
+          :loading="merging"
+          :disabled="!mergeTargetId"
+          @click="handleMerge"
+        >
           确认合并
         </Button>
       </div>
@@ -396,11 +452,24 @@ onBeforeUnmount(() => {
     <Modal v-model="showDeleteConfirm" size="sm" title="删除人物">
       <div class="person-detail__dialog">
         <p class="person-detail__delete-text">
-          确定要删除「{{ person?.name }}」吗？该人物的人脸将变为未分配，照片不会被删除。
+          确定要删除「{{
+            person?.name
+          }}」吗？该人物的人脸将变为未分配，照片不会被删除。
         </p>
         <div class="person-detail__delete-actions">
-          <Button variant="outline" type="button" @click="showDeleteConfirm = false">取消</Button>
-          <Button variant="danger" type="button" :loading="deleting" @click="handleDelete">删除</Button>
+          <Button
+            variant="outline"
+            type="button"
+            @click="showDeleteConfirm = false"
+            >取消</Button
+          >
+          <Button
+            variant="danger"
+            type="button"
+            :loading="deleting"
+            @click="handleDelete"
+            >删除</Button
+          >
         </div>
       </div>
     </Modal>
@@ -576,7 +645,7 @@ onBeforeUnmount(() => {
 
 .load-sentinel__text::before,
 .load-sentinel__text::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   width: 40px;

@@ -53,7 +53,7 @@
 
 /* 玻璃光扫过动画 */
 .photo-viewer__image-wrapper--refreshing::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
@@ -444,4 +444,3 @@
   opacity: var(--btn-disabled-opacity);
   cursor: not-allowed;
 }
-

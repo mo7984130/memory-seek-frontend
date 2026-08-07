@@ -1,36 +1,36 @@
 <script setup lang="ts">
-import { drawerVariants } from './drawer.variants'
-import type { Placement, Size } from '../../_shared/types'
-import Icon from '../../base/Icon/Icon.vue'
-import './drawer.css'
+import { drawerVariants } from "./drawer.variants";
+import type { Placement, Size } from "../../_shared/types";
+import Icon from "../../base/Icon/Icon.vue";
+import "./drawer.css";
 
 interface Props {
-  modelValue?: boolean
-  placement?: Placement
-  size?: Size
-  title?: string
-  closable?: boolean
-  maskClosable?: boolean
+  modelValue?: boolean;
+  placement?: Placement;
+  size?: Size;
+  title?: string;
+  closable?: boolean;
+  maskClosable?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placement: 'right',
-  size: 'md',
+  placement: "right",
+  size: "md",
   closable: true,
   maskClosable: true,
-})
+});
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
-}>()
+  "update:modelValue": [value: boolean];
+}>();
 
 function close() {
-  emit('update:modelValue', false)
+  emit("update:modelValue", false);
 }
 
 function onMaskClick() {
   if (props.maskClosable) {
-    close()
+    close();
   }
 }
 </script>
@@ -42,7 +42,12 @@ function onMaskClick() {
       <div :class="drawerVariants({ placement, size })">
         <div v-if="title || closable" class="drawer__header">
           <h3 v-if="title" class="drawer__title">{{ title }}</h3>
-          <button v-if="closable" class="drawer__close" type="button" @click="close">
+          <button
+            v-if="closable"
+            class="drawer__close"
+            type="button"
+            @click="close"
+          >
             <Icon name="CloseIcon" :size="20" />
           </button>
         </div>

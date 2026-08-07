@@ -1,68 +1,77 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ImageIcon, LikeIcon, FavoriteIcon, User, FaceIcon, MoreVertical } from '@/components/base/Icon/icons'
-import Drawer from '@/components/feedback/Drawer/Drawer.vue'
+import { ref, computed, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import {
+  ImageIcon,
+  LikeIcon,
+  FavoriteIcon,
+  User,
+  FaceIcon,
+  MoreVertical,
+} from "@/components/base/Icon/icons";
+import Drawer from "@/components/feedback/Drawer/Drawer.vue";
 
 const props = defineProps<{
-  modelValue: boolean
-}>()
+  modelValue: boolean;
+}>();
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
-}>()
+  "update:modelValue": [value: boolean];
+}>();
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
 interface NavItem {
-  path: string
-  label: string
-  icon: typeof ImageIcon
+  path: string;
+  label: string;
+  icon: typeof ImageIcon;
 }
 
 const navItems: NavItem[] = [
-  { path: '/photos', label: '照片墙', icon: ImageIcon },
-  { path: '/persons', label: '人物', icon: FaceIcon },
-  { path: '/likes', label: '我喜欢', icon: LikeIcon },
-  { path: '/collections', label: '收藏夹', icon: FavoriteIcon },
-  { path: '/profile', label: '个人中心', icon: User },
-]
+  { path: "/photos", label: "照片墙", icon: ImageIcon },
+  { path: "/persons", label: "人物", icon: FaceIcon },
+  { path: "/likes", label: "我喜欢", icon: LikeIcon },
+  { path: "/collections", label: "收藏夹", icon: FavoriteIcon },
+  { path: "/profile", label: "个人中心", icon: User },
+];
 
 // "更多"折叠菜单：当前路由在其分组内时默认展开
 const moreItems: NavItem[] = [
-  { path: '/unassigned-faces', label: '未分配人脸', icon: FaceIcon },
-]
+  { path: "/unassigned-faces", label: "未分配人脸", icon: FaceIcon },
+];
 
 const activePath = computed(() => {
   // 匹配当前路由或其父级
-  const path = route.path
-  if (path.startsWith('/collections')) return '/collections'
-  if (path.startsWith('/persons')) return '/persons'
-  if (path.startsWith('/unassigned-faces')) return '/unassigned-faces'
-  return path
-})
+  const path = route.path;
+  if (path.startsWith("/collections")) return "/collections";
+  if (path.startsWith("/persons")) return "/persons";
+  if (path.startsWith("/unassigned-faces")) return "/unassigned-faces";
+  return path;
+});
 
 // "更多"分组内是否有选中项
-const moreActive = computed(() => moreItems.some((item) => activePath.value === item.path))
+const moreActive = computed(() =>
+  moreItems.some((item) => activePath.value === item.path),
+);
 
 // 展开状态：进入分组内自动展开，离开后自动折叠
-const moreOpen = ref(moreActive.value)
+const moreOpen = ref(moreActive.value);
 
 watch(
   () => route.path,
   () => {
     if (moreActive.value) {
-      moreOpen.value = true
+      moreOpen.value = true;
     } else {
-      moreOpen.value = false
+      moreOpen.value = false;
     }
   },
-)
+);
 
 function navigateTo(path: string) {
-  router.push(path)
-  emit('update:modelValue', false)
+  router.push(path);
+  emit("update:modelValue", false);
 }
 </script>
 
@@ -114,7 +123,9 @@ function navigateTo(path: string) {
                 v-for="item in moreItems"
                 :key="item.path"
                 class="app-drawer__nav-item app-drawer__more-item"
-                :class="{ 'app-drawer__nav-item--active': activePath === item.path }"
+                :class="{
+                  'app-drawer__nav-item--active': activePath === item.path,
+                }"
                 type="button"
                 @click="navigateTo(item.path)"
               >
@@ -127,9 +138,7 @@ function navigateTo(path: string) {
       </nav>
 
       <!-- 底部版本 -->
-      <div class="app-drawer__footer">
-        v0.1.0
-      </div>
+      <div class="app-drawer__footer">v0.1.0</div>
     </div>
   </Drawer>
 </template>

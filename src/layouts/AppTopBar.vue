@@ -1,34 +1,34 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { Menu, Sun, Moon } from '@/components/base/Icon/icons'
-import { photo } from 'memory-seek-api'
-import { useThemeStore } from '@/stores/theme'
-import { useAuthStore } from '@/stores/auth'
-import IconButton from '@/components/actions/IconButton/IconButton.vue'
+import { computed } from "vue";
+import { useRoute } from "vue-router";
+import { Menu, Sun, Moon } from "@/components/base/Icon/icons";
+import { photo } from "memory-seek-api";
+import { useThemeStore } from "@/stores/theme";
+import { useAuthStore } from "@/stores/auth";
+import IconButton from "@/components/actions/IconButton/IconButton.vue";
 
 const emit = defineEmits<{
-  'menu-click': []
-}>()
+  "menu-click": [];
+}>();
 
-const route = useRoute()
-const themeStore = useThemeStore()
-const authStore = useAuthStore()
+const route = useRoute();
+const themeStore = useThemeStore();
+const authStore = useAuthStore();
 
 const pageTitle = computed(() => {
-  const title = route.meta.title
-  return title ? String(title) : '寻忆'
-})
+  const title = route.meta.title;
+  return title ? String(title) : "寻忆";
+});
 
 const avatarUrl = computed(() => {
-  const token = authStore.user?.avatarToken
-  return token ? photo.getImgUrl(token) : null
-})
+  const token = authStore.user?.avatarToken;
+  return token ? photo.getImgUrl(token) : null;
+});
 
 const avatarText = computed(() => {
-  const name = authStore.nickname || 'U'
-  return name.charAt(0).toUpperCase()
-})
+  const name = authStore.nickname || "U";
+  return name.charAt(0).toUpperCase();
+});
 </script>
 
 <template>
@@ -40,12 +40,20 @@ const avatarText = computed(() => {
       <h1 class="app-topbar__title">{{ pageTitle }}</h1>
     </div>
     <div class="app-topbar__right">
-      <IconButton class="app-topbar__theme-btn" @click="themeStore.toggleTheme()">
+      <IconButton
+        class="app-topbar__theme-btn"
+        @click="themeStore.toggleTheme()"
+      >
         <Moon v-if="!themeStore.isDark" :size="20" />
         <Sun v-else :size="20" />
       </IconButton>
       <div class="app-topbar__avatar" @click="$router.push('/profile')">
-        <img v-if="avatarUrl" :src="avatarUrl" class="app-topbar__avatar-img" alt="" />
+        <img
+          v-if="avatarUrl"
+          :src="avatarUrl"
+          class="app-topbar__avatar-img"
+          alt=""
+        />
         <span v-else>{{ avatarText }}</span>
       </div>
     </div>

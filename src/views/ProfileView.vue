@@ -1,69 +1,77 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { Camera, LogOut, Key, Edit3, Copy, Check, Ticket } from '@/components/base/Icon/icons'
-import { user, photo } from 'memory-seek-api'
-import type { UserInfo, InviterCode } from 'memory-seek-api'
-import { useAuthStore } from '@/stores/auth'
-import Card from '@/components/data/Card/Card.vue'
-import Modal from '@/components/feedback/Modal/Modal.vue'
-import Input from '@/components/form/Input/Input.vue'
-import Button from '@/components/actions/Button/Button.vue'
-import IconButton from '@/components/actions/IconButton/IconButton.vue'
-import Spinner from '@/components/base/Spinner/Spinner.vue'
-import { useToast } from '@/components/feedback/Toast/toast'
+import { ref, onMounted, computed } from "vue";
+import {
+  Camera,
+  LogOut,
+  Key,
+  Edit3,
+  Copy,
+  Check,
+  Ticket,
+} from "@/components/base/Icon/icons";
+import { user, photo } from "memory-seek-api";
+import type { UserInfo, InviterCode } from "memory-seek-api";
+import { useAuthStore } from "@/stores/auth";
+import Card from "@/components/data/Card/Card.vue";
+import Modal from "@/components/feedback/Modal/Modal.vue";
+import Input from "@/components/form/Input/Input.vue";
+import Button from "@/components/actions/Button/Button.vue";
+import IconButton from "@/components/actions/IconButton/IconButton.vue";
+import Spinner from "@/components/base/Spinner/Spinner.vue";
+import { useToast } from "@/components/feedback/Toast/toast";
 
-const INVITER_CODE_KEY = 'inviter_code'
+const INVITER_CODE_KEY = "inviter_code";
 
-const authStore = useAuthStore()
-const toast = useToast()
+const authStore = useAuthStore();
+const toast = useToast();
 
-const loading = ref(true)
-const userInfo = ref<UserInfo | null>(null)
+const loading = ref(true);
+const userInfo = ref<UserInfo | null>(null);
 
 // 邀请码
-const inviterCode = ref<InviterCode | null>(null)
-const generatingCode = ref(false)
-const copied = ref(false)
+const inviterCode = ref<InviterCode | null>(null);
+const generatingCode = ref(false);
+const copied = ref(false);
 
 // 编辑昵称
-const showNicknameModal = ref(false)
-const newNickname = ref('')
-const savingNickname = ref(false)
+const showNicknameModal = ref(false);
+const newNickname = ref("");
+const savingNickname = ref(false);
 
 // 修改密码
-const showPasswordModal = ref(false)
-const oldPassword = ref('')
-const newPassword = ref('')
-const confirmPassword = ref('')
-const savingPassword = ref(false)
+const showPasswordModal = ref(false);
+const oldPassword = ref("");
+const newPassword = ref("");
+const confirmPassword = ref("");
+const savingPassword = ref(false);
 
 // 退出登录确认
-const showLogoutConfirm = ref(false)
+const showLogoutConfirm = ref(false);
 
 const avatarUrl = computed(() => {
-  const token = userInfo.value?.avatarToken
-  return token ? photo.getImgUrl(token) : null
-})
+  const token = userInfo.value?.avatarToken;
+  return token ? photo.getImgUrl(token) : null;
+});
 
 const avatarText = computed(() => {
-  const name = userInfo.value?.nickname ?? userInfo.value?.username ?? 'U'
-  return name.charAt(0).toUpperCase()
-})
+  const name = userInfo.value?.nickname ?? userInfo.value?.username ?? "U";
+  return name.charAt(0).toUpperCase();
+});
 
 /**
  * 加载用户信息
  */
 async function loadData() {
-  loading.value = true
+  loading.value = true;
   try {
-    const userRes = await user.getMe()
-    userInfo.value = userRes.data
+    const userRes = await user.getMe();
+    userInfo.value = userRes.data;
     // 从 localStorage 恢复邀请码
-    loadSavedInviterCode()
+    loadSavedInviterCode();
   } catch (error) {
-    console.error('加载用户信息失败:', error)
+    console.error("加载用户信息失败:", error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
@@ -72,18 +80,18 @@ async function loadData() {
  */
 function loadSavedInviterCode() {
   try {
-    const saved = localStorage.getItem(INVITER_CODE_KEY)
+    const saved = localStorage.getItem(INVITER_CODE_KEY);
     if (saved) {
-      const parsed = JSON.parse(saved) as InviterCode
+      const parsed = JSON.parse(saved) as InviterCode;
       // 检查是否过期
       if (new Date(parsed.expireAt).getTime() > Date.now()) {
-        inviterCode.value = parsed
+        inviterCode.value = parsed;
       } else {
-        localStorage.removeItem(INVITER_CODE_KEY)
+        localStorage.removeItem(INVITER_CODE_KEY);
       }
     }
   } catch {
-    localStorage.removeItem(INVITER_CODE_KEY)
+    localStorage.removeItem(INVITER_CODE_KEY);
   }
 }
 
@@ -91,16 +99,16 @@ function loadSavedInviterCode() {
  * 生成邀请码
  */
 async function handleGenerateCode() {
-  generatingCode.value = true
+  generatingCode.value = true;
   try {
-    const res = await user.generateInviterCode()
-    inviterCode.value = res.data
-    localStorage.setItem(INVITER_CODE_KEY, JSON.stringify(res.data))
-    toast.success('邀请码生成成功')
+    const res = await user.generateInviterCode();
+    inviterCode.value = res.data;
+    localStorage.setItem(INVITER_CODE_KEY, JSON.stringify(res.data));
+    toast.success("邀请码生成成功");
   } catch (error) {
-    console.error('生成邀请码失败:', error)
+    console.error("生成邀请码失败:", error);
   } finally {
-    generatingCode.value = false
+    generatingCode.value = false;
   }
 }
 
@@ -108,14 +116,16 @@ async function handleGenerateCode() {
  * 复制邀请码
  */
 async function copyInviterCode() {
-  if (!inviterCode.value) return
+  if (!inviterCode.value) return;
   try {
-    await navigator.clipboard.writeText(inviterCode.value.inviterCode)
-    copied.value = true
-    toast.success('已复制到剪贴板')
-    setTimeout(() => { copied.value = false }, 2000)
+    await navigator.clipboard.writeText(inviterCode.value.inviterCode);
+    copied.value = true;
+    toast.success("已复制到剪贴板");
+    setTimeout(() => {
+      copied.value = false;
+    }, 2000);
   } catch {
-    toast.error('复制失败，请手动复制')
+    toast.error("复制失败，请手动复制");
   }
 }
 
@@ -123,81 +133,81 @@ async function copyInviterCode() {
  * 格式化过期时间
  */
 function formatExpireAt(dateStr: string) {
-  const d = new Date(dateStr)
-  const now = new Date()
-  const diff = d.getTime() - now.getTime()
-  const hours = Math.floor(diff / (1000 * 60 * 60))
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diff = d.getTime() - now.getTime();
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
-  const datePart = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`
-  const timePart = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  const datePart = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
+  const timePart = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 
-  let remain = ''
+  let remain = "";
   if (hours > 24) {
-    remain = `（剩余 ${Math.floor(hours / 24)} 天）`
+    remain = `（剩余 ${Math.floor(hours / 24)} 天）`;
   } else if (hours > 0) {
-    remain = `（剩余 ${hours} 小时 ${minutes} 分钟）`
+    remain = `（剩余 ${hours} 小时 ${minutes} 分钟）`;
   } else if (minutes > 0) {
-    remain = `（剩余 ${minutes} 分钟）`
+    remain = `（剩余 ${minutes} 分钟）`;
   } else {
-    remain = '（即将过期）'
+    remain = "（即将过期）";
   }
 
-  return `${datePart} ${timePart} ${remain}`
+  return `${datePart} ${timePart} ${remain}`;
 }
 
 /**
  * 上传头像
  */
 async function handleAvatarUpload(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) return
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
 
   try {
-    const res = await user.uploadAvatar(file)
+    const res = await user.uploadAvatar(file);
     if (userInfo.value) {
-      userInfo.value.avatarToken = res.data
+      userInfo.value.avatarToken = res.data;
     }
-    toast.success('头像更新成功')
+    toast.success("头像更新成功");
   } catch (error) {
-    console.error('上传头像失败:', error)
+    console.error("上传头像失败:", error);
   }
 
   // 重置 input
-  input.value = ''
+  input.value = "";
 }
 
 /**
  * 打开编辑昵称弹窗
  */
 function openNicknameEdit() {
-  newNickname.value = userInfo.value?.nickname ?? ''
-  showNicknameModal.value = true
+  newNickname.value = userInfo.value?.nickname ?? "";
+  showNicknameModal.value = true;
 }
 
 /**
  * 保存昵称
  */
 async function handleSaveNickname() {
-  const nickname = newNickname.value.trim()
+  const nickname = newNickname.value.trim();
   if (!nickname) {
-    toast.warning('请输入昵称')
-    return
+    toast.warning("请输入昵称");
+    return;
   }
 
-  savingNickname.value = true
+  savingNickname.value = true;
   try {
-    await user.changeNickname({ newNickname: nickname })
+    await user.changeNickname({ newNickname: nickname });
     if (userInfo.value) {
-      userInfo.value.nickname = nickname
+      userInfo.value.nickname = nickname;
     }
-    showNicknameModal.value = false
-    toast.success('昵称更新成功')
+    showNicknameModal.value = false;
+    toast.success("昵称更新成功");
   } catch (error) {
-    console.error('修改昵称失败:', error)
+    console.error("修改昵称失败:", error);
   } finally {
-    savingNickname.value = false
+    savingNickname.value = false;
   }
 }
 
@@ -205,10 +215,10 @@ async function handleSaveNickname() {
  * 打开修改密码弹窗
  */
 function openPasswordChange() {
-  oldPassword.value = ''
-  newPassword.value = ''
-  confirmPassword.value = ''
-  showPasswordModal.value = true
+  oldPassword.value = "";
+  newPassword.value = "";
+  confirmPassword.value = "";
+  showPasswordModal.value = true;
 }
 
 /**
@@ -216,34 +226,34 @@ function openPasswordChange() {
  */
 async function handleSavePassword() {
   if (!oldPassword.value) {
-    toast.warning('请输入当前密码')
-    return
+    toast.warning("请输入当前密码");
+    return;
   }
   if (!newPassword.value) {
-    toast.warning('请输入新密码')
-    return
+    toast.warning("请输入新密码");
+    return;
   }
   if (newPassword.value !== confirmPassword.value) {
-    toast.warning('两次输入的密码不一致')
-    return
+    toast.warning("两次输入的密码不一致");
+    return;
   }
   if (newPassword.value.length < 6) {
-    toast.warning('密码长度不能少于 6 位')
-    return
+    toast.warning("密码长度不能少于 6 位");
+    return;
   }
 
-  savingPassword.value = true
+  savingPassword.value = true;
   try {
     await user.changePassword({
       oldPassword: oldPassword.value,
       newPassword: newPassword.value,
-    })
-    showPasswordModal.value = false
-    toast.success('密码修改成功')
+    });
+    showPasswordModal.value = false;
+    toast.success("密码修改成功");
   } catch (error) {
-    console.error('修改密码失败:', error)
+    console.error("修改密码失败:", error);
   } finally {
-    savingPassword.value = false
+    savingPassword.value = false;
   }
 }
 
@@ -251,20 +261,20 @@ async function handleSavePassword() {
  * 退出登录
  */
 function handleLogout() {
-  authStore.logout()
+  authStore.logout();
 }
 
 /**
  * 格式化日期
  */
 function formatDate(dateStr: string) {
-  const d = new Date(dateStr)
-  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
 }
 
 onMounted(() => {
-  loadData()
-})
+  loadData();
+});
 </script>
 
 <template>
@@ -281,7 +291,12 @@ onMounted(() => {
           <!-- 头像 -->
           <div class="profile-card__avatar-wrapper">
             <div class="profile-card__avatar">
-              <img v-if="avatarUrl" :src="avatarUrl" class="profile-card__avatar-img" alt="" />
+              <img
+                v-if="avatarUrl"
+                :src="avatarUrl"
+                class="profile-card__avatar-img"
+                alt=""
+              />
               <span v-else>{{ avatarText }}</span>
             </div>
             <label class="profile-card__avatar-upload" title="更换头像">
@@ -298,13 +313,22 @@ onMounted(() => {
           <!-- 用户信息 -->
           <div class="profile-card__info">
             <div class="profile-card__name-row">
-              <span class="profile-card__nickname">{{ userInfo.nickname || userInfo.username }}</span>
-              <IconButton size="sm" variant="ghost" @click="openNicknameEdit" title="编辑昵称">
+              <span class="profile-card__nickname">{{
+                userInfo.nickname || userInfo.username
+              }}</span>
+              <IconButton
+                size="sm"
+                variant="ghost"
+                @click="openNicknameEdit"
+                title="编辑昵称"
+              >
                 <Edit3 :size="14" />
               </IconButton>
             </div>
             <div class="profile-card__username">@{{ userInfo.username }}</div>
-            <div class="profile-card__email" v-if="userInfo.email">{{ userInfo.email }}</div>
+            <div class="profile-card__email" v-if="userInfo.email">
+              {{ userInfo.email }}
+            </div>
             <div class="profile-card__join-date">
               注册于 {{ formatDate(userInfo.createdAt) }}
             </div>
@@ -318,14 +342,25 @@ onMounted(() => {
         <Card shadow="sm" padding="sm" class="invite-card">
           <div v-if="inviterCode" class="invite-card__row">
             <code class="invite-card__code">{{ inviterCode.inviterCode }}</code>
-            <IconButton size="sm" variant="outline" @click="copyInviterCode" title="复制">
+            <IconButton
+              size="sm"
+              variant="outline"
+              @click="copyInviterCode"
+              title="复制"
+            >
               <Check v-if="copied" :size="16" />
               <Copy v-else :size="16" />
             </IconButton>
             <span class="invite-card__expire">
               {{ formatExpireAt(inviterCode.expireAt) }}
             </span>
-            <IconButton size="sm" variant="outline" :disabled="generatingCode" @click="handleGenerateCode" title="重新生成">
+            <IconButton
+              size="sm"
+              variant="outline"
+              :disabled="generatingCode"
+              @click="handleGenerateCode"
+              title="重新生成"
+            >
               <Ticket :size="14" />
             </IconButton>
           </div>
@@ -348,13 +383,25 @@ onMounted(() => {
       <div class="security-section">
         <h3 class="section-title">账号安全</h3>
         <div class="security-actions">
-          <Card shadow="sm" padding="none" hoverable class="security-card" @click="openPasswordChange">
+          <Card
+            shadow="sm"
+            padding="none"
+            hoverable
+            class="security-card"
+            @click="openPasswordChange"
+          >
             <div class="security-btn">
               <Key :size="18" />
               <span>修改密码</span>
             </div>
           </Card>
-          <Card shadow="sm" padding="none" hoverable class="security-card security-card--danger" @click="showLogoutConfirm = true">
+          <Card
+            shadow="sm"
+            padding="none"
+            hoverable
+            class="security-card security-card--danger"
+            @click="showLogoutConfirm = true"
+          >
             <div class="security-btn security-btn--danger">
               <LogOut :size="18" />
               <span>退出登录</span>
@@ -375,7 +422,12 @@ onMounted(() => {
             @keydown.enter="handleSaveNickname"
           />
         </div>
-        <Button type="button" :loading="savingNickname" block @click="handleSaveNickname">
+        <Button
+          type="button"
+          :loading="savingNickname"
+          block
+          @click="handleSaveNickname"
+        >
           保存
         </Button>
       </div>
@@ -409,7 +461,12 @@ onMounted(() => {
             @keydown.enter="handleSavePassword"
           />
         </div>
-        <Button type="button" :loading="savingPassword" block @click="handleSavePassword">
+        <Button
+          type="button"
+          :loading="savingPassword"
+          block
+          @click="handleSavePassword"
+        >
           修改密码
         </Button>
       </div>
@@ -420,7 +477,11 @@ onMounted(() => {
       <div class="logout-confirm">
         <p class="logout-confirm__text">确定要退出登录吗？</p>
         <div class="logout-confirm__actions">
-          <Button variant="outline" type="button" @click="showLogoutConfirm = false">
+          <Button
+            variant="outline"
+            type="button"
+            @click="showLogoutConfirm = false"
+          >
             取消
           </Button>
           <Button variant="danger" type="button" @click="handleLogout">

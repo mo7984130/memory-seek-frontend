@@ -1,39 +1,39 @@
 <script setup lang="ts">
-import { ref, onMounted, onActivated, nextTick, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { useDebounceFn, useIntersectionObserver } from '@vueuse/core'
-import { photo } from 'memory-seek-api'
-import type { Person } from 'memory-seek-api'
-import { useListScrollRestore } from '@/composables/useListScrollRestore'
-import { consumeListDirty } from '@/composables/useListDirty'
-import { FaceIcon, SearchIcon } from '@/components/base/Icon/icons'
-import Card from '@/components/data/Card/Card.vue'
-import Input from '@/components/form/Input/Input.vue'
-import Spinner from '@/components/base/Spinner/Spinner.vue'
+import { ref, onMounted, onActivated, nextTick, watch } from "vue";
+import { useRouter } from "vue-router";
+import { useDebounceFn, useIntersectionObserver } from "@vueuse/core";
+import { photo } from "memory-seek-api";
+import type { Person } from "memory-seek-api";
+import { useListScrollRestore } from "@/composables/useListScrollRestore";
+import { consumeListDirty } from "@/composables/useListDirty";
+import { FaceIcon, SearchIcon } from "@/components/base/Icon/icons";
+import Card from "@/components/data/Card/Card.vue";
+import Input from "@/components/form/Input/Input.vue";
+import Spinner from "@/components/base/Spinner/Spinner.vue";
 
 // 组件名（KeepAlive include 匹配）
-defineOptions({ name: 'PersonsView' })
+defineOptions({ name: "PersonsView" });
 
-const router = useRouter()
+const router = useRouter();
 
 // 返回时恢复滚动位置（KeepAlive 缓存页）
-const { restoreScroll } = useListScrollRestore()
+const { restoreScroll } = useListScrollRestore();
 
 // 搜索关键词
-const keyword = ref('')
+const keyword = ref("");
 // 搜索面板是否展开
-const searchOpen = ref(false)
+const searchOpen = ref(false);
 
-const searchInputRef = ref<InstanceType<typeof Input> | null>(null)
+const searchInputRef = ref<InstanceType<typeof Input> | null>(null);
 
 /**
  * 切换搜索面板；展开时自动聚焦输入框
  */
 async function toggleSearch() {
-  searchOpen.value = !searchOpen.value
+  searchOpen.value = !searchOpen.value;
   if (searchOpen.value) {
-    await nextTick()
-    searchInputRef.value?.focus()
+    await nextTick();
+    searchInputRef.value?.focus();
   }
 }
 
@@ -41,40 +41,40 @@ async function toggleSearch() {
  * 关闭搜索面板（关键词清空后重置列表）
  */
 function closeSearch() {
-  searchOpen.value = false
+  searchOpen.value = false;
   if (keyword.value) {
-    keyword.value = ''
+    keyword.value = "";
   }
 }
 
 // 人物列表（游标分页）
-const persons = ref<Person[]>([])
-const cursor = ref<string | null>(null)
-const hasMore = ref(true)
-const loading = ref(false)
+const persons = ref<Person[]>([]);
+const cursor = ref<string | null>(null);
+const hasMore = ref(true);
+const loading = ref(false);
 
-const sentinelRef = ref<HTMLElement | null>(null)
+const sentinelRef = ref<HTMLElement | null>(null);
 
 /**
  * 拉取一页人物；cursor 为空表示第一页
  * 有关键词时走搜索接口，否则走列表接口
  */
 async function fetchPage() {
-  if (loading.value || !hasMore.value) return
-  loading.value = true
+  if (loading.value || !hasMore.value) return;
+  loading.value = true;
   try {
-    const kw = keyword.value.trim()
+    const kw = keyword.value.trim();
     const res = kw
-      ? await photo.person.searchPersons(kw, { cursor: cursor.value, size: 32 })
-      : await photo.person.getPersons({ cursor: cursor.value, size: 32 })
-    const page = res.data
-    persons.value.push(...page.records)
-    cursor.value = page.nextCursor
-    hasMore.value = page.hasMore
+      ? await photo.person.searchPersons(kw, { cursor: cursor.value })
+      : await photo.person.getPersons({ cursor: cursor.value });
+    const page = res.data;
+    persons.value.push(...page.records);
+    cursor.value = page.nextCursor;
+    hasMore.value = page.hasMore;
   } catch (error) {
-    console.error('[PersonsView] 加载人物列表失败:', error)
+    console.error("[PersonsView] 加载人物列表失败:", error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
@@ -82,26 +82,26 @@ async function fetchPage() {
  * 重置列表并重新拉取（关键词变化时调用）
  */
 async function reload() {
-  persons.value = []
-  cursor.value = null
-  hasMore.value = true
-  await fetchPage()
+  persons.value = [];
+  cursor.value = null;
+  hasMore.value = true;
+  await fetchPage();
 }
 
 // 关键词防抖搜索
-const onKeywordChange = useDebounceFn(reload, 300)
+const onKeywordChange = useDebounceFn(reload, 300);
 
 watch(keyword, () => {
-  onKeywordChange()
-})
+  onKeywordChange();
+});
 
 // 触底加载（组件卸载时自动停止观察）
 useIntersectionObserver(sentinelRef, (entries) => {
-  const isIntersecting = entries[0]?.isIntersecting || false
+  const isIntersecting = entries[0]?.isIntersecting || false;
   if (isIntersecting && !loading.value && hasMore.value) {
-    fetchPage()
+    fetchPage();
   }
-})
+});
 
 /**
  * 进入人物详情
@@ -111,25 +111,25 @@ function enterPerson(person: Person) {
     path: `/persons/${person.id}`,
     // faceCount 运行时为 number（.d.ts 声明为 bigint），显式转换以兼容 HistoryState 序列化
     state: { person: { ...person, faceCount: Number(person.faceCount) } },
-  })
+  });
 }
 
 onMounted(() => {
-  fetchPage()
-})
+  fetchPage();
+});
 
 // 从详情页返回：详情页改过人物（改名/删除/合并）时刷新列表，随后恢复浏览位置
 onActivated(async () => {
-  if (consumeListDirty('persons')) {
+  if (consumeListDirty("persons")) {
     // 记录离开时已加载的数量，刷新后补足到相同数量，保证高度足够恢复滚动位置
-    const targetCount = persons.value.length
-    await reload()
+    const targetCount = persons.value.length;
+    await reload();
     while (hasMore.value && persons.value.length < targetCount) {
-      await fetchPage()
+      await fetchPage();
     }
   }
-  await restoreScroll()
-})
+  await restoreScroll();
+});
 </script>
 
 <template>
@@ -137,7 +137,7 @@ onActivated(async () => {
     <!-- 标题栏 -->
     <div class="persons-view__header">
       <div class="persons-view__count" v-if="persons.length > 0">
-        {{ keyword.trim() ? '找到' : '' }}{{ persons.length }} 位人物
+        {{ keyword.trim() ? "找到" : "" }}{{ persons.length }} 位人物
       </div>
     </div>
 
@@ -168,7 +168,9 @@ onActivated(async () => {
         </div>
         <div class="person-card__info">
           <div class="person-card__name">{{ person.name }}</div>
-          <div class="person-card__count">{{ Number(person.faceCount) }} 张照片</div>
+          <div class="person-card__count">
+            {{ Number(person.faceCount) }} 张照片
+          </div>
         </div>
       </Card>
     </div>
@@ -178,18 +180,25 @@ onActivated(async () => {
       <FaceIcon :size="56" class="persons-view__empty-icon" />
       <template v-if="keyword.trim()">
         <div class="persons-view__empty-text">未找到相关人物</div>
-        <div class="persons-view__empty-hint">换个关键词试试，支持姓名或首字母搜索</div>
+        <div class="persons-view__empty-hint">
+          换个关键词试试，支持姓名或首字母搜索
+        </div>
       </template>
       <template v-else>
         <div class="persons-view__empty-text">暂无人物</div>
-        <div class="persons-view__empty-hint">识别照片中出现的人脸后会显示在这里</div>
+        <div class="persons-view__empty-hint">
+          识别照片中出现的人脸后会显示在这里
+        </div>
       </template>
     </div>
 
     <!-- 触底加载指示器 -->
     <div ref="sentinelRef" class="load-sentinel">
       <Spinner v-if="loading" />
-      <span v-else-if="!hasMore && persons.length > 0" class="load-sentinel__text">
+      <span
+        v-else-if="!hasMore && persons.length > 0"
+        class="load-sentinel__text"
+      >
         已经到底啦 ~
       </span>
     </div>
@@ -221,7 +230,7 @@ onActivated(async () => {
       >
         <SearchIcon :size="18" />
         <span class="persons-view__search-btn-text">
-          {{ keyword.trim() ? `已搜索：${keyword.trim()}` : '搜索人物' }}
+          {{ keyword.trim() ? `已搜索：${keyword.trim()}` : "搜索人物" }}
         </span>
       </button>
     </div>
@@ -416,7 +425,7 @@ onActivated(async () => {
 
 .load-sentinel__text::before,
 .load-sentinel__text::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   width: 40px;

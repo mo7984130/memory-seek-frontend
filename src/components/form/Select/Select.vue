@@ -1,67 +1,73 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { selectVariants } from './select.variants'
-import type { Size, Status } from '../../_shared/types'
-import Icon from '../../base/Icon/Icon.vue'
-import './select.css'
+import { ref, computed } from "vue";
+import { selectVariants } from "./select.variants";
+import type { Size, Status } from "../../_shared/types";
+import Icon from "../../base/Icon/Icon.vue";
+import "./select.css";
 
 export interface SelectOption {
-  label: string
-  value: string | number
-  disabled?: boolean
+  label: string;
+  value: string | number;
+  disabled?: boolean;
 }
 
 interface Props {
-  size?: Size
-  status?: Status
-  modelValue?: string | number
-  options?: SelectOption[]
-  placeholder?: string
-  disabled?: boolean
-  clearable?: boolean
+  size?: Size;
+  status?: Status;
+  modelValue?: string | number;
+  options?: SelectOption[];
+  placeholder?: string;
+  disabled?: boolean;
+  clearable?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  size: 'md',
-  status: 'default',
+  size: "md",
+  status: "default",
   options: () => [],
-  placeholder: '请选择',
-})
+  placeholder: "请选择",
+});
 
 const emit = defineEmits<{
-  'update:modelValue': [value: string | number | undefined]
-}>()
+  "update:modelValue": [value: string | number | undefined];
+}>();
 
-const isOpen = ref(false)
+const isOpen = ref(false);
 
 const selectedLabel = computed(() => {
-  if (props.modelValue === undefined || props.modelValue === null) return ''
-  const option = props.options.find(o => o.value === props.modelValue)
-  return option?.label ?? ''
-})
+  if (props.modelValue === undefined || props.modelValue === null) return "";
+  const option = props.options.find((o) => o.value === props.modelValue);
+  return option?.label ?? "";
+});
 
-const showClear = computed(() => props.clearable && props.modelValue !== undefined && props.modelValue !== null && !props.disabled)
+const showClear = computed(
+  () =>
+    props.clearable &&
+    props.modelValue !== undefined &&
+    props.modelValue !== null &&
+    !props.disabled,
+);
 
 function toggle() {
   if (!props.disabled) {
-    isOpen.value = !isOpen.value
+    isOpen.value = !isOpen.value;
   }
 }
 
 function close() {
-  isOpen.value = false
+  isOpen.value = false;
 }
 
 function select(option: SelectOption) {
-  if (option.disabled) return
-  emit('update:modelValue', option.value)
-  close()
+  if (option.disabled) return;
+  emit("update:modelValue", option.value);
+  close();
 }
 
 function onClear(event: Event) {
-  event.stopPropagation()
-  emit('update:modelValue', undefined)
-  close()
+  event.stopPropagation();
+  emit("update:modelValue", undefined);
+  close();
 }
 </script>
 
@@ -80,7 +86,7 @@ function onClear(event: Event) {
       @click="toggle"
       @keydown.escape="close"
     >
-      <span :class="['select__value', { 'select__placeholder': !selectedLabel }]">
+      <span :class="['select__value', { select__placeholder: !selectedLabel }]">
         {{ selectedLabel || placeholder }}
       </span>
       <button

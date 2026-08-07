@@ -1,43 +1,43 @@
 <script setup lang="ts">
-import Modal from '../Modal/Modal.vue'
-import Button from '../../actions/Button/Button.vue'
-import type { Variant } from '../../_shared/types'
+import Modal from "../Modal/Modal.vue";
+import Button from "../../actions/Button/Button.vue";
+import type { Variant } from "../../_shared/types";
 
 interface Props {
   /** 是否显示 */
-  modelValue: boolean
+  modelValue: boolean;
   /** 弹窗标题 */
-  title?: string
+  title?: string;
   /** 确认按钮文本 */
-  confirmText?: string
+  confirmText?: string;
   /** 取消按钮文本 */
-  cancelText?: string
+  cancelText?: string;
   /** 确认按钮 variant */
-  confirmVariant?: Variant
+  confirmVariant?: Variant;
   /** 是否加载中 */
-  loading?: boolean
+  loading?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  title: '确认操作',
-  confirmText: '确认',
-  cancelText: '取消',
-  confirmVariant: 'danger',
-})
+  title: "确认操作",
+  confirmText: "确认",
+  cancelText: "取消",
+  confirmVariant: "danger",
+});
 
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean]
-  confirm: []
-  cancel: []
-}>()
+  "update:modelValue": [value: boolean];
+  confirm: [];
+  cancel: [];
+}>();
 
 function handleCancel() {
-  emit('update:modelValue', false)
-  emit('cancel')
+  emit("update:modelValue", false);
+  emit("cancel");
 }
 
 function handleConfirm() {
-  emit('confirm')
+  emit("confirm");
 }
 </script>
 

@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import type { Size } from '../../_shared/types'
-import './spinner.css'
+import type { Size } from "../../_shared/types";
+import "./spinner.css";
 
 interface Props {
-  size?: Size
-  color?: string
+  size?: Size;
+  color?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  size: 'md',
-})
+  size: "md",
+});
 </script>
 
 <template>

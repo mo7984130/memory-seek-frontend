@@ -1,36 +1,35 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { tooltipVariants } from './tooltip.variants'
-import type { Placement } from '../../_shared/types'
-import './tooltip.css'
+import { ref } from "vue";
+import { tooltipVariants } from "./tooltip.variants";
+import type { Placement } from "../../_shared/types";
+import "./tooltip.css";
 
 interface Props {
-  content: string
-  placement?: Placement
-  trigger?: 'hover' | 'click'
-  disabled?: boolean
+  content: string;
+  placement?: Placement;
+  trigger?: "hover" | "click";
+  disabled?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  placement: 'top',
-  trigger: 'hover',
-})
+  placement: "top",
+  trigger: "hover",
+});
 
-const isVisible = ref(false)
+const isVisible = ref(false);
 
 function show() {
-  if (!props.disabled) isVisible.value = true
+  if (!props.disabled) isVisible.value = true;
 }
 
 function hide() {
-  isVisible.value = false
+  isVisible.value = false;
 }
 
 function toggle() {
-  if (props.disabled) return
-  isVisible.value = !isVisible.value
+  if (props.disabled) return;
+  isVisible.value = !isVisible.value;
 }
-
 </script>
 
 <template>

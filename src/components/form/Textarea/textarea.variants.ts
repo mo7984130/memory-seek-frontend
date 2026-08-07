@@ -1,14 +1,14 @@
-import { cva } from '../../_shared/cva'
+import { cva } from "../../_shared/cva";
 
-export const textareaVariants = cva('textarea', {
+export const textareaVariants = cva("textarea", {
   variants: {
     status: {
-      default: '',
-      error: 'textarea--error',
-      success: 'textarea--success',
+      default: "",
+      error: "textarea--error",
+      success: "textarea--success",
     },
   },
   defaultVariants: {
-    status: 'default',
+    status: "default",
   },
-})
+});

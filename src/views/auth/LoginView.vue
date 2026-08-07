@@ -1,23 +1,29 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { Lock, User, ArrowRight, Sun, Moon } from '@/components/base/Icon/icons'
-import { useAuthStore } from '@/stores/auth'
-import { useThemeStore } from '@/stores/theme'
-import Input from '@/components/form/Input/Input.vue'
-import Button from '@/components/actions/Button/Button.vue'
-import IconButton from '@/components/actions/IconButton/IconButton.vue'
-import { useToast } from '@/components/feedback/Toast/toast'
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+import {
+  Lock,
+  User,
+  ArrowRight,
+  Sun,
+  Moon,
+} from "@/components/base/Icon/icons";
+import { useAuthStore } from "@/stores/auth";
+import { useThemeStore } from "@/stores/theme";
+import Input from "@/components/form/Input/Input.vue";
+import Button from "@/components/actions/Button/Button.vue";
+import IconButton from "@/components/actions/IconButton/IconButton.vue";
+import { useToast } from "@/components/feedback/Toast/toast";
 
-const router = useRouter()
-const authStore = useAuthStore()
-const themeStore = useThemeStore()
-const toast = useToast()
+const router = useRouter();
+const authStore = useAuthStore();
+const themeStore = useThemeStore();
+const toast = useToast();
 
 // 表单状态
-const account = ref('')
-const password = ref('')
-const loading = ref(false)
+const account = ref("");
+const password = ref("");
+const loading = ref(false);
 
 /**
  * 登录处理
@@ -25,25 +31,25 @@ const loading = ref(false)
 async function handleLogin() {
   // 表单验证
   if (!account.value.trim()) {
-    toast.warning('请输入用户名')
-    return
+    toast.warning("请输入用户名");
+    return;
   }
   if (!password.value) {
-    toast.warning('请输入密码')
-    return
+    toast.warning("请输入密码");
+    return;
   }
 
-  loading.value = true
+  loading.value = true;
   try {
-    const success = await authStore.login(account.value, password.value)
+    const success = await authStore.login(account.value, password.value);
     if (success) {
-      toast.success('登录成功')
-      await router.push('/photos')
+      toast.success("登录成功");
+      await router.push("/photos");
     }
   } catch (error) {
-    toast.error('登录失败: ' + error)
+    toast.error("登录失败: " + error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
@@ -51,7 +57,7 @@ async function handleLogin() {
  * 跳转到注册页
  */
 function handleRegister() {
-  router.push('/register')
+  router.push("/register");
 }
 </script>
 
@@ -83,7 +89,12 @@ function handleRegister() {
 
         <!-- 密码输入框 -->
         <div class="login-form__field">
-          <Input v-model="password" type="password" placeholder="密码" size="lg">
+          <Input
+            v-model="password"
+            type="password"
+            placeholder="密码"
+            size="lg"
+          >
             <template #prefix>
               <Lock :size="18" class="login-form__icon" />
             </template>
@@ -91,7 +102,13 @@ function handleRegister() {
         </div>
 
         <!-- 登录按钮 -->
-        <Button type="submit" size="lg" block :loading="loading" class="login-form__submit">
+        <Button
+          type="submit"
+          size="lg"
+          block
+          :loading="loading"
+          class="login-form__submit"
+        >
           登录
           <ArrowRight :size="18" />
         </Button>
@@ -100,7 +117,9 @@ function handleRegister() {
       <!-- 注册链接 -->
       <div class="login-form__footer">
         <span class="login-form__footer-text">还没有账号？</span>
-        <span class="login-form__footer-link" @click="handleRegister"> 立即注册 </span>
+        <span class="login-form__footer-link" @click="handleRegister">
+          立即注册
+        </span>
       </div>
     </div>
   </div>
@@ -114,7 +133,11 @@ function handleRegister() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--color-bg-primary), var(--color-bg-secondary));
+  background: linear-gradient(
+    135deg,
+    var(--color-bg-primary),
+    var(--color-bg-secondary)
+  );
   padding: var(--spacing-4);
   position: relative;
 }
@@ -208,7 +231,11 @@ function handleRegister() {
   height: 48px;
   font-size: var(--text-base);
   border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    var(--color-primary-dark)
+  );
   border: none;
   color: white;
   font-weight: var(--font-medium);
@@ -219,7 +246,11 @@ function handleRegister() {
 
 @media (hover: hover) and (pointer: fine) {
   .login-form__submit:hover {
-    background: linear-gradient(135deg, var(--color-primary-light), var(--color-primary));
+    background: linear-gradient(
+      135deg,
+      var(--color-primary-light),
+      var(--color-primary)
+    );
     box-shadow: 0 6px 16px rgba(143, 181, 163, 0.4);
     transform: translateY(-1px);
   }
@@ -231,7 +262,11 @@ function handleRegister() {
 }
 
 .dark .login-form__submit {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-light));
+  background: linear-gradient(
+    135deg,
+    var(--color-primary),
+    var(--color-primary-light)
+  );
   box-shadow: 0 4px 12px rgba(120, 120, 120, 0.3);
 }
 

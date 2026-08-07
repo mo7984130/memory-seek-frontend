@@ -1,23 +1,23 @@
 <script setup lang="ts">
-import type { Variant, Size, Shape } from '../../_shared/types'
-import Spinner from '../../base/Spinner/Spinner.vue'
-import './icon-button.css'
+import type { Variant, Size, Shape } from "../../_shared/types";
+import Spinner from "../../base/Spinner/Spinner.vue";
+import "./icon-button.css";
 
 interface Props {
-  variant?: Variant
-  size?: Size
-  shape?: Shape
-  type?: 'button' | 'submit' | 'reset'
-  loading?: boolean
-  disabled?: boolean
+  variant?: Variant;
+  size?: Size;
+  shape?: Shape;
+  type?: "button" | "submit" | "reset";
+  loading?: boolean;
+  disabled?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  variant: 'ghost',
-  size: 'md',
-  shape: 'circle',
-  type: 'button',
-})
+  variant: "ghost",
+  size: "md",
+  shape: "circle",
+  type: "button",
+});
 </script>
 
 <template>

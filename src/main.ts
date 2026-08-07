@@ -1,33 +1,33 @@
-import './styles/variables.css'
-import './styles/global.css'
-import './components/index.css'
+import "./styles/variables.css";
+import "./styles/global.css";
+import "./components/index.css";
 
-console.log(`Memory Seek Frontend v${__APP_VERSION__}`)
+console.log(`Memory Seek Frontend v${__APP_VERSION__}`);
 
-import { createApp } from 'vue'
-import { createPinia } from 'pinia'
-import { initApiConfig, setMessageHandler } from 'memory-seek-api'
-import { useToast } from '@/components/feedback/Toast/toast'
+import { createApp } from "vue";
+import { createPinia } from "pinia";
+import { initApiConfig, setMessageHandler } from "memory-seek-api";
+import { useToast } from "@/components/feedback/Toast/toast";
 
-import App from './App.vue'
-import router from './router'
+import App from "./App.vue";
+import router from "./router";
 
 // 初始化 API 配置 — 必须在任何组件使用 API 之前
 initApiConfig({
   baseUrl: import.meta.env.VITE_API_BASE_URL,
   timeout: 10000,
-})
+});
 
-const toast = useToast()
+const toast = useToast();
 setMessageHandler({
   error: (msg: string) => toast.error(msg),
   success: (msg: string) => toast.success(msg),
-  refreshTokenFail: () => router.push('/login'),
-})
+  refreshTokenFail: () => router.push("/login"),
+});
 
-const app = createApp(App)
+const app = createApp(App);
 
-app.use(createPinia())
-app.use(router)
+app.use(createPinia());
+app.use(router);
 
-app.mount('#app')
+app.mount("#app");

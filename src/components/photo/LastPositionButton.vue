@@ -1,40 +1,40 @@
 <!-- 回到上次浏览位置 悬浮按钮（右上角，按钮触发恢复） -->
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useWaterfallPersistence } from '@/composables/useWaterfallPersistence'
-import { History } from '@/components/base/Icon/icons'
+import { ref, onMounted } from "vue";
+import { useWaterfallPersistence } from "@/composables/useWaterfallPersistence";
+import { History } from "@/components/base/Icon/icons";
 
 const props = defineProps<{
   /** 与对应页面一致的存储键名（photos / likes / collection-<id>） */
-  storageKey: string
-}>()
+  storageKey: string;
+}>();
 
 const emit = defineEmits<{
-  (e: 'restore'): void
-}>()
+  (e: "restore"): void;
+}>();
 
-const waterfall = useWaterfallPersistence(props.storageKey)
+const waterfall = useWaterfallPersistence(props.storageKey);
 
-const visible = ref(false)
+const visible = ref(false);
 
 /**
  * 点击：通知页面执行 cursor 恢复，并隐藏按钮
  */
 function handleClick() {
-  emit('restore')
-  visible.value = false
+  emit("restore");
+  visible.value = false;
 }
 
 onMounted(() => {
   // 存在可恢复的位置时才显示：
   // - cursor 非空：上次浏览位置在某页
   // - cursor 为空但有 anchorTime：上次在时间线列表第 0 页，可按锚点恢复
-  const saved = waterfall.getSavedPosition()
-  if (!saved) return
-  if (saved.cursor == null && !saved.anchorTime) return
+  const saved = waterfall.getSavedPosition();
+  if (!saved) return;
+  if (saved.cursor == null && !saved.anchorTime) return;
 
-  visible.value = true
-})
+  visible.value = true;
+});
 </script>
 
 <template>

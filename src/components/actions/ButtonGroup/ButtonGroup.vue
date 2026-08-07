@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import './button-group.css'
+import "./button-group.css";
 
 interface Props {
-  vertical?: boolean
+  vertical?: boolean;
 }
 
-defineProps<Props>()
+defineProps<Props>();
 </script>
 
 <template>

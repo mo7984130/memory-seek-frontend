@@ -1,52 +1,52 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { LikeIcon, PhotoIcon } from '@/components/base/Icon/icons'
-import { photo, type Photo } from 'memory-seek-api'
-import dayjs from 'dayjs'
+import { computed } from "vue";
+import { LikeIcon, PhotoIcon } from "@/components/base/Icon/icons";
+import { photo, type Photo } from "memory-seek-api";
+import dayjs from "dayjs";
 
 const props = defineProps<{
-  item: Photo
-}>()
+  item: Photo;
+}>();
 
 const emit = defineEmits<{
-  (e: 'click', item: Photo): void
-  (e: 'like', item: Photo): void
-}>()
+  (e: "click", item: Photo): void;
+  (e: "like", item: Photo): void;
+}>();
 
 /**
  * 缩略图 URL
  */
 const thumbnailUrl = computed(() => {
-  if (props.item.thumbnailToken) return photo.getImgUrl(props.item.thumbnailToken)
-  return null
-})
+  if (props.item.thumbnailToken)
+    return photo.getImgUrl(props.item.thumbnailToken);
+  return null;
+});
 
 /**
  * 是否已点赞
  */
-const isLiked = computed(() => props.item.isLiked ?? false)
+const isLiked = computed(() => props.item.isLiked ?? false);
 
 /**
  * 格式化日期
  */
 const formattedDate = computed(() => {
-  return dayjs(props.item.createdAt).format('YYYY/MM/DD')
-})
-
+  return dayjs(props.item.createdAt).format("YYYY/MM/DD");
+});
 
 /**
  * 点击处理
  */
 function handleClick() {
-  emit('click', props.item)
+  emit("click", props.item);
 }
 
 /**
  * 点赞/取消点赞
  */
 function handleLike(event: Event) {
-  event.stopPropagation()
-  emit('like', props.item)
+  event.stopPropagation();
+  emit("like", props.item);
 }
 </script>
 
@@ -105,12 +105,16 @@ function handleLike(event: Event) {
 @media (hover: hover) and (pointer: fine) {
   .photo-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 16px 48px rgba(0, 0, 0, 0.08);
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.12),
+      0 16px 48px rgba(0, 0, 0, 0.08);
     border-color: rgba(0, 0, 0, 0.1);
   }
 
   .dark .photo-card:hover {
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 16px 48px rgba(0, 0, 0, 0.3);
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.4),
+      0 16px 48px rgba(0, 0, 0, 0.3);
     border-color: rgba(255, 255, 255, 0.15);
   }
 

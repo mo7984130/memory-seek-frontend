@@ -1,30 +1,38 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onActivated, onBeforeUnmount } from 'vue'
-import { photo } from 'memory-seek-api'
-import type { Photo } from 'memory-seek-api'
-import dayjs from 'dayjs'
-import { useWaterfallPage } from '@/composables/useWaterfallPage'
-import { useListScrollRestore } from '@/composables/useListScrollRestore'
-import VirtualWaterfall from '@/components/photo/VirtualWaterfall.vue'
-import TimelineNav from '@/components/photo/TimelineNav.vue'
-import LastPositionButton from '@/components/photo/LastPositionButton.vue'
-import WaterfallBookmarkPanel from '@/components/photo/WaterfallBookmarkPanel.vue'
-import PhotoCard from '@/components/photo/PhotoCard.vue'
-import PhotoViewer from '@/components/photo/PhotoViewer.vue'
-import Spinner from '@/components/base/Spinner/Spinner.vue'
-import type { WaterfallBookmark } from '@/composables/useWaterfallBookmarks'
-import BackToTop from '@/components/actions/BackToTop/BackToTop.vue'
+import {
+  ref,
+  computed,
+  nextTick,
+  onMounted,
+  onActivated,
+  onBeforeUnmount,
+} from "vue";
+import { photo } from "memory-seek-api";
+import type { Photo } from "memory-seek-api";
+import dayjs from "dayjs";
+import { useWaterfallPage } from "@/composables/useWaterfallPage";
+import { useListScrollRestore } from "@/composables/useListScrollRestore";
+import VirtualWaterfall from "@/components/photo/VirtualWaterfall.vue";
+import TimelineNav from "@/components/photo/TimelineNav.vue";
+import LastPositionButton from "@/components/photo/LastPositionButton.vue";
+import WaterfallBookmarkPanel from "@/components/photo/WaterfallBookmarkPanel.vue";
+import PhotoCard from "@/components/photo/PhotoCard.vue";
+import PhotoViewer from "@/components/photo/PhotoViewer.vue";
+import Spinner from "@/components/base/Spinner/Spinner.vue";
+import type { WaterfallBookmark } from "@/composables/useWaterfallBookmarks";
+import BackToTop from "@/components/actions/BackToTop/BackToTop.vue";
 
 // 组件名（KeepAlive include 匹配）
-defineOptions({ name: 'PhotoWaterfallView' })
+defineOptions({ name: "PhotoWaterfallView" });
 
 // 瀑布流页面（布局/加载/持久化/自动恢复/时间线）
 const page = useWaterfallPage({
-  storageKey: 'photos',
+  storageKey: "photos",
   fetch: async ({ cursor, anchorTime }) =>
-    (await photo.getPhotos({ cursor, size: 20, direction: 'next', anchorTime })).data,
+    (await photo.getPhotos({ cursor, size: 20, direction: "next", anchorTime }))
+      .data,
   fetchTimeline: async () => (await photo.timeline.getMonthlyStats()).data,
-})
+});
 
 const {
   waterfall,
@@ -40,121 +48,123 @@ const {
   dispose,
   navigateToMonth,
   navigateToAnchor,
-} = page
+} = page;
 
-const waterfallViewRef = ref<InstanceType<typeof VirtualWaterfall> | null>(null)
+const waterfallViewRef = ref<InstanceType<typeof VirtualWaterfall> | null>(
+  null,
+);
 
 // 返回时恢复滚动位置（KeepAlive 缓存页）
-const { restoreScroll } = useListScrollRestore()
+const { restoreScroll } = useListScrollRestore();
 
 // 照片查看器状态（临时 UI 状态，不持久化）
-const viewerVisible = ref(false)
-const selectedPhoto = ref<Photo | null>(null)
+const viewerVisible = ref(false);
+const selectedPhoto = ref<Photo | null>(null);
 
 function getPhotoById(id: string | number): Photo | undefined {
-  return waterfall.allPhotos.value.find((p) => p.id === id)
+  return waterfall.allPhotos.value.find((p) => p.id === id);
 }
 
 function formatMonthLabel(key: string): string {
-  const parts = key.split('-')
-  return `${parts[0]}年${parseInt(parts[1]!)}月`
+  const parts = key.split("-");
+  return `${parts[0]}年${parseInt(parts[1]!)}月`;
 }
 
 /**
  * 当前视口顶部的照片（用于生成位置书签锚点）
  */
 const topPhoto = computed(() => {
-  if (topItemId.value == null) return null
-  return getPhotoById(topItemId.value) ?? null
-})
+  if (topItemId.value == null) return null;
+  return getPhotoById(topItemId.value) ?? null;
+});
 
 /**
  * 当前浏览位置的锚点信息（顶部照片所在月份）
  */
 const currentAnchor = computed(() => {
-  const photo = topPhoto.value
-  if (!photo?.createdAt) return null
-  const monthKey = photo.createdAt.substring(0, 7)
+  const photo = topPhoto.value;
+  if (!photo?.createdAt) return null;
+  const monthKey = photo.createdAt.substring(0, 7);
   return {
     label: formatMonthLabel(monthKey),
     monthKey,
     // 精确到顶部照片的拍摄时间：同一月份不同时刻保存的书签，跳转位置不同
     anchorTime: photo.createdAt,
     // 顶部照片的精确拍摄时间，用于更详细的位置提示
-    detail: dayjs(photo.createdAt).format('YYYY年M月D日 HH:mm'),
-  }
-})
+    detail: dayjs(photo.createdAt).format("YYYY年M月D日 HH:mm"),
+  };
+});
 
 /**
  * 位置书签跳转：从书签记录的锚点重新加载照片流
  */
 function handleBookmarkJump(bookmark: WaterfallBookmark) {
-  navigateToAnchor(bookmark.anchorTime, bookmark.monthKey)
+  navigateToAnchor(bookmark.anchorTime, bookmark.monthKey);
 }
 
 function handlePhotoClick(photoItem: Photo) {
-  selectedPhoto.value = photoItem
-  viewerVisible.value = true
+  selectedPhoto.value = photoItem;
+  viewerVisible.value = true;
 }
 
 /** 查看器切换照片：更新当前照片并让瀑布流滚动到对应位置 */
 function handleViewerNavigate(photoItem: Photo) {
-  selectedPhoto.value = photoItem
+  selectedPhoto.value = photoItem;
   nextTick(() => {
-    waterfallViewRef.value?.scrollToItem(photoItem.id, 'smooth')
-  })
+    waterfallViewRef.value?.scrollToItem(photoItem.id, "smooth");
+  });
 }
 
 /** 查看器触底时加载下一页；返回是否加载到了新照片 */
 async function handleLoadMore(): Promise<boolean> {
-  if (loading.value || !waterfall.hasMore.value) return false
-  const records = await page.fetchMore({ cursor: waterfall.cursor.value })
-  return records.length > 0
+  if (loading.value || !waterfall.hasMore.value) return false;
+  const records = await page.fetchMore({ cursor: waterfall.cursor.value });
+  return records.length > 0;
 }
 
 function handleLikeChange(photoId: string, isLiked: boolean) {
-  waterfall.updatePhotoLike(photoId, isLiked)
+  waterfall.updatePhotoLike(photoId, isLiked);
   if (selectedPhoto.value?.id === photoId) {
-    selectedPhoto.value.isLiked = isLiked
+    selectedPhoto.value.isLiked = isLiked;
   }
 }
 
 function handleDelete(photoId: string) {
-  waterfall.removePhoto(photoId)
+  waterfall.removePhoto(photoId);
 }
 
 async function handleLike(photoItem: Photo) {
-  const photoId = photoItem.id as string
-  const wasLiked = photoItem.isLiked ?? false
+  const photoId = photoItem.id as string;
+  const wasLiked = photoItem.isLiked ?? false;
 
   // 乐观更新
-  waterfall.updatePhotoLike(photoId, !wasLiked)
+  waterfall.updatePhotoLike(photoId, !wasLiked);
 
   try {
     if (wasLiked) {
-      await photo.like.unlikePhoto(photoId)
+      await photo.like.unlikePhoto(photoId);
     } else {
-      await photo.like.likePhoto(photoId)
+      await photo.like.likePhoto(photoId);
     }
   } catch (error) {
     // 回滚
-    waterfall.updatePhotoLike(photoId, wasLiked)
-    console.error('[PhotoWaterfallView] 点赞操作失败:', error)
+    waterfall.updatePhotoLike(photoId, wasLiked);
+    console.error("[PhotoWaterfallView] 点赞操作失败:", error);
   }
 }
 
 onMounted(() => {
-  initialize(() => waterfallViewRef.value)
-})
+  initialize(() => waterfallViewRef.value);
+});
 
 // 从其他页面返回时恢复浏览位置
 onActivated(() => {
-  restoreScroll()
-})
+  restoreScroll();
+});
 
 onBeforeUnmount(() => {
-  dispose()
-})
+  dispose();
+});
 </script>
 
 <template>
@@ -248,7 +258,7 @@ onBeforeUnmount(() => {
 
 .load-sentinel__text::before,
 .load-sentinel__text::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   width: 40px;

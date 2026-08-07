@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { toastVariants } from './toast.variants'
-import { useToast } from './toast'
-import type { ToastItem } from './toast'
-import Icon from '../../base/Icon/Icon.vue'
-import './toast.css'
+import { toastVariants } from "./toast.variants";
+import { useToast } from "./toast";
+import type { ToastItem } from "./toast";
+import Icon from "../../base/Icon/Icon.vue";
+import "./toast.css";
 
-const { toasts, remove } = useToast()
+const { toasts, remove } = useToast();
 
-const iconMap: Record<ToastItem['type'], string> = {
-  success: 'SuccessIcon',
-  warning: 'WarningIcon',
-  error: 'ErrorIcon',
-  info: 'InfoIcon',
-}
+const iconMap: Record<ToastItem["type"], string> = {
+  success: "SuccessIcon",
+  warning: "WarningIcon",
+  error: "ErrorIcon",
+  info: "InfoIcon",
+};
 </script>
 
 <template>

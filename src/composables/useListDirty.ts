@@ -5,14 +5,14 @@
  * 详情页对数据做过修改时调用 markListDirty(key) 登记，
  * 列表页在 onActivated 中 consumeListDirty(key) 消费一次，命中则刷新。
  */
-const dirtyKeys = new Set<string>()
+const dirtyKeys = new Set<string>();
 
 export function markListDirty(key: string) {
-  dirtyKeys.add(key)
+  dirtyKeys.add(key);
 }
 
 export function consumeListDirty(key: string): boolean {
-  const has = dirtyKeys.has(key)
-  if (has) dirtyKeys.delete(key)
-  return has
+  const has = dirtyKeys.has(key);
+  if (has) dirtyKeys.delete(key);
+  return has;
 }

@@ -1,34 +1,34 @@
-import { ref } from 'vue'
-import { defineStore } from 'pinia'
+import { ref } from "vue";
+import { defineStore } from "pinia";
 
-export const useThemeStore = defineStore('theme', () => {
-  const isDark = ref(false)
+export const useThemeStore = defineStore("theme", () => {
+  const isDark = ref(false);
 
   function initTheme() {
     // 检查本地存储
-    const saved = localStorage.getItem('theme')
+    const saved = localStorage.getItem("theme");
     if (saved) {
-      isDark.value = saved === 'dark'
+      isDark.value = saved === "dark";
     } else {
       // 检查系统偏好
-      isDark.value = window.matchMedia('(prefers-color-scheme: dark)').matches
+      isDark.value = window.matchMedia("(prefers-color-scheme: dark)").matches;
     }
-    applyTheme()
+    applyTheme();
   }
 
   function toggleTheme() {
-    isDark.value = !isDark.value
-    localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
-    applyTheme()
+    isDark.value = !isDark.value;
+    localStorage.setItem("theme", isDark.value ? "dark" : "light");
+    applyTheme();
   }
 
   function applyTheme() {
-    document.documentElement.classList.toggle('dark', isDark.value)
+    document.documentElement.classList.toggle("dark", isDark.value);
   }
 
   return {
     isDark,
     initTheme,
     toggleTheme,
-  }
-})
+  };
+});

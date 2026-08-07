@@ -1,25 +1,25 @@
 <!-- 回到顶部 悬浮按钮 -->
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { ArrowUp } from '@/components/base/Icon/icons'
+import { ref, onMounted, onBeforeUnmount } from "vue";
+import { ArrowUp } from "@/components/base/Icon/icons";
 
-const visible = ref(false)
+const visible = ref(false);
 
 function handleScroll() {
-  visible.value = window.scrollY > 400
+  visible.value = window.scrollY > 400;
 }
 
 function scrollToTop() {
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 onMounted(() => {
-  window.addEventListener('scroll', handleScroll, { passive: true })
-})
+  window.addEventListener("scroll", handleScroll, { passive: true });
+});
 
 onBeforeUnmount(() => {
-  window.removeEventListener('scroll', handleScroll)
-})
+  window.removeEventListener("scroll", handleScroll);
+});
 </script>
 
 <template>

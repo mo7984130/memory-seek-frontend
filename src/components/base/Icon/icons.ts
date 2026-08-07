@@ -1,12 +1,12 @@
-export { default as CloseIcon } from './svg/close.svg?component'
-export { default as CheckIcon } from './svg/check.svg?component'
-export { default as LoadingIcon } from './svg/loading.svg?component'
-export { default as ChevronDownIcon } from './svg/chevron-down.svg?component'
-export { default as SearchIcon } from './svg/search.svg?component'
-export { default as WarningIcon } from './svg/warning.svg?component'
-export { default as InfoIcon } from './svg/info.svg?component'
-export { default as SuccessIcon } from './svg/success.svg?component'
-export { default as ErrorIcon } from './svg/error.svg?component'
+export { default as CloseIcon } from "./svg/close.svg?component";
+export { default as CheckIcon } from "./svg/check.svg?component";
+export { default as LoadingIcon } from "./svg/loading.svg?component";
+export { default as ChevronDownIcon } from "./svg/chevron-down.svg?component";
+export { default as SearchIcon } from "./svg/search.svg?component";
+export { default as WarningIcon } from "./svg/warning.svg?component";
+export { default as InfoIcon } from "./svg/info.svg?component";
+export { default as SuccessIcon } from "./svg/success.svg?component";
+export { default as ErrorIcon } from "./svg/error.svg?component";
 
 /* ============================================
    Lucide 图标统一导出
@@ -54,7 +54,7 @@ import {
   Tag,
   ChevronLeft,
   ChevronRight,
-} from '@lucide/vue'
+} from "@lucide/vue";
 
 export {
   X,
@@ -98,7 +98,7 @@ export {
   Tag,
   ChevronLeft,
   ChevronRight,
-}
+};
 
 /* ============================================
    语义化图标别名
@@ -106,16 +106,16 @@ export {
    ============================================ */
 
 /** 点赞/喜欢 - 心形图标 */
-export const LikeIcon = Heart
+export const LikeIcon = Heart;
 
 /** 收藏 - 书签图标 */
-export const FavoriteIcon = Bookmark
+export const FavoriteIcon = Bookmark;
 
 /** 评论 - 对话气泡图标 */
-export const CommentIcon = MessageCircle
+export const CommentIcon = MessageCircle;
 
 /** 照片 - 图片图标 */
-export const PhotoIcon = ImageIcon
+export const PhotoIcon = ImageIcon;
 
 /** 人脸识别 - 人形图标 */
-export const FaceIcon = UserRound
+export const FaceIcon = UserRound;

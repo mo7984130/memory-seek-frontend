@@ -1,81 +1,81 @@
 <script setup lang="ts">
-import { ref, onMounted, onActivated } from 'vue'
-import { useRouter } from 'vue-router'
-import { Plus, FolderOpen } from '@/components/base/Icon/icons'
-import { photo } from 'memory-seek-api'
-import type { Collection } from 'memory-seek-api'
-import { useListScrollRestore } from '@/composables/useListScrollRestore'
-import { consumeListDirty } from '@/composables/useListDirty'
-import IconButton from '@/components/actions/IconButton/IconButton.vue'
-import Button from '@/components/actions/Button/Button.vue'
-import Card from '@/components/data/Card/Card.vue'
-import Modal from '@/components/feedback/Modal/Modal.vue'
-import Input from '@/components/form/Input/Input.vue'
-import Spinner from '@/components/base/Spinner/Spinner.vue'
-import { useToast } from '@/components/feedback/Toast/toast'
+import { ref, onMounted, onActivated } from "vue";
+import { useRouter } from "vue-router";
+import { Plus, FolderOpen } from "@/components/base/Icon/icons";
+import { photo } from "memory-seek-api";
+import type { Collection } from "memory-seek-api";
+import { useListScrollRestore } from "@/composables/useListScrollRestore";
+import { consumeListDirty } from "@/composables/useListDirty";
+import IconButton from "@/components/actions/IconButton/IconButton.vue";
+import Button from "@/components/actions/Button/Button.vue";
+import Card from "@/components/data/Card/Card.vue";
+import Modal from "@/components/feedback/Modal/Modal.vue";
+import Input from "@/components/form/Input/Input.vue";
+import Spinner from "@/components/base/Spinner/Spinner.vue";
+import { useToast } from "@/components/feedback/Toast/toast";
 
 // 组件名（KeepAlive include 匹配）
-defineOptions({ name: 'CollectionsView' })
+defineOptions({ name: "CollectionsView" });
 
-const router = useRouter()
-const toast = useToast()
+const router = useRouter();
+const toast = useToast();
 
 // 返回时恢复滚动位置（KeepAlive 缓存页）
-const { restoreScroll } = useListScrollRestore()
+const { restoreScroll } = useListScrollRestore();
 
-const loading = ref(false)
-const collections = ref<Collection[]>([])
-const showCreateModal = ref(false)
-const newCollectionName = ref('')
-const newCollectionDesc = ref('')
-const creating = ref(false)
+const loading = ref(false);
+const collections = ref<Collection[]>([]);
+const showCreateModal = ref(false);
+const newCollectionName = ref("");
+const newCollectionDesc = ref("");
+const creating = ref(false);
 
 /**
  * 封面渐变色 — 根据 index 循环，分浅色/暗色两套
  */
 const gradients = {
   light: [
-    'linear-gradient(135deg, #ccfbf1, #99f6e4)',
-    'linear-gradient(135deg, #fef3c7, #fde68a)',
-    'linear-gradient(135deg, #dbeafe, #93c5fd)',
-    'linear-gradient(135deg, #fce7f3, #f9a8d4)',
-    'linear-gradient(135deg, #e0e7ff, #a5b4fc)',
-    'linear-gradient(135deg, #d1fae5, #6ee7b7)',
+    "linear-gradient(135deg, #ccfbf1, #99f6e4)",
+    "linear-gradient(135deg, #fef3c7, #fde68a)",
+    "linear-gradient(135deg, #dbeafe, #93c5fd)",
+    "linear-gradient(135deg, #fce7f3, #f9a8d4)",
+    "linear-gradient(135deg, #e0e7ff, #a5b4fc)",
+    "linear-gradient(135deg, #d1fae5, #6ee7b7)",
   ],
   dark: [
-    'linear-gradient(135deg, #134e4a, #115e59)',
-    'linear-gradient(135deg, #78350f, #92400e)',
-    'linear-gradient(135deg, #1e3a5f, #1e40af)',
-    'linear-gradient(135deg, #831843, #9d174d)',
-    'linear-gradient(135deg, #312e81, #4338ca)',
-    'linear-gradient(135deg, #064e3b, #065f46)',
+    "linear-gradient(135deg, #134e4a, #115e59)",
+    "linear-gradient(135deg, #78350f, #92400e)",
+    "linear-gradient(135deg, #1e3a5f, #1e40af)",
+    "linear-gradient(135deg, #831843, #9d174d)",
+    "linear-gradient(135deg, #312e81, #4338ca)",
+    "linear-gradient(135deg, #064e3b, #065f46)",
   ],
-}
+};
 
 /**
  * 判断当前是否为暗色模式
  */
 function isDarkMode() {
-  return document.documentElement.classList.contains('dark')
+  return document.documentElement.classList.contains("dark");
 }
 
 function getGradient(index: number) {
-  const mode = isDarkMode() ? 'dark' : 'light'
-  return gradients[mode][index % gradients.light.length]
+  const mode = isDarkMode() ? "dark" : "light";
+  return gradients[mode][index % gradients.light.length];
 }
 
 /**
  * 加载收藏夹列表
  */
 async function loadCollections() {
-  loading.value = true
+  loading.value = true;
   try {
-    const res = await photo.collection.getCollectionList()
-    collections.value = res.data
+    const res = await photo.collection.getCollectionList();
+    collections.value = res.data;
   } catch (error) {
-    console.error('加载收藏夹失败:', error)
+    console.error("加载收藏夹失败:", error);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
 }
 
@@ -83,48 +83,48 @@ async function loadCollections() {
  * 进入收藏夹详情
  */
 function enterCollection(collection: Collection) {
-  router.push(`/collections/${collection.id}`)
+  router.push(`/collections/${collection.id}`);
 }
 
 /**
  * 创建收藏夹
  */
 async function handleCreate() {
-  const name = newCollectionName.value.trim()
+  const name = newCollectionName.value.trim();
   if (!name) {
-    toast.warning('请输入收藏夹名称')
-    return
+    toast.warning("请输入收藏夹名称");
+    return;
   }
 
-  creating.value = true
+  creating.value = true;
   try {
     const res = await photo.collection.createCollection({
       name,
       description: newCollectionDesc.value.trim() || undefined,
-    })
-    collections.value.push(res.data)
-    showCreateModal.value = false
-    newCollectionName.value = ''
-    newCollectionDesc.value = ''
-    toast.success('收藏夹创建成功')
+    });
+    collections.value.push(res.data);
+    showCreateModal.value = false;
+    newCollectionName.value = "";
+    newCollectionDesc.value = "";
+    toast.success("收藏夹创建成功");
   } catch (error) {
-    console.error('创建收藏夹失败:', error)
+    console.error("创建收藏夹失败:", error);
   } finally {
-    creating.value = false
+    creating.value = false;
   }
 }
 
 onMounted(() => {
-  loadCollections()
-})
+  loadCollections();
+});
 
 // 从详情页返回：详情页改过收藏夹（编辑/删除/删照片）时刷新列表，随后恢复浏览位置
 onActivated(async () => {
-  if (consumeListDirty('collections')) {
-    await loadCollections()
+  if (consumeListDirty("collections")) {
+    await loadCollections();
   }
-  await restoreScroll()
-})
+  await restoreScroll();
+});
 </script>
 
 <template>
@@ -136,7 +136,10 @@ onActivated(async () => {
           {{ collections.length }} 个收藏夹
         </div>
       </div>
-      <IconButton class="collections-view__add-btn" @click="showCreateModal = true">
+      <IconButton
+        class="collections-view__add-btn"
+        @click="showCreateModal = true"
+      >
         <Plus :size="20" />
       </IconButton>
     </div>
@@ -157,7 +160,10 @@ onActivated(async () => {
         class="collection-card"
         @click="enterCollection(collection)"
       >
-        <div class="collection-card__cover" :style="{ background: getGradient(index) }">
+        <div
+          class="collection-card__cover"
+          :style="{ background: getGradient(index) }"
+        >
           <img
             v-if="collection.coverToken"
             :src="photo.getImgUrl(collection.coverToken)"
@@ -168,7 +174,9 @@ onActivated(async () => {
         </div>
         <div class="collection-card__info">
           <div class="collection-card__name">{{ collection.name }}</div>
-          <div class="collection-card__count">{{ collection.photoCount }} 张照片</div>
+          <div class="collection-card__count">
+            {{ collection.photoCount }} 张照片
+          </div>
         </div>
       </Card>
     </div>
@@ -177,15 +185,13 @@ onActivated(async () => {
     <div v-else class="collections-view__empty">
       <FolderOpen :size="56" class="collections-view__empty-icon" />
       <div class="collections-view__empty-text">暂无收藏夹</div>
-      <div class="collections-view__empty-hint">点击右上角 + 创建第一个收藏夹</div>
+      <div class="collections-view__empty-hint">
+        点击右上角 + 创建第一个收藏夹
+      </div>
     </div>
 
     <!-- 创建收藏夹弹窗 -->
-    <Modal
-      v-model="showCreateModal"
-      size="sm"
-      title="新建收藏夹"
-    >
+    <Modal v-model="showCreateModal" size="sm" title="新建收藏夹">
       <div class="create-form">
         <div class="create-form__field">
           <label class="create-form__label">名称</label>
@@ -197,17 +203,9 @@ onActivated(async () => {
         </div>
         <div class="create-form__field">
           <label class="create-form__label">描述（可选）</label>
-          <Input
-            v-model="newCollectionDesc"
-            placeholder="简短描述"
-          />
+          <Input v-model="newCollectionDesc" placeholder="简短描述" />
         </div>
-        <Button
-          type="button"
-          :loading="creating"
-          block
-          @click="handleCreate"
-        >
+        <Button type="button" :loading="creating" block @click="handleCreate">
           创建
         </Button>
       </div>

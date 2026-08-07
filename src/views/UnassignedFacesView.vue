@@ -1,30 +1,30 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted, onActivated, onBeforeUnmount } from 'vue'
-import { photo } from 'memory-seek-api'
-import type { Photo } from 'memory-seek-api'
-import { useWaterfallPage } from '@/composables/useWaterfallPage'
-import { useListScrollRestore } from '@/composables/useListScrollRestore'
-import VirtualWaterfall from '@/components/photo/VirtualWaterfall.vue'
-import LastPositionButton from '@/components/photo/LastPositionButton.vue'
-import PhotoCard from '@/components/photo/PhotoCard.vue'
-import PhotoViewer from '@/components/photo/PhotoViewer.vue'
-import Spinner from '@/components/base/Spinner/Spinner.vue'
-import BackToTop from '@/components/actions/BackToTop/BackToTop.vue'
-import IconButton from '@/components/actions/IconButton/IconButton.vue'
-import { FaceIcon, CloseIcon } from '@/components/base/Icon/icons'
+import { ref, nextTick, onMounted, onActivated, onBeforeUnmount } from "vue";
+import { photo } from "memory-seek-api";
+import type { Photo } from "memory-seek-api";
+import { useWaterfallPage } from "@/composables/useWaterfallPage";
+import { useListScrollRestore } from "@/composables/useListScrollRestore";
+import VirtualWaterfall from "@/components/photo/VirtualWaterfall.vue";
+import LastPositionButton from "@/components/photo/LastPositionButton.vue";
+import PhotoCard from "@/components/photo/PhotoCard.vue";
+import PhotoViewer from "@/components/photo/PhotoViewer.vue";
+import Spinner from "@/components/base/Spinner/Spinner.vue";
+import BackToTop from "@/components/actions/BackToTop/BackToTop.vue";
+import IconButton from "@/components/actions/IconButton/IconButton.vue";
+import { FaceIcon, CloseIcon } from "@/components/base/Icon/icons";
 
 // 组件名（KeepAlive include 匹配）
-defineOptions({ name: 'UnassignedFacesView' })
+defineOptions({ name: "UnassignedFacesView" });
 
 // 页面顶部引导卡片（每次进入默认显示，本次进入内可关闭）
-const showGuide = ref(true)
+const showGuide = ref(true);
 
 // 瀑布流页面（布局/加载/持久化/自动恢复）
 const page = useWaterfallPage({
-  storageKey: 'unassigned',
+  storageKey: "unassigned",
   fetch: async ({ cursor }) =>
     (await photo.face.getUnassignedFacePhotos({ cursor, size: 20 })).data,
-})
+});
 
 const {
   waterfall,
@@ -37,93 +37,98 @@ const {
   restoreToLastPosition,
   initialize,
   dispose,
-} = page
+} = page;
 
-const waterfallViewRef = ref<InstanceType<typeof VirtualWaterfall> | null>(null)
+const waterfallViewRef = ref<InstanceType<typeof VirtualWaterfall> | null>(
+  null,
+);
 
 // 返回时恢复滚动位置（KeepAlive 缓存页）
-const { restoreScroll } = useListScrollRestore()
+const { restoreScroll } = useListScrollRestore();
 
 // 照片查看器状态
-const viewerVisible = ref(false)
-const selectedPhoto = ref<Photo | null>(null)
+const viewerVisible = ref(false);
+const selectedPhoto = ref<Photo | null>(null);
 
 function getPhotoById(id: string | number): Photo | undefined {
-  return waterfall.allPhotos.value.find((p) => p.id === id)
+  return waterfall.allPhotos.value.find((p) => p.id === id);
 }
 
 function handlePhotoClick(photoItem: Photo) {
-  selectedPhoto.value = photoItem
-  viewerVisible.value = true
+  selectedPhoto.value = photoItem;
+  viewerVisible.value = true;
 }
 
 /** 查看器切换照片：更新当前照片并让瀑布流滚动到对应位置 */
 function handleViewerNavigate(photoItem: Photo) {
-  selectedPhoto.value = photoItem
+  selectedPhoto.value = photoItem;
   nextTick(() => {
-    waterfallViewRef.value?.scrollToItem(photoItem.id, 'smooth')
-  })
+    waterfallViewRef.value?.scrollToItem(photoItem.id, "smooth");
+  });
 }
 
 /** 查看器触底时加载下一页；返回是否加载到了新照片 */
 async function handleLoadMore(): Promise<boolean> {
-  if (loading.value || !waterfall.hasMore.value) return false
-  const records = await fetchMore({ cursor: waterfall.cursor.value })
-  return records.length > 0
+  if (loading.value || !waterfall.hasMore.value) return false;
+  const records = await fetchMore({ cursor: waterfall.cursor.value });
+  return records.length > 0;
 }
 
 function handleLikeChange(photoId: string, isLiked: boolean) {
   if (selectedPhoto.value?.id === photoId) {
-    selectedPhoto.value.isLiked = isLiked
+    selectedPhoto.value.isLiked = isLiked;
   }
 }
 
 function handleDelete(photoId: string) {
-  waterfall.removePhoto(photoId)
+  waterfall.removePhoto(photoId);
 }
 
 /** 人脸变更（分配/取消/删除）后，若当前照片已不含未分配人脸则从列表移除 */
 async function handleFacesUpdated() {
-  const photoItem = selectedPhoto.value
-  if (!photoItem) return
+  const photoItem = selectedPhoto.value;
+  if (!photoItem) return;
   try {
-    const faces = (await photo.face.getFaces(photoItem.id)).data
+    const faces = (await photo.face.getFaces(photoItem.id)).data;
     if (!faces.some((f) => !f.personId)) {
-      waterfall.removePhoto(photoItem.id)
+      waterfall.removePhoto(photoItem.id);
     }
   } catch (error) {
-    console.error('[UnassignedFacesView] 刷新人脸状态失败:', error)
+    console.error("[UnassignedFacesView] 刷新人脸状态失败:", error);
   }
 }
 
 async function handleLike(photoItem: Photo) {
-  const photoId = photoItem.id as string
+  const photoId = photoItem.id as string;
   try {
-    await photo.like.unlikePhoto(photoId)
-    waterfall.removePhoto(photoId)
+    await photo.like.unlikePhoto(photoId);
+    waterfall.removePhoto(photoId);
   } catch (error) {
-    console.error('[UnassignedFacesView] 取消点赞失败:', error)
+    console.error("[UnassignedFacesView] 取消点赞失败:", error);
   }
 }
 
 onMounted(() => {
-  initialize(() => waterfallViewRef.value)
-})
+  initialize(() => waterfallViewRef.value);
+});
 
 // 从其他页面返回时恢复浏览位置
 onActivated(() => {
-  restoreScroll()
-})
+  restoreScroll();
+});
 
 onBeforeUnmount(() => {
-  dispose()
-})
+  dispose();
+});
 </script>
 
 <template>
   <div class="unassigned-view" :ref="page.containerRef">
     <div class="unassigned-view__header">
-      <span class="unassigned-view__count" v-if="waterfall.allPhotos.value.length > 0">
+      <span
+        class="unassigned-view__count"
+        v-if="waterfall.allPhotos.value.length > 0"
+      >
         {{ waterfall.allPhotos.value.length }} 张照片
       </span>
     </div>
@@ -175,17 +180,28 @@ onBeforeUnmount(() => {
 
       <div :ref="page.sentinelRef" class="load-sentinel">
         <Spinner v-if="loading" />
-        <span v-else-if="!waterfall.hasMore.value && waterfall.allPhotos.value.length > 0" class="load-sentinel__text">
+        <span
+          v-else-if="
+            !waterfall.hasMore.value && waterfall.allPhotos.value.length > 0
+          "
+          class="load-sentinel__text"
+        >
           已经到底啦 ~
         </span>
-        <span v-else-if="!loading && waterfall.allPhotos.value.length === 0" class="load-sentinel__text">
+        <span
+          v-else-if="!loading && waterfall.allPhotos.value.length === 0"
+          class="load-sentinel__text"
+        >
           没有未分配人脸的照片
         </span>
       </div>
     </div>
 
     <!-- 回到上次浏览位置（按钮触发恢复） -->
-    <LastPositionButton storage-key="unassigned" @restore="restoreToLastPosition" />
+    <LastPositionButton
+      storage-key="unassigned"
+      @restore="restoreToLastPosition"
+    />
 
     <!-- 回到顶部 -->
     <BackToTop />
@@ -301,7 +317,7 @@ onBeforeUnmount(() => {
 
 .load-sentinel__text::before,
 .load-sentinel__text::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 50%;
   width: 40px;

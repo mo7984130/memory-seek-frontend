@@ -1,51 +1,54 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import type { MonthStat } from 'memory-seek-api'
-import { Calendar } from '@/components/base/Icon/icons'
-import Modal from '@/components/feedback/Modal/Modal.vue'
+import { ref, computed } from "vue";
+import type { MonthStat } from "memory-seek-api";
+import { Calendar } from "@/components/base/Icon/icons";
+import Modal from "@/components/feedback/Modal/Modal.vue";
 
 /**
  * 导航年份结构
  */
 interface NavYear {
-  year: number
-  months: { key: string; label: string; count: number }[]
+  year: number;
+  months: { key: string; label: string; count: number }[];
 }
 
 const props = withDefaults(
   defineProps<{
-    monthStats: MonthStat[]
-    currentGroup: string
-    navigating?: boolean
+    monthStats: MonthStat[];
+    currentGroup: string;
+    navigating?: boolean;
   }>(),
   { navigating: false },
-)
+);
 
 const emit = defineEmits<{
-  (e: 'navigate', groupKey: string): void
-}>()
+  (e: "navigate", groupKey: string): void;
+}>();
 
-const showModal = ref(false)
+const showModal = ref(false);
 
 /**
  * 将 MonthStat 转换为导航结构
  */
 const navYears = computed<NavYear[]>(() => {
-  const yearMap = new Map<number, { key: string; label: string; count: number }[]>()
+  const yearMap = new Map<
+    number,
+    { key: string; label: string; count: number }[]
+  >();
 
   for (const stat of props.monthStats) {
-    const parts = stat.dateStr.split('-')
-    const year = parseInt(parts[0]!)
-    const month = parseInt(parts[1]!)
+    const parts = stat.dateStr.split("-");
+    const year = parseInt(parts[0]!);
+    const month = parseInt(parts[1]!);
 
     if (!yearMap.has(year)) {
-      yearMap.set(year, [])
+      yearMap.set(year, []);
     }
     yearMap.get(year)!.push({
       key: stat.dateStr,
       label: `${month}月`,
       count: stat.count,
-    })
+    });
   }
 
   return Array.from(yearMap.entries())
@@ -53,16 +56,16 @@ const navYears = computed<NavYear[]>(() => {
     .map(([year, months]) => ({
       year,
       months: months.sort((a, b) => b.key.localeCompare(a.key)),
-    }))
-})
+    }));
+});
 
 /**
  * 点击月份处理
  */
 function handleMonthClick(key: string) {
-  if (props.navigating) return
-  emit('navigate', key)
-  showModal.value = false
+  if (props.navigating) return;
+  emit("navigate", key);
+  showModal.value = false;
 }
 </script>
 
@@ -78,7 +81,9 @@ function handleMonthClick(key: string) {
       <div
         class="timeline-nav__year"
         :class="{
-          'timeline-nav__year--active': year.months.some(m => m.key === currentGroup)
+          'timeline-nav__year--active': year.months.some(
+            (m) => m.key === currentGroup,
+          ),
         }"
       >
         {{ year.year }}
@@ -112,11 +117,7 @@ function handleMonthClick(key: string) {
       <Calendar :size="20" />
     </button>
 
-    <Modal
-      v-model="showModal"
-      size="sm"
-      title="时间线"
-    >
+    <Modal v-model="showModal" size="sm" title="时间线">
       <div class="timeline-modal">
         <div
           v-for="year in navYears"
@@ -243,7 +244,9 @@ function handleMonthClick(key: string) {
 }
 
 @keyframes timeline-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ============================================

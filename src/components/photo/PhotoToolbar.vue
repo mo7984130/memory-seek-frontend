@@ -1,101 +1,135 @@
 <!-- src/components/photo/PhotoToolbar.vue -->
 <script setup lang="ts">
-import { ZoomIn, ZoomOut, RotateCw, Maximize2, Heart, Bookmark, MessageCircle, PhotoIcon, Download, LoadingIcon, Trash2, FaceIcon, Tag } from '@/components/base/Icon/icons'
-import './photo-toolbar.css'
+import {
+  ZoomIn,
+  ZoomOut,
+  RotateCw,
+  Maximize2,
+  Heart,
+  Bookmark,
+  MessageCircle,
+  PhotoIcon,
+  Download,
+  LoadingIcon,
+  Trash2,
+  FaceIcon,
+  Tag,
+} from "@/components/base/Icon/icons";
+import "./photo-toolbar.css";
 
 interface Props {
-  zoom: number
-  rotation: number
-  isFavorited?: boolean
-  isCollected?: boolean
-  showOriginal?: boolean
-  loadingOriginal?: boolean
-  hasOriginalToken?: boolean
-  isOwner?: boolean
-  showFaces?: boolean
-  showFaceLabels?: boolean
+  zoom: number;
+  rotation: number;
+  isFavorited?: boolean;
+  isCollected?: boolean;
+  showOriginal?: boolean;
+  loadingOriginal?: boolean;
+  hasOriginalToken?: boolean;
+  isOwner?: boolean;
+  showFaces?: boolean;
+  showFaceLabels?: boolean;
 }
 
-defineProps<Props>()
+defineProps<Props>();
 
 const emit = defineEmits<{
-  'zoom-in': []
-  'zoom-out': []
-  'rotate': []
-  'reset': []
-  'toggle-favorite': []
-  'toggle-collect': []
-  'toggle-comments': []
-  'view-original': []
-  'download': []
-  'delete': []
-  'toggle-faces': []
-  'toggle-face-labels': []
-}>()
+  "zoom-in": [];
+  "zoom-out": [];
+  rotate: [];
+  reset: [];
+  "toggle-favorite": [];
+  "toggle-collect": [];
+  "toggle-comments": [];
+  "view-original": [];
+  download: [];
+  delete: [];
+  "toggle-faces": [];
+  "toggle-face-labels": [];
+}>();
 
 function handleZoomIn() {
-  emit('zoom-in')
+  emit("zoom-in");
 }
 
 function handleZoomOut() {
-  emit('zoom-out')
+  emit("zoom-out");
 }
 
 function handleRotate() {
-  emit('rotate')
+  emit("rotate");
 }
 
 function handleReset() {
-  emit('reset')
+  emit("reset");
 }
 
 function handleToggleFavorite() {
-  emit('toggle-favorite')
+  emit("toggle-favorite");
 }
 
 function handleToggleCollect() {
-  emit('toggle-collect')
+  emit("toggle-collect");
 }
 
 function handleToggleComments() {
-  emit('toggle-comments')
+  emit("toggle-comments");
 }
 
 function handleViewOriginal() {
-  emit('view-original')
+  emit("view-original");
 }
 
 function handleDownload() {
-  emit('download')
+  emit("download");
 }
 
 function handleDelete() {
-  emit('delete')
+  emit("delete");
 }
 
 function handleToggleFaces() {
-  emit('toggle-faces')
+  emit("toggle-faces");
 }
 
 function handleToggleFaceLabels() {
-  emit('toggle-face-labels')
+  emit("toggle-face-labels");
 }
 </script>
 
 <template>
   <div class="photo-toolbar">
-    <button class="photo-toolbar__btn" type="button" @click="handleZoomOut" title="缩小 (-)">
+    <button
+      class="photo-toolbar__btn"
+      type="button"
+      @click="handleZoomOut"
+      title="缩小 (-)"
+    >
       <ZoomOut :size="20" />
     </button>
     <span class="photo-toolbar__zoom">{{ Math.round(zoom * 100) }}%</span>
-    <button class="photo-toolbar__btn" type="button" @click="handleZoomIn" title="放大 (+)">
+    <button
+      class="photo-toolbar__btn"
+      type="button"
+      @click="handleZoomIn"
+      title="放大 (+)"
+    >
       <ZoomIn :size="20" />
     </button>
     <div class="photo-toolbar__divider" />
-    <button class="photo-toolbar__btn" type="button" @click="handleRotate" title="旋转 (R)">
+    <button
+      class="photo-toolbar__btn"
+      type="button"
+      @click="handleRotate"
+      title="旋转 (R)"
+    >
       <RotateCw :size="20" />
     </button>
-    <button class="photo-toolbar__btn" type="button" @click="handleReset" title="重置 (0)">
+    <button
+      class="photo-toolbar__btn"
+      type="button"
+      @click="handleReset"
+      title="重置 (0)"
+    >
       <Maximize2 :size="20" />
     </button>
     <div class="photo-toolbar__divider" />
@@ -115,9 +149,17 @@ function handleToggleFaceLabels() {
       @click="handleToggleCollect"
       title="收藏 (B)"
     >
-      <Bookmark :size="20" :fill="isCollected ? 'var(--color-warning)' : 'none'" />
+      <Bookmark
+        :size="20"
+        :fill="isCollected ? 'var(--color-warning)' : 'none'"
+      />
     </button>
-    <button class="photo-toolbar__btn" type="button" @click="handleToggleComments" title="评论 (C)">
+    <button
+      class="photo-toolbar__btn"
+      type="button"
+      @click="handleToggleComments"
+      title="评论 (C)"
+    >
       <MessageCircle :size="20" />
     </button>
     <div class="photo-toolbar__divider" />
@@ -130,10 +172,19 @@ function handleToggleFaceLabels() {
       @click="handleViewOriginal"
       :title="showOriginal ? '查看预览图 (O)' : '查看原图 (O)'"
     >
-      <LoadingIcon v-if="loadingOriginal" :size="20" class="photo-toolbar__loading" />
+      <LoadingIcon
+        v-if="loadingOriginal"
+        :size="20"
+        class="photo-toolbar__loading"
+      />
       <PhotoIcon v-else :size="20" />
     </button>
-    <button class="photo-toolbar__btn" type="button" @click="handleDownload" title="下载 (D)">
+    <button
+      class="photo-toolbar__btn"
+      type="button"
+      @click="handleDownload"
+      title="下载 (D)"
+    >
       <Download :size="20" />
     </button>
     <button
@@ -157,7 +208,12 @@ function handleToggleFaceLabels() {
     </button>
     <template v-if="isOwner">
       <div class="photo-toolbar__divider" />
-      <button class="photo-toolbar__btn photo-toolbar__btn--danger" type="button" @click="handleDelete" title="删除">
+      <button
+        class="photo-toolbar__btn photo-toolbar__btn--danger"
+        type="button"
+        @click="handleDelete"
+        title="删除"
+      >
         <Trash2 :size="20" />
       </button>
     </template>

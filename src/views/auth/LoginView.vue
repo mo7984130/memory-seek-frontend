@@ -94,7 +94,7 @@ function handleRegister() {
           <Input
             v-model="password"
             type="password"
-            placeholder="密码"
+            :placeholder="`密码（${validation.RULES.password.min}-${validation.RULES.password.max} 位）`"
             size="lg"
           >
             <template #prefix>

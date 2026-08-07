@@ -275,7 +275,7 @@ watch(
       <textarea
         v-model="newComment"
         class="photo-comments__input"
-        placeholder="写评论..."
+        :placeholder="`写评论...（最多 ${validation.RULES.commentContent.max} 字）`"
         rows="1"
         @keydown="handleKeydown"
       />

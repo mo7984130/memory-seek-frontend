@@ -383,7 +383,7 @@ onBeforeUnmount(() => {
           <label class="person-detail__dialog-label">人物名称</label>
           <Input
             v-model="renameName"
-            placeholder="输入新名称"
+            :placeholder="`输入新名称（最多 ${validation.RULES.personName.max} 字）`"
             @keydown.enter="handleRename"
           />
         </div>

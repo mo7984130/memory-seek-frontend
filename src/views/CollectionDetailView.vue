@@ -305,13 +305,16 @@ onBeforeUnmount(() => {
           <label class="edit-form__label">名称</label>
           <Input
             v-model="editName"
-            placeholder="收藏夹名称"
+            :placeholder="`收藏夹名称（${validation.RULES.collectionName.min}-${validation.RULES.collectionName.max} 字）`"
             @keydown.enter="handleSaveEdit"
           />
         </div>
         <div class="edit-form__field">
           <label class="edit-form__label">描述（可选）</label>
-          <Input v-model="editDesc" placeholder="简短描述" />
+          <Input
+            v-model="editDesc"
+            :placeholder="`简短描述（最多 ${validation.RULES.collectionDesc.max} 字）`"
+          />
         </div>
         <Button type="button" :loading="saving" block @click="handleSaveEdit">
           保存

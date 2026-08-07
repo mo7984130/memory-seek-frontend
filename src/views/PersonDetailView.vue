@@ -33,7 +33,7 @@ const page = useWaterfallPage({
   storageKey: `person-${personId}`,
   enableAutoBookmark: false,
   fetch: async ({ cursor }) =>
-    (await photo.person.getPersonPhotos(personId, { cursor, size: 20 })).data,
+    (await photo.person.getPersonPhotos(personId, { cursor })).data,
 });
 
 const {
@@ -106,7 +106,7 @@ async function loadPerson(): Promise<boolean> {
   try {
     let cursor: string | null = null;
     for (;;) {
-      const res = await photo.person.getPersons({ cursor, size: 32 });
+      const res = await photo.person.getPersons({ cursor });
       const page = res.data;
       const found = page.records.find((p) => p.id === personId);
       if (found) {

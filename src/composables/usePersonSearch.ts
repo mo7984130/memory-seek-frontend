@@ -3,7 +3,6 @@ import { useDebounceFn } from "@vueuse/core";
 import { photo } from "memory-seek-api";
 import type { Person } from "memory-seek-api";
 
-const PAGE_SIZE = 32;
 const LOAD_THRESHOLD = 80;
 
 export interface UsePersonSearchOptions {
@@ -33,14 +32,8 @@ export function usePersonSearch(options: UsePersonSearchOptions = {}) {
     try {
       const kw = keyword.value.trim();
       const res = kw
-        ? await photo.person.searchPersons(kw, {
-            cursor: cursor.value,
-            size: PAGE_SIZE,
-          })
-        : await photo.person.getPersons({
-            cursor: cursor.value,
-            size: PAGE_SIZE,
-          });
+        ? await photo.person.searchPersons(kw, { cursor: cursor.value })
+        : await photo.person.getPersons({ cursor: cursor.value });
       const page = res.data;
       const exclude = options.excludeId?.();
       const records = exclude

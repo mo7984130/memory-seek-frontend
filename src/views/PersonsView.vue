@@ -65,8 +65,8 @@ async function fetchPage() {
   try {
     const kw = keyword.value.trim();
     const res = kw
-      ? await photo.person.searchPersons(kw, { cursor: cursor.value, size: 32 })
-      : await photo.person.getPersons({ cursor: cursor.value, size: 32 });
+      ? await photo.person.searchPersons(kw, { cursor: cursor.value })
+      : await photo.person.getPersons({ cursor: cursor.value });
     const page = res.data;
     persons.value.push(...page.records);
     cursor.value = page.nextCursor;

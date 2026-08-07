@@ -23,7 +23,7 @@ import type { WaterfallGroup } from "@/components/photo/VirtualWaterfall.vue";
  * const page = useWaterfallPage({
  *   storageKey: 'photos',
  *   fetch: async ({ cursor, anchorTime }) =>
- *     (await photo.getPhotos({ cursor, size: 20, direction: 'next', anchorTime })).data,
+ *     (await photo.getPhotos({ cursor, anchorTime })).data,
  *   fetchTimeline: async () => (await photo.timeline.getMonthlyStats()).data,
  * })
  */

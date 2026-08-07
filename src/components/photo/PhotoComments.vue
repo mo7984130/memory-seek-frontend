@@ -51,7 +51,6 @@ async function loadComments() {
   try {
     const response = await photo.comment.getCommentList(props.photoId, {
       cursor: cursor.value,
-      size: 20,
     });
     const { records, nextCursor, hasMore: more } = response.data;
     comments.value.push(...records);

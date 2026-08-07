@@ -23,7 +23,7 @@ const showGuide = ref(true);
 const page = useWaterfallPage({
   storageKey: "unassigned",
   fetch: async ({ cursor }) =>
-    (await photo.face.getUnassignedFacePhotos({ cursor, size: 20 })).data,
+    (await photo.face.getUnassignedFacePhotos({ cursor })).data,
 });
 
 const {

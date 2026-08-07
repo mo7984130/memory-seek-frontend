@@ -30,12 +30,7 @@ const collectionId = route.params.id as string;
 const page = useWaterfallPage({
   storageKey: `collection-${collectionId}`,
   fetch: async ({ cursor }) =>
-    (
-      await photo.collection.getCollectionPhotos(collectionId, {
-        cursor,
-        size: 20,
-      })
-    ).data,
+    (await photo.collection.getCollectionPhotos(collectionId, { cursor })).data,
 });
 
 const {

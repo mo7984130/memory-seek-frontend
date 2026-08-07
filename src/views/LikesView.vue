@@ -18,7 +18,7 @@ defineOptions({ name: "LikesView" });
 const page = useWaterfallPage({
   storageKey: "likes",
   fetch: async ({ cursor }) =>
-    (await photo.like.getLikedPhotos({ cursor, size: 20 })).data,
+    (await photo.like.getLikedPhotos({ cursor })).data,
 });
 
 const {

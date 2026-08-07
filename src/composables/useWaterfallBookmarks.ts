@@ -19,7 +19,7 @@ export interface WaterfallBookmark {
   id: string;
   /** 书签名称（默认按月份生成，可编辑） */
   label: string;
-  /** 加载锚点：getPhotos({ anchorTime, direction: 'next' }) */
+  /** 加载锚点：getPhotos({ anchorTime }) */
   anchorTime: string;
   /** 对应月份 key（"2026-06"），用于恢复时间线高亮 */
   monthKey: string;

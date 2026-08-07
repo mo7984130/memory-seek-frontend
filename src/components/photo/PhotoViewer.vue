@@ -2,7 +2,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onBeforeUnmount } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { photo as photoApi } from "memory-seek-api";
+import { photo as photoApi, validation } from "memory-seek-api";
 import type { Face, Photo } from "memory-seek-api";
 import {
   ChevronLeft,
@@ -487,12 +487,14 @@ async function submitChangeBelonging() {
 }
 
 async function submitRename() {
-  const name = renameName.value.trim();
-  if (!name) {
-    toast.warning("请输入人物名称");
+  const error = validation.validatePersonName(renameName.value);
+  if (error) {
+    toast.warning(error);
     return;
   }
   if (!activeFace.value?.personId) return;
+
+  const name = renameName.value.trim();
   renaming.value = true;
   try {
     await photoApi.person.renamePerson(activeFace.value.personId, name);
@@ -1018,6 +1020,7 @@ onBeforeUnmount(() => {
           <div class="face-dialog__field">
             <label class="face-dialog__label">搜索目标人物</label>
             <Input v-model="personKeyword" placeholder="输入关键词筛选人物" />
+            <p class="face-dialog__hint">支持姓名或首字母搜索</p>
           </div>
           <div class="face-dialog__list" @scroll="onPersonsScroll">
             <button

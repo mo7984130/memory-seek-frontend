@@ -2,7 +2,7 @@
 import { ref, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ArrowLeft, FaceIcon } from "@/components/base/Icon/icons";
-import { photo } from "memory-seek-api";
+import { photo, validation } from "memory-seek-api";
 import type { Person, Photo } from "memory-seek-api";
 import { useWaterfallPage } from "@/composables/useWaterfallPage";
 import VirtualWaterfall from "@/components/photo/VirtualWaterfall.vue";
@@ -183,11 +183,13 @@ function openRenameDialog() {
 }
 
 async function handleRename() {
-  const name = renameName.value.trim();
-  if (!name) {
-    toast.warning("请输入人物名称");
+  const error = validation.validatePersonName(renameName.value);
+  if (error) {
+    toast.warning(error);
     return;
   }
+
+  const name = renameName.value.trim();
   renaming.value = true;
   try {
     await photo.person.renamePerson(personId, name);
@@ -404,6 +406,7 @@ onBeforeUnmount(() => {
           将「{{ person?.name }}」合并到目标人物，合并后当前人物将被删除。
         </p>
         <Input v-model="mergeKeyword" placeholder="输入关键词筛选人物" />
+        <p class="person-detail__merge-hint">支持姓名或首字母搜索</p>
         <div class="person-detail__merge-list" @scroll="onMergeScroll">
           <button
             v-for="p in mergePersons"
@@ -560,6 +563,13 @@ onBeforeUnmount(() => {
   color: var(--color-text-secondary);
   line-height: var(--leading-relaxed);
   margin: 0;
+}
+
+.person-detail__merge-hint {
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+  line-height: var(--leading-relaxed);
+  margin: calc(var(--spacing-1) * -1) 0 0;
 }
 
 .person-detail__merge-list {

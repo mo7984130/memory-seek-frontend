@@ -8,6 +8,7 @@ import {
   Sun,
   Moon,
 } from "@/components/base/Icon/icons";
+import { validation } from "memory-seek-api";
 import { useAuthStore } from "@/stores/auth";
 import { useThemeStore } from "@/stores/theme";
 import Input from "@/components/form/Input/Input.vue";
@@ -29,13 +30,14 @@ const loading = ref(false);
  * 登录处理
  */
 async function handleLogin() {
-  // 表单验证
-  if (!account.value.trim()) {
-    toast.warning("请输入用户名");
+  const accountError = validation.validateAccount(account.value);
+  if (accountError) {
+    toast.warning(accountError);
     return;
   }
-  if (!password.value) {
-    toast.warning("请输入密码");
+  const passwordError = validation.validatePassword(password.value);
+  if (passwordError) {
+    toast.warning(passwordError);
     return;
   }
 

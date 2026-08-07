@@ -2,7 +2,7 @@
 import { ref, onMounted, onActivated } from "vue";
 import { useRouter } from "vue-router";
 import { Plus, FolderOpen } from "@/components/base/Icon/icons";
-import { photo } from "memory-seek-api";
+import { photo, validation } from "memory-seek-api";
 import type { Collection } from "memory-seek-api";
 import { useListScrollRestore } from "@/composables/useListScrollRestore";
 import { consumeListDirty } from "@/composables/useListDirty";
@@ -90,11 +90,18 @@ function enterCollection(collection: Collection) {
  * 创建收藏夹
  */
 async function handleCreate() {
-  const name = newCollectionName.value.trim();
-  if (!name) {
-    toast.warning("请输入收藏夹名称");
+  const nameError = validation.validateCollectionName(newCollectionName.value);
+  if (nameError) {
+    toast.warning(nameError);
     return;
   }
+  const descError = validation.validateCollectionDesc(newCollectionDesc.value);
+  if (descError) {
+    toast.warning(descError);
+    return;
+  }
+
+  const name = newCollectionName.value.trim();
 
   creating.value = true;
   try {

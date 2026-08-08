@@ -461,7 +461,6 @@ async function loadFaces() {
   } catch (error) {
     console.error("获取人脸失败:", error);
     facesError.value = true;
-    toast.error("人脸信息加载失败");
   } finally {
     loadingFaces.value = false;
   }
@@ -539,18 +538,12 @@ async function submitChangeBelonging() {
     emit("faces-updated");
   } catch (error) {
     console.error("修改人脸归属失败:", error);
-    toast.error("修改人脸归属失败");
   } finally {
     changingBelonging.value = false;
   }
 }
 
 async function submitRename() {
-  const error = validation.validatePersonName(renameName.value);
-  if (error) {
-    toast.warning(error);
-    return;
-  }
   if (!activeFace.value?.personId) return;
 
   const name = renameName.value.trim();
@@ -563,7 +556,6 @@ async function submitRename() {
     emit("faces-updated");
   } catch (error) {
     console.error("修改人物名称失败:", error);
-    toast.error("修改人物名称失败");
   } finally {
     renaming.value = false;
   }
@@ -581,7 +573,6 @@ async function submitUnassign() {
     emit("faces-updated");
   } catch (error) {
     console.error("取消人脸归属失败:", error);
-    toast.error("取消人脸归属失败");
   } finally {
     unassigning.value = false;
   }
@@ -605,7 +596,6 @@ async function submitDeleteFace() {
     emit("faces-updated");
   } catch (error) {
     console.error("删除人脸失败:", error);
-    toast.error("删除人脸失败");
   } finally {
     deletingFace.value = false;
   }
@@ -850,7 +840,6 @@ async function handleDelete() {
     close();
   } catch (error) {
     console.error("删除照片失败:", error);
-    toast.error("删除失败，请重试");
   } finally {
     deleting.value = false;
   }

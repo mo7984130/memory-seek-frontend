@@ -28,19 +28,9 @@ const loading = ref(false);
 
 /**
  * 登录处理
+ * 校验由后端统一返回错误消息
  */
 async function handleLogin() {
-  const accountError = validation.validateAccount(account.value);
-  if (accountError) {
-    toast.warning(accountError);
-    return;
-  }
-  const passwordError = validation.validatePassword(password.value);
-  if (passwordError) {
-    toast.warning(passwordError);
-    return;
-  }
-
   loading.value = true;
   try {
     const success = await authStore.login(account.value, password.value);
@@ -49,7 +39,7 @@ async function handleLogin() {
       await router.push("/photos");
     }
   } catch (error) {
-    toast.error("登录失败: " + error);
+    console.error("登录失败:", error);
   } finally {
     loading.value = false;
   }

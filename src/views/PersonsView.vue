@@ -10,13 +10,11 @@ import { FaceIcon, SearchIcon } from "@/components/base/Icon/icons";
 import Card from "@/components/data/Card/Card.vue";
 import Input from "@/components/form/Input/Input.vue";
 import Spinner from "@/components/base/Spinner/Spinner.vue";
-import { useToast } from "@/components/feedback/Toast/toast";
 
 // 组件名（KeepAlive include 匹配）
 defineOptions({ name: "PersonsView" });
 
 const router = useRouter();
-const toast = useToast();
 
 // 返回时恢复滚动位置（KeepAlive 缓存页）
 const { restoreScroll } = useListScrollRestore();
@@ -66,15 +64,6 @@ async function fetchPage() {
   loading.value = true;
   try {
   const kw = keyword.value.trim();
-  if (kw) {
-    const keywordError = validation.validateSearchKeyword(keyword.value);
-    if (keywordError) {
-      hasMore.value = false;
-      persons.value = [];
-      toast.warning(keywordError);
-      return;
-    }
-  }
   const res = kw
     ? await photo.person.searchPersons(kw, { cursor: cursor.value })
     : await photo.person.getPersons({ cursor: cursor.value });

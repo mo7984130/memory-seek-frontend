@@ -5,7 +5,6 @@ import { photo, validation } from "memory-seek-api";
 import type { Comment } from "memory-seek-api";
 import { useAuthStore } from "@/stores/auth";
 import { useUserStore } from "@/stores/user";
-import { useToast } from "@/components/feedback/Toast/toast";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/zh-cn";
@@ -26,7 +25,6 @@ const emit = defineEmits<{
 
 const authStore = useAuthStore();
 const userStore = useUserStore();
-const toast = useToast();
 
 const comments = ref<Comment[]>([]);
 const loading = ref(false);
@@ -71,16 +69,11 @@ async function loadComments() {
 
 /**
  * 发表评论
+ * 校验由后端统一返回错误消息
  */
 async function handleSend() {
   const content = newComment.value.trim();
   if (sending.value) return;
-
-  const error = validation.validateCommentContent(newComment.value);
-  if (error) {
-    toast.warning(error);
-    return;
-  }
 
   sending.value = true;
   try {

@@ -1,5 +1,4 @@
 import { ref, computed, nextTick } from "vue";
-import { useIntersectionObserver } from "@vueuse/core";
 import type { Photo, MonthStat } from "memory-seek-api";
 import { useWaterfallPersistence } from "./useWaterfallPersistence";
 import {
@@ -60,7 +59,6 @@ export function useWaterfallPage(options: UseWaterfallPageOptions) {
 
   // ======== 布局 ========
   const containerRef = ref<HTMLElement | null>(null);
-  const sentinelRef = ref<HTMLElement | null>(null);
   const columnCount = ref(4);
   const containerWidth = ref(0);
   const loading = ref(false);
@@ -153,26 +151,9 @@ export function useWaterfallPage(options: UseWaterfallPageOptions) {
     }
   }
 
-  /** 追加一页（触底加载）；首屏未填满时自动续载直至撑满视口或数据耗尽 */
-  async function fetchMore(
-    params: { cursor?: string; anchorTime?: string } = {},
-  ) {
-    const records = await requestPage(params, false);
-    await nextTick();
-    // IntersectionObserver 只在交叉状态变化时触发，哨兵持续可见时不会重复回调。
-    // 视口过大时首屏内容不足一屏，需在此主动检查并继续填充。
-    if (
-      records.length > 0 &&
-      !loading.value &&
-      waterfall.hasMore.value &&
-      sentinelRef.value
-    ) {
-      const rect = sentinelRef.value.getBoundingClientRect();
-      if (rect.top < window.innerHeight) {
-        fetchMore({ cursor: waterfall.cursor.value });
-      }
-    }
-    return records;
+  /** 追加一页（触底加载）；首屏填充由 VirtualWaterfall 组件内部处理 */
+  function fetchMore(params: { cursor?: string; anchorTime?: string } = {}) {
+    return requestPage(params, false);
   }
 
   /** 拉取一页并替换列表（按钮恢复用），随后落到页首 */
@@ -185,14 +166,6 @@ export function useWaterfallPage(options: UseWaterfallPageOptions) {
     window.scrollTo({ top: 0, behavior: "auto" });
     return records;
   }
-
-  // 触底加载
-  useIntersectionObserver(sentinelRef, (entries) => {
-    const isIntersecting = entries[0]?.isIntersecting || false;
-    if (isIntersecting && !loading.value && waterfall.hasMore.value) {
-      fetchMore({ cursor: waterfall.cursor.value });
-    }
-  });
 
   // ======== 浏览位置捕获 ========
   /** 当前视口顶部照片 ID（供页面生成位置书签锚点） */
@@ -361,7 +334,6 @@ export function useWaterfallPage(options: UseWaterfallPageOptions) {
   return {
     waterfall,
     containerRef,
-    sentinelRef,
     columnCount,
     containerWidth,
     loading,

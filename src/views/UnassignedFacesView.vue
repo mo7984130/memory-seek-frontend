@@ -4,11 +4,9 @@ import { photo } from "memory-seek-api";
 import type { Photo } from "memory-seek-api";
 import { useWaterfallPage } from "@/composables/useWaterfallPage";
 import { useListScrollRestore } from "@/composables/useListScrollRestore";
-import VirtualWaterfall from "@/components/photo/VirtualWaterfall.vue";
+import PhotoWaterfall from "@/components/photo/PhotoWaterfall.vue";
 import LastPositionButton from "@/components/photo/LastPositionButton.vue";
-import PhotoCard from "@/components/photo/PhotoCard.vue";
 import PhotoViewer from "@/components/photo/PhotoViewer.vue";
-import Spinner from "@/components/base/Spinner/Spinner.vue";
 import BackToTop from "@/components/actions/BackToTop/BackToTop.vue";
 import IconButton from "@/components/actions/IconButton/IconButton.vue";
 import { FaceIcon, CloseIcon } from "@/components/base/Icon/icons";
@@ -39,7 +37,7 @@ const {
   dispose,
 } = page;
 
-const waterfallViewRef = ref<InstanceType<typeof VirtualWaterfall> | null>(
+const waterfallViewRef = ref<InstanceType<typeof PhotoWaterfall> | null>(
   null,
 );
 
@@ -49,10 +47,6 @@ const { restoreScroll } = useListScrollRestore();
 // 照片查看器状态
 const viewerVisible = ref(false);
 const selectedPhoto = ref<Photo | null>(null);
-
-function getPhotoById(id: string | number): Photo | undefined {
-  return waterfall.allPhotos.value.find((p) => p.id === id);
-}
 
 function handlePhotoClick(photoItem: Photo) {
   selectedPhoto.value = photoItem;
@@ -72,6 +66,13 @@ async function handleLoadMore(): Promise<boolean> {
   if (loading.value || !waterfall.hasMore.value) return false;
   const records = await fetchMore({ cursor: waterfall.cursor.value });
   return records.length > 0;
+}
+
+/** 瀑布流触底/首屏填充的加载回调：返回本次新增条数 */
+function loadMoreWaterfall(): Promise<number> {
+  return fetchMore({ cursor: waterfall.cursor.value }).then(
+    (records) => records.length,
+  );
 }
 
 function handleLikeChange(photoId: string, isLiked: boolean) {
@@ -149,41 +150,21 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="waterfall-container">
-      <VirtualWaterfall
+      <PhotoWaterfall
         ref="waterfallViewRef"
         :groups="groups"
+        :photos="waterfall.allPhotos.value"
         :column-count="columnCount"
         :container-width="containerWidth"
         :gap="16"
+        :has-more="waterfall.hasMore.value"
+        :loading="loading"
+        :load-more="loadMoreWaterfall"
+        empty-text="没有未分配人脸的照片"
         @top-item-change="handleTopItemChange"
-      >
-        <template #default="{ item }">
-          <PhotoCard
-            v-if="getPhotoById(item.id)"
-            :item="getPhotoById(item.id)!"
-            @click="handlePhotoClick"
-            @like="handleLike"
-          />
-        </template>
-      </VirtualWaterfall>
-
-      <div :ref="page.sentinelRef" class="load-sentinel">
-        <Spinner v-if="loading" />
-        <span
-          v-else-if="
-            !waterfall.hasMore.value && waterfall.allPhotos.value.length > 0
-          "
-          class="load-sentinel__text"
-        >
-          已经到底啦 ~
-        </span>
-        <span
-          v-else-if="!loading && waterfall.allPhotos.value.length === 0"
-          class="load-sentinel__text"
-        >
-          没有未分配人脸的照片
-        </span>
-      </div>
+        @photo-click="handlePhotoClick"
+        @like="handleLike"
+      />
     </div>
 
     <!-- 回到上次浏览位置（按钮触发恢复） -->

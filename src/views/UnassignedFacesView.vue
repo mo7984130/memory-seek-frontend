@@ -129,8 +129,11 @@ onBeforeUnmount(() => {
           这里收录了已识别出人脸、但尚未分配人物的照片。
         </div>
         <ol class="unassigned-view__guide-steps">
-          <li>点击照片进入查看器，人脸框会自动标出</li>
-          <li>右键人脸框，可分配归属、重命名或删除</li>
+          <li>点击照片进入查看器，会自动高亮第一个未分配人脸</li>
+          <li>
+            按 <kbd>Enter</kbd> 选择归属，按 <kbd>Delete</kbd> 删除
+          </li>
+          <li>处理完一个自动进入下一个，本张处理完自动跳到下一张</li>
           <li>不认识的未分配人脸，可直接删除</li>
           <li>处理完所有未分配人脸后，照片仍会保留在本页，刷新后不再显示</li>
         </ol>
@@ -198,6 +201,7 @@ onBeforeUnmount(() => {
       :photos="waterfall.allPhotos.value"
       :load-more="handleLoadMore"
       initial-show-faces
+      unassigned-workflow
       @like="handleLikeChange"
       @delete="handleDelete"
       @navigate="handleViewerNavigate"
@@ -273,6 +277,16 @@ onBeforeUnmount(() => {
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
   line-height: var(--leading-relaxed);
+}
+
+.unassigned-view__guide-steps kbd {
+  padding: 1px 6px;
+  font-size: var(--text-xs);
+  font-family: inherit;
+  color: var(--color-text-primary);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
 }
 
 .unassigned-view__guide-close {

@@ -29,10 +29,13 @@ interface Props {
   loadMore?: () => Promise<boolean>;
   /** 打开查看器时自动开启人脸框（默认关闭，保持现有页面行为） */
   initialShowFaces?: boolean;
+  /** 未分配人脸处理模式：自动聚焦第一个未分配人脸，支持键盘连续处理 */
+  unassignedWorkflow?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
   initialShowFaces: false,
+  unassignedWorkflow: false,
 });
 
 const emit = defineEmits<{
@@ -87,6 +90,12 @@ const unassigning = ref(false);
 const deletingFace = ref(false);
 const renameName = ref("");
 const targetPersonId = ref("");
+/** 归属弹窗：键盘高亮的人物下标（-1 表示无高亮） */
+const personHighlightIndex = ref(-1);
+const personInputRef = ref<InstanceType<typeof Input> | null>(null);
+const personListRef = ref<HTMLElement | null>(null);
+/** 未分配人脸处理模式：上次因无未分配人脸而自动跳转后，下一张仍无则停止 */
+const autoAdvancePending = ref(false);
 
 // ---- 框选批量删除状态 ----
 const faceSelectActive = ref(false);
@@ -180,6 +189,15 @@ const unassignedFaces = computed(() =>
 
 /** 是否存在无归属人脸（框选按钮显示条件） */
 const hasUnassignedFaces = computed(() => unassignedFaces.value.length > 0);
+
+/** 当前处理的人脸在无归属人脸列表中的进度（index 从 0 开始） */
+const unassignedProgress = computed(() => {
+  const list = unassignedFaces.value;
+  const index = activeFace.value
+    ? list.findIndex((f) => f.id === activeFace.value!.id)
+    : -1;
+  return { index, total: list.length };
+});
 
 /** 选中的人脸 */
 const selectedFaces = computed(() =>
@@ -458,12 +476,35 @@ async function loadFaces() {
     if (faces.value.length === 0) {
       toast.info("未检测到人脸");
     }
+    if (props.unassignedWorkflow) {
+      handleUnassignedFacesLoaded();
+    }
   } catch (error) {
     console.error("获取人脸失败:", error);
     facesError.value = true;
   } finally {
     loadingFaces.value = false;
   }
+}
+
+/**
+ * 未分配人脸处理模式：人脸加载完成后
+ * - 有未分配人脸：自动聚焦第一个
+ * - 无未分配人脸：自动跳到下一张（仅一张）；若刚跳转过来仍无，则停止提示
+ */
+function handleUnassignedFacesLoaded() {
+  const unassigned = unassignedFaces.value;
+  if (unassigned.length > 0) {
+    activeFace.value = unassigned[0]!;
+    return;
+  }
+  if (autoAdvancePending.value) {
+    autoAdvancePending.value = false;
+    toast.info("下一张照片没有未分配人脸，已停止自动跳转");
+    return;
+  }
+  autoAdvancePending.value = true;
+  goNext();
 }
 
 // ---- 人脸框坐标 ----
@@ -496,6 +537,11 @@ function handleFaceContextMenu(event: MouseEvent, face: Face) {
 function handleFaceClick(face: Face) {
   if (faceSelectActive.value) return;
   if (!face.personId) {
+    // 未分配人脸处理模式：点击未分配人脸将其设为当前处理对象（键盘连续操作的鼠标备选）
+    if (props.unassignedWorkflow) {
+      activeFace.value = face;
+      return;
+    }
     toast.info("该人脸尚未分配人物");
     return;
   }
@@ -515,7 +561,63 @@ function openChangeBelongingDialog() {
   resetPersons();
   reloadPersons();
   targetPersonId.value = "";
+  personHighlightIndex.value = -1;
   showChangeBelongingDialog.value = true;
+  // 打开后自动聚焦搜索框，支持全键盘操作
+  nextTick(() => personInputRef.value?.focus());
+}
+
+/** 归属弹窗搜索框键盘导航：方向键移动高亮，Enter 确认分配，Esc 关闭 */
+function handlePersonKeydown(event: KeyboardEvent) {
+  switch (event.key) {
+    case "ArrowDown":
+    case "ArrowUp": {
+      event.preventDefault();
+      const total = persons.value.length;
+      if (total === 0) return;
+      if (event.key === "ArrowDown") {
+        personHighlightIndex.value =
+          personHighlightIndex.value < 0
+            ? 0
+            : (personHighlightIndex.value + 1) % total;
+      } else {
+        personHighlightIndex.value =
+          personHighlightIndex.value <= 0
+            ? total - 1
+            : personHighlightIndex.value - 1;
+      }
+      scrollPersonIntoView();
+      break;
+    }
+    case "Enter": {
+      event.preventDefault();
+      const person =
+        personHighlightIndex.value >= 0
+          ? persons.value[personHighlightIndex.value]
+          : persons.value[0];
+      if (person) {
+        targetPersonId.value = person.id;
+        submitChangeBelonging();
+      }
+      break;
+    }
+    case "Escape":
+      event.preventDefault();
+      showChangeBelongingDialog.value = false;
+      break;
+  }
+}
+
+/** 将键盘高亮的人物滚动到列表可视区域 */
+function scrollPersonIntoView() {
+  nextTick(() => {
+    const list = personListRef.value;
+    if (!list) return;
+    const el = list.querySelectorAll(".face-dialog__person")[
+      personHighlightIndex.value
+    ] as HTMLElement | undefined;
+    el?.scrollIntoView({ block: "nearest" });
+  });
 }
 
 function openRenameDialog() {
@@ -525,7 +627,8 @@ function openRenameDialog() {
 }
 
 async function submitChangeBelonging() {
-  if (!activeFace.value || !targetPersonId.value) return;
+  if (!activeFace.value || !targetPersonId.value || changingBelonging.value)
+    return;
   changingBelonging.value = true;
   try {
     await photoApi.face.changeFaceBelonging(
@@ -586,7 +689,7 @@ function openDeleteFaceConfirm() {
 
 /** 删除人脸（仅未归属人物的人脸可删除） */
 async function submitDeleteFace() {
-  if (!activeFace.value) return;
+  if (!activeFace.value || deletingFace.value) return;
   deletingFace.value = true;
   try {
     await photoApi.face.deleteFace(activeFace.value.id);
@@ -865,6 +968,37 @@ function handleKeydown(event: KeyboardEvent) {
   ) {
     return;
   }
+
+  // 弹窗优先：删除确认弹窗打开时，Enter 确认、Esc 取消
+  if (showDeleteFaceConfirm.value) {
+    if (event.key === "Enter") {
+      // 焦点在按钮上时交给原生 click（避免取消/删除按钮冲突）
+      if ((document.activeElement as HTMLElement | null)?.tagName === "BUTTON") {
+        return;
+      }
+      event.preventDefault();
+      submitDeleteFace();
+    } else if (event.key === "Escape") {
+      showDeleteFaceConfirm.value = false;
+    }
+    return;
+  }
+  // 归属弹窗（搜索框失焦时的兜底）：Esc 关闭
+  if (showChangeBelongingDialog.value) {
+    if (event.key === "Escape") {
+      showChangeBelongingDialog.value = false;
+    }
+    return;
+  }
+
+  // 未分配人脸处理模式：专注模式下禁止 Backspace 触发浏览器后退
+  if (
+    props.unassignedWorkflow &&
+    (event.key === "Backspace" || event.key === "Delete")
+  ) {
+    event.preventDefault();
+  }
+
   switch (event.key) {
     case "Escape":
       // 框选模式下优先退出框选
@@ -873,6 +1007,20 @@ function handleKeydown(event: KeyboardEvent) {
         return;
       }
       close();
+      break;
+    case "Enter":
+      // 未分配人脸处理模式：打开当前人脸的归属选择弹窗
+      if (props.unassignedWorkflow && activeFace.value && !activeFace.value.personId) {
+        event.preventDefault();
+        openChangeBelongingDialog();
+      }
+      break;
+    case "Delete":
+    case "Backspace":
+      // 未分配人脸处理模式：打开当前人脸的删除确认弹窗
+      if (props.unassignedWorkflow && activeFace.value && !activeFace.value.personId) {
+        openDeleteFaceConfirm();
+      }
       break;
     case "ArrowLeft":
       goPrev();
@@ -972,6 +1120,10 @@ function resetState() {
   showRenameDialog.value = false;
   showDeleteFaceConfirm.value = false;
   showFaceLabels.value = true;
+  // 归属弹窗键盘状态
+  personHighlightIndex.value = -1;
+  // 未分配人脸自动跳转状态
+  autoAdvancePending.value = false;
   // 框选批量删除状态
   faceSelectActive.value = false;
   resetFaceSelection();
@@ -1012,7 +1164,6 @@ onBeforeUnmount(() => {
       v-if="modelValue"
       class="photo-viewer"
       @click="handleContentClick"
-      @keydown="handleKeydown"
       tabindex="0"
     >
       <!-- 加载提示（切换照片 / 触底加载下一页时隐藏当前照片并显示） -->
@@ -1185,6 +1336,25 @@ onBeforeUnmount(() => {
         </button>
       </div>
 
+      <!-- 未分配人脸处理进度条（键盘连续处理提示） -->
+      <div
+        v-if="unassignedWorkflow && unassignedFaces.length > 0"
+        class="photo-viewer__unassigned-bar"
+        @click.stop
+      >
+        <span class="photo-viewer__unassigned-bar-count">
+          {{
+            unassignedProgress.index > 0
+              ? `未分配人脸 ${unassignedProgress.index + 1}/${unassignedProgress.total}`
+              : `本张剩余 ${unassignedProgress.total} 个未分配人脸`
+          }}
+        </span>
+        <span class="photo-viewer__unassigned-bar-keys">
+          <kbd>Enter</kbd> 分配归属 ·
+          <kbd>Delete</kbd> 删除 · <kbd>Esc</kbd> 退出
+        </span>
+      </div>
+
       <!-- 侧边评论抽屉 -->
       <PhotoComments
         v-if="photo"
@@ -1255,17 +1425,28 @@ onBeforeUnmount(() => {
           </div>
           <div class="face-dialog__field">
             <label class="face-dialog__label">搜索目标人物</label>
-            <Input v-model="personKeyword" placeholder="输入关键词筛选人物" />
+            <Input
+              ref="personInputRef"
+              v-model="personKeyword"
+              placeholder="输入关键词筛选人物"
+              @keydown="handlePersonKeydown"
+            />
             <p class="face-dialog__hint">支持姓名或首字母搜索</p>
           </div>
-          <div class="face-dialog__list" @scroll="onPersonsScroll">
+          <div
+            ref="personListRef"
+            class="face-dialog__list"
+            @scroll="onPersonsScroll"
+          >
             <button
-              v-for="person in persons"
+              v-for="(person, index) in persons"
               :key="person.id"
               type="button"
               class="face-dialog__person"
               :class="{
                 'face-dialog__person--active': targetPersonId === person.id,
+                'face-dialog__person--highlight':
+                  personHighlightIndex === index,
               }"
               @click="targetPersonId = person.id"
             >

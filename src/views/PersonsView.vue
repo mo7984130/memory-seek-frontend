@@ -77,12 +77,14 @@ function handleResize() {
 
   if (containerWidth.value < 640) {
     columnCount.value = 2;
-  } else if (containerWidth.value < 1024) {
+  } else if (containerWidth.value < 768) {
     columnCount.value = 3;
-  } else if (containerWidth.value < 1440) {
+  } else if (containerWidth.value < 1024) {
     columnCount.value = 4;
-  } else {
+  } else if (containerWidth.value < 1440) {
     columnCount.value = 5;
+  } else {
+    columnCount.value = 6;
   }
 }
 
@@ -136,10 +138,10 @@ function loadMoreWaterfall(): Promise<number> {
 }
 
 /**
- * 人物卡片高度：4:3 封面 + 底部信息区
+ * 人物卡片高度：1:1 封面 + 底部信息区
  */
 function personCardHeight(_item: WaterfallItem, colWidth: number): number {
-  return colWidth * 0.75 + 64;
+  return colWidth + 64;
 }
 
 /**
@@ -428,7 +430,7 @@ onActivated(async () => {
 }
 
 .person-card__cover {
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1 / 1;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -62,12 +62,14 @@ const sentinelRef = ref<HTMLElement | null>(null);
 async function fetchPage() {
   if (loading.value || !hasMore.value) return;
   loading.value = true;
+  let added = 0;
   try {
   const kw = keyword.value.trim();
   const res = kw
     ? await photo.person.searchPersons(kw, { cursor: cursor.value })
     : await photo.person.getPersons({ cursor: cursor.value });
     const page = res.data;
+    added = page.records.length;
     persons.value.push(...page.records);
     cursor.value = page.nextCursor;
     hasMore.value = page.hasMore;
@@ -75,6 +77,20 @@ async function fetchPage() {
     console.error("[PersonsView] 加载人物列表失败:", error);
   } finally {
     loading.value = false;
+  }
+  await nextTick();
+  // IntersectionObserver 只在交叉状态变化时触发，哨兵持续可见时不会重复回调。
+  // 首屏不足一屏时主动检查并继续加载，直至撑满视口或数据耗尽。
+  if (
+    added > 0 &&
+    !loading.value &&
+    hasMore.value &&
+    sentinelRef.value
+  ) {
+    const rect = sentinelRef.value.getBoundingClientRect();
+    if (rect.top < window.innerHeight) {
+      fetchPage();
+    }
   }
 }
 

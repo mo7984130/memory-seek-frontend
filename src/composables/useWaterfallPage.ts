@@ -153,9 +153,26 @@ export function useWaterfallPage(options: UseWaterfallPageOptions) {
     }
   }
 
-  /** 追加一页（触底加载） */
-  function fetchMore(params: { cursor?: string; anchorTime?: string } = {}) {
-    return requestPage(params, false);
+  /** 追加一页（触底加载）；首屏未填满时自动续载直至撑满视口或数据耗尽 */
+  async function fetchMore(
+    params: { cursor?: string; anchorTime?: string } = {},
+  ) {
+    const records = await requestPage(params, false);
+    await nextTick();
+    // IntersectionObserver 只在交叉状态变化时触发，哨兵持续可见时不会重复回调。
+    // 视口过大时首屏内容不足一屏，需在此主动检查并继续填充。
+    if (
+      records.length > 0 &&
+      !loading.value &&
+      waterfall.hasMore.value &&
+      sentinelRef.value
+    ) {
+      const rect = sentinelRef.value.getBoundingClientRect();
+      if (rect.top < window.innerHeight) {
+        fetchMore({ cursor: waterfall.cursor.value });
+      }
+    }
+    return records;
   }
 
   /** 拉取一页并替换列表（按钮恢复用），随后落到页首 */

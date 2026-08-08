@@ -507,6 +507,23 @@ function handleUnassignedFacesLoaded() {
   goNext();
 }
 
+/** 切换当前处理的未分配人脸（delta 为 ±1，循环） */
+function focusAdjacentUnassigned(delta: number) {
+  const list = unassignedFaces.value;
+  if (list.length === 0) return;
+  const currentId = activeFace.value?.id;
+  const currentIndex = currentId
+    ? list.findIndex((f) => f.id === currentId)
+    : -1;
+  const nextIndex =
+    currentIndex < 0
+      ? delta > 0
+        ? 0
+        : list.length - 1
+      : (currentIndex + delta + list.length) % list.length;
+  activeFace.value = list[nextIndex]!;
+}
+
 // ---- 人脸框坐标 ----
 /**
  * 人脸框样式：百分比定位（overlay 与图片同尺寸同 transform，缩放/旋转/拖拽由 CSS transform 统一处理，
@@ -1015,11 +1032,12 @@ function handleKeydown(event: KeyboardEvent) {
         openChangeBelongingDialog();
       }
       break;
-    case "Delete":
-    case "Backspace":
-      // 未分配人脸处理模式：打开当前人脸的删除确认弹窗
-      if (props.unassignedWorkflow && activeFace.value && !activeFace.value.personId) {
-        openDeleteFaceConfirm();
+    case "ArrowUp":
+    case "ArrowDown":
+      // 未分配人脸处理模式：在未分配人脸之间上下切换
+      if (props.unassignedWorkflow) {
+        event.preventDefault();
+        focusAdjacentUnassigned(event.key === "ArrowDown" ? 1 : -1);
       }
       break;
     case "ArrowLeft":
@@ -1048,6 +1066,12 @@ function handleKeydown(event: KeyboardEvent) {
       break;
     case "d":
     case "D":
+      // 未分配人脸处理模式：D 删除当前人脸
+      if (props.unassignedWorkflow && activeFace.value && !activeFace.value.personId) {
+        event.preventDefault();
+        openDeleteFaceConfirm();
+        break;
+      }
       downloadOriginal();
       break;
     case "b":
@@ -1343,15 +1367,12 @@ onBeforeUnmount(() => {
         @click.stop
       >
         <span class="photo-viewer__unassigned-bar-count">
-          {{
-            unassignedProgress.index > 0
-              ? `未分配人脸 ${unassignedProgress.index + 1}/${unassignedProgress.total}`
-              : `本张剩余 ${unassignedProgress.total} 个未分配人脸`
-          }}
+          未分配人脸 {{ unassignedProgress.index + 1 }}/{{ unassignedProgress.total }}
         </span>
         <span class="photo-viewer__unassigned-bar-keys">
+          <kbd>↑</kbd>/<kbd>↓</kbd> 切换人脸 ·
           <kbd>Enter</kbd> 分配归属 ·
-          <kbd>Delete</kbd> 删除 · <kbd>Esc</kbd> 退出
+          <kbd>D</kbd> 删除 · <kbd>Esc</kbd> 退出
         </span>
       </div>
 

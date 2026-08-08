@@ -132,7 +132,8 @@ onBeforeUnmount(() => {
         <ol class="unassigned-view__guide-steps">
           <li>点击照片进入查看器，会自动高亮第一个未分配人脸</li>
           <li>
-            按 <kbd>Enter</kbd> 选择归属，按 <kbd>Delete</kbd> 删除
+            <kbd>↑</kbd>/<kbd>↓</kbd> 切换人脸，
+            <kbd>Enter</kbd> 选择归属，<kbd>D</kbd> 删除
           </li>
           <li>处理完一个自动进入下一个，本张处理完自动跳到下一张</li>
           <li>不认识的未分配人脸，可直接删除</li>

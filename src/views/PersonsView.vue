@@ -7,10 +7,9 @@ import {
   useTemplateRef,
   onMounted,
   onActivated,
-  onBeforeUnmount,
 } from "vue";
 import { useRouter } from "vue-router";
-import { useDebounceFn } from "@vueuse/core";
+import { useDebounceFn, useResizeObserver } from "@vueuse/core";
 import { photo, validation } from "memory-seek-api";
 import type { Person } from "memory-seek-api";
 import { useListScrollRestore } from "@/composables/useListScrollRestore";
@@ -150,15 +149,11 @@ const waterfallItems = computed<WaterfallItem[]>(() =>
   persons.value.map((p) => ({ ...p, id: p.id })),
 );
 
-// 列表内容变化后重新测量容器宽度（瀑布流首次挂载晚于 onMounted）
-watch(
-  persons,
-  async () => {
-    await nextTick();
-    handleResize();
-  },
-  { flush: "post" },
-);
+// 容器尺寸变化（含首次挂载）时测量宽度。
+// grid 为条件渲染，挂载晚于 onMounted，用 ResizeObserver 保证测量时机可靠。
+useResizeObserver(gridRef, () => {
+  handleResize();
+});
 
 /**
  * 进入人物详情
@@ -172,12 +167,7 @@ function enterPerson(item: WaterfallItem) {
 }
 
 onMounted(() => {
-  window.addEventListener("resize", handleResize);
   fetchPage();
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("resize", handleResize);
 });
 
 // 从详情页返回：详情页改过人物（改名/删除/合并）时刷新列表，随后恢复浏览位置

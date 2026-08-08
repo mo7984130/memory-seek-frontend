@@ -68,6 +68,11 @@ const gridRef = useTemplateRef<HTMLElement>("gridRef");
 const columnCount = ref(4);
 const containerWidth = ref(0);
 
+// 人物卡片最小列宽（px）：列数由容器宽度动态决定，而非固定档位。
+// 例如 1980px 宽度 → 约 8 列。
+const MIN_CARD_WIDTH = 220;
+const GRID_GAP = 16;
+
 function handleResize() {
   if (!gridRef.value) return;
   const style = getComputedStyle(gridRef.value);
@@ -75,17 +80,10 @@ function handleResize() {
   const paddingRight = parseInt(style.paddingRight) || 0;
   containerWidth.value = gridRef.value.clientWidth - paddingLeft - paddingRight;
 
-  if (containerWidth.value < 640) {
-    columnCount.value = 2;
-  } else if (containerWidth.value < 768) {
-    columnCount.value = 3;
-  } else if (containerWidth.value < 1024) {
-    columnCount.value = 4;
-  } else if (containerWidth.value < 1440) {
-    columnCount.value = 5;
-  } else {
-    columnCount.value = 6;
-  }
+  columnCount.value = Math.max(
+    1,
+    Math.floor((containerWidth.value + GRID_GAP) / (MIN_CARD_WIDTH + GRID_GAP)),
+  );
 }
 
 /**

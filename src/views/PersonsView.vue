@@ -136,10 +136,10 @@ function loadMoreWaterfall(): Promise<number> {
 }
 
 /**
- * 人物卡片高度：1:1 封面 + 底部信息区
+ * 人物卡片高度：4:3 封面 + 底部信息区
  */
 function personCardHeight(_item: WaterfallItem, colWidth: number): number {
-  return colWidth + 64;
+  return colWidth * 0.75 + 64;
 }
 
 /**
@@ -428,7 +428,7 @@ onActivated(async () => {
 }
 
 .person-card__cover {
-  aspect-ratio: 1 / 1;
+  aspect-ratio: 4 / 3;
   display: flex;
   align-items: center;
   justify-content: center;

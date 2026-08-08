@@ -297,7 +297,7 @@ function handleResize() {
 /**
  * 触发一次加载：
  * - IntersectionObserver 只在交叉状态变化时触发，哨兵持续可见时不会重复回调，
- *   因此加载完成后若哨兵仍在视口内（首屏未填满）则递归续载，直至撑满视口或数据耗尽。
+ *   因此加载完成后若哨兵仍在视口内（首屏未填满）则循环续载，直至撑满视口或数据耗尽。
  */
 let isFetching = false;
 async function triggerLoadMore() {
@@ -306,19 +306,21 @@ async function triggerLoadMore() {
 
   isFetching = true;
   try {
-    const added = await props.loadMore();
-    await nextTick();
-    if (
-      typeof added === "number" &&
-      added > 0 &&
-      !props.loading &&
-      props.hasMore &&
-      sentinelRef.value
-    ) {
-      const rect = sentinelRef.value.getBoundingClientRect();
-      if (rect.top < window.innerHeight) {
-        await triggerLoadMore();
+    // 循环续载而非递归：递归会命中上方的 isFetching 守卫导致只填充一轮
+    for (;;) {
+      const added = await props.loadMore();
+      await nextTick();
+      if (
+        typeof added !== "number" ||
+        added <= 0 ||
+        props.loading ||
+        !props.hasMore ||
+        !sentinelRef.value
+      ) {
+        break;
       }
+      const rect = sentinelRef.value.getBoundingClientRect();
+      if (rect.top >= window.innerHeight) break;
     }
   } finally {
     isFetching = false;

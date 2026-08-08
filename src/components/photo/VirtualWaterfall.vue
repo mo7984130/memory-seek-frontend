@@ -1,13 +1,24 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
+import {
+  ref,
+  computed,
+  watch,
+  nextTick,
+  onMounted,
+  onBeforeUnmount,
+} from "vue";
+import { useIntersectionObserver } from "@vueuse/core";
+import Spinner from "@/components/base/Spinner/Spinner.vue";
 
 /**
- * 瀑布流项目接口
+ * 通用瀑布流项目接口：不绑定具体业务类型，
+ * 渲染与高度由插槽 / itemHeight 决定。
  */
 export interface WaterfallItem {
   id: string | number;
-  width: number;
-  height: number;
+  /** 仅按宽高比计算高度时使用（照片兼容），其余场景可省略 */
+  width?: number;
+  height?: number;
   [key: string]: any;
 }
 
@@ -29,11 +40,29 @@ const props = withDefaults(
     gap?: number;
     buffer?: number;
     groupHeaderHeight?: number; // 分组标题高度
+    /**
+     * 自定义卡片高度（用于非照片型内容）：
+     * - 数字：所有卡片统一高度
+     * - 函数：按卡片返回高度（参数为卡片与列宽）
+     * - 不传：按图片宽高比计算（兼容照片）
+     */
+    itemHeight?: number | ((item: WaterfallItem, colWidth: number) => number);
+    // ======== 内置加载（触底加载 + 首屏填充） ========
+    /** 是否还有更多数据 */
+    hasMore?: boolean;
+    /** 是否正在加载 */
+    loading?: boolean;
+    /** 拉取一页；返回本次新增条数以驱动首屏自动填充 */
+    loadMore?: () => Promise<number | void>;
+    /** 列表为空时的提示文案 */
+    emptyText?: string;
   }>(),
   {
     gap: 16,
     buffer: 800,
     groupHeaderHeight: 48,
+    hasMore: false,
+    loading: false,
   },
 );
 
@@ -48,9 +77,11 @@ const windowHeight = ref(window.innerHeight);
 const scrollY = ref(0);
 // 容器 ref
 const waterfallRef = ref<HTMLElement | null>(null);
+// 加载哨兵 ref
+const sentinelRef = ref<HTMLElement | null>(null);
 
 /**
- * 定位后的项目（照片或分组标题）
+ * 定位后的项目（照片/卡片或分组标题）
  */
 interface PositionedItem {
   id: string | number;
@@ -62,6 +93,22 @@ interface PositionedItem {
   renderWidth: number;
   renderHeight: number;
   [key: string]: any;
+}
+
+/**
+ * 计算卡片显示高度：
+ * - 传入 itemHeight（数字或函数）时按自定义高度
+ * - 否则按图片宽高比计算
+ */
+function getDisplayHeight(item: WaterfallItem, colWidth: number): number {
+  if (typeof props.itemHeight === "function") {
+    return props.itemHeight(item, colWidth);
+  }
+  if (typeof props.itemHeight === "number") {
+    return props.itemHeight;
+  }
+  const ratio = (item.height || 100) / (item.width || 100);
+  return colWidth * ratio;
 }
 
 /**
@@ -99,8 +146,7 @@ const positionedItems = computed<PositionedItem[]>(() => {
       for (const item of group.items) {
         const minHeight = Math.min(...heights);
         const minIndex = heights.indexOf(minHeight);
-        const ratio = (item.height || 100) / (item.width || 100);
-        const displayHeight = colWidth * ratio;
+        const displayHeight = getDisplayHeight(item, colWidth);
 
         result.push({
           ...item,
@@ -123,8 +169,7 @@ const positionedItems = computed<PositionedItem[]>(() => {
     return props.items.map((item) => {
       const minHeight = Math.min(...heights);
       const minIndex = heights.indexOf(minHeight);
-      const ratio = (item.height || 100) / (item.width || 100);
-      const displayHeight = colWidth * ratio;
+      const displayHeight = getDisplayHeight(item, colWidth);
 
       const pos: PositionedItem = {
         ...item,
@@ -153,6 +198,16 @@ const visibleItems = computed(() => {
   return positionedItems.value.filter(
     (p) => p.renderTop + p.renderHeight > start && p.renderTop < end,
   );
+});
+
+/**
+ * 已加载的卡片总数（用于空态判断）
+ */
+const itemCount = computed(() => {
+  if (props.groups) {
+    return props.groups.reduce((n, g) => n + g.items.length, 0);
+  }
+  return props.items?.length ?? 0;
 });
 
 /**
@@ -236,6 +291,55 @@ function handleScroll() {
 function handleResize() {
   windowHeight.value = window.innerHeight;
 }
+
+// ======== 内置加载：触底 + 首屏填充 ========
+
+/**
+ * 触发一次加载：
+ * - IntersectionObserver 只在交叉状态变化时触发，哨兵持续可见时不会重复回调，
+ *   因此加载完成后若哨兵仍在视口内（首屏未填满）则循环续载，直至撑满视口或数据耗尽。
+ */
+let isFetching = false;
+async function triggerLoadMore() {
+  if (isFetching || !props.loadMore) return;
+  if (props.loading || !props.hasMore) return;
+
+  isFetching = true;
+  try {
+    // 循环续载而非递归：递归会命中上方的 isFetching 守卫导致只填充一轮
+    for (;;) {
+      const added = await props.loadMore();
+      await nextTick();
+      if (
+        typeof added !== "number" ||
+        added <= 0 ||
+        props.loading ||
+        !props.hasMore ||
+        !sentinelRef.value
+      ) {
+        break;
+      }
+      const rect = sentinelRef.value.getBoundingClientRect();
+      if (rect.top >= window.innerHeight) break;
+    }
+  } finally {
+    isFetching = false;
+  }
+}
+
+// 触底加载
+useIntersectionObserver(sentinelRef, (entries) => {
+  const isIntersecting = entries[0]?.isIntersecting || false;
+  if (isIntersecting) triggerLoadMore();
+});
+
+// 外部首屏加载（loading 结束）后补一次填充检查
+watch(
+  () => props.loading,
+  (val) => {
+    if (!val) triggerLoadMore();
+  },
+);
 
 /**
  * 滚动到指定分组
@@ -336,9 +440,23 @@ onBeforeUnmount(() => {
           }}</span>
         </div>
       </slot>
-      <!-- 照片卡片 -->
+      <!-- 卡片（最小单位：任意卡片，如 PhotoCard / 人物卡片） -->
       <slot v-else :item="item" />
     </div>
+  </div>
+
+  <!-- 加载哨兵 + 状态指示器 -->
+  <div ref="sentinelRef" class="waterfall-sentinel">
+    <Spinner v-if="loading" />
+    <span
+      v-else-if="itemCount > 0 && !hasMore"
+      class="waterfall-sentinel__text"
+    >
+      已经到底啦 ~
+    </span>
+    <span v-else-if="itemCount === 0 && !loading && emptyText" class="waterfall-sentinel__text">
+      {{ emptyText }}
+    </span>
   </div>
 </template>
 
@@ -371,5 +489,37 @@ onBeforeUnmount(() => {
   font-size: var(--text-lg);
   font-weight: var(--font-semibold);
   color: var(--color-text-primary);
+}
+
+.waterfall-sentinel {
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--color-text-tertiary);
+}
+
+.waterfall-sentinel__text {
+  font-size: var(--text-sm);
+  position: relative;
+}
+
+.waterfall-sentinel__text::before,
+.waterfall-sentinel__text::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-border));
+}
+
+.waterfall-sentinel__text::before {
+  right: calc(100% + 12px);
+}
+
+.waterfall-sentinel__text::after {
+  left: calc(100% + 12px);
+  background: linear-gradient(90deg, var(--color-border), transparent);
 }
 </style>

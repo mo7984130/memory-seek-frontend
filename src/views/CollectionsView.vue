@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, onActivated } from "vue";
+import { ref, useTemplateRef, onMounted, onActivated } from "vue";
 import { useRouter } from "vue-router";
+import { useResizeObserver } from "@vueuse/core";
 import { Plus, FolderOpen } from "@/components/base/Icon/icons";
 import { photo, validation } from "memory-seek-api";
 import type { Collection } from "memory-seek-api";
@@ -29,6 +30,34 @@ const showCreateModal = ref(false);
 const newCollectionName = ref("");
 const newCollectionDesc = ref("");
 const creating = ref(false);
+
+// 收藏夹网格列数/宽度：与照片瀑布流保持一致（同列数阈值 + gap 16）
+const gridRef = useTemplateRef<HTMLElement>("gridRef");
+const columnCount = ref(4);
+const containerWidth = ref(0);
+
+function handleResize() {
+  if (!gridRef.value) return;
+  const style = getComputedStyle(gridRef.value);
+  const paddingLeft = parseInt(style.paddingLeft) || 0;
+  const paddingRight = parseInt(style.paddingRight) || 0;
+  containerWidth.value = gridRef.value.clientWidth - paddingLeft - paddingRight;
+
+  if (containerWidth.value < 640) {
+    columnCount.value = 2;
+  } else if (containerWidth.value < 1024) {
+    columnCount.value = 3;
+  } else if (containerWidth.value < 1440) {
+    columnCount.value = 4;
+  } else {
+    columnCount.value = 5;
+  }
+}
+
+// 网格为条件渲染，挂载晚于 onMounted，用 ResizeObserver 保证测量时机可靠
+useResizeObserver(gridRef, () => {
+  handleResize();
+});
 
 /**
  * 封面渐变色 — 根据 index 循环，分浅色/暗色两套
@@ -146,8 +175,13 @@ onActivated(async () => {
       <Spinner size="lg" />
     </div>
 
-    <!-- 收藏夹网格 -->
-    <div v-else-if="collections.length > 0" class="collections-view__grid">
+    <!-- 收藏夹网格（列宽与照片瀑布流一致） -->
+    <div
+      v-else-if="collections.length > 0"
+      ref="gridRef"
+      class="collections-view__grid"
+      :style="{ gridTemplateColumns: `repeat(${columnCount}, 1fr)` }"
+    >
       <Card
         v-for="(collection, index) in collections"
         :key="collection.id"
@@ -252,9 +286,7 @@ onActivated(async () => {
 
 .collections-view__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: var(--spacing-5);
-  padding-left: var(--spacing-8);
+  gap: 16px;
 }
 
 .collection-card {
@@ -348,12 +380,6 @@ onActivated(async () => {
 @media (max-width: 768px) {
   .collections-view {
     padding: var(--spacing-4) var(--spacing-2);
-  }
-
-  .collections-view__grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-3);
-    padding-left: var(--spacing-2);
   }
 
   .collections-view__header {

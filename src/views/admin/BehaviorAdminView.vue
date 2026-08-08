@@ -1,6 +1,14 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted } from "vue";
+import {
+  ref,
+  reactive,
+  computed,
+  watch,
+  onMounted,
+  onBeforeUnmount,
+} from "vue";
 import dayjs from "dayjs";
+import { useIntersectionObserver } from "@vueuse/core";
 import { photo } from "memory-seek-api";
 import { ArrowLeft } from "@/components/base/Icon/icons";
 import IconButton from "@/components/actions/IconButton/IconButton.vue";
@@ -10,6 +18,7 @@ import Select from "@/components/form/Select/Select.vue";
 import Input from "@/components/form/Input/Input.vue";
 import Card from "@/components/data/Card/Card.vue";
 import BackToTop from "@/components/actions/BackToTop/BackToTop.vue";
+import VirtualWaterfall from "@/components/photo/VirtualWaterfall.vue";
 import { useGoBack } from "@/composables/useGoBack";
 import { useUserStore } from "@/stores/user";
 
@@ -143,8 +152,69 @@ const auditRecords = ref<AuditItem[]>([]);
 const auditCursor = ref<string | null>(null);
 const auditHasMore = ref(false);
 const auditLoading = ref(false);
-const auditLoadingMore = ref(false);
 const auditError = ref("");
+
+// 触底自动加载（哨兵元素进入视口时加载下一页）
+const auditSentinelRef = ref<HTMLElement | null>(null);
+useIntersectionObserver(auditSentinelRef, (entries) => {
+  const isIntersecting = entries[0]?.isIntersecting || false;
+  if (isIntersecting && !auditLoading.value && auditHasMore.value) {
+    loadAudit(false);
+  }
+});
+
+// ---------------- 审计瀑布流布局 ----------------
+const auditContainerRef = ref<HTMLElement | null>(null);
+const auditColumnCount = ref(3);
+const auditContainerWidth = ref(0);
+
+function handleAuditResize() {
+  if (!auditContainerRef.value) return;
+  const style = getComputedStyle(auditContainerRef.value);
+  const paddingLeft = parseInt(style.paddingLeft) || 0;
+  const paddingRight = parseInt(style.paddingRight) || 0;
+  auditContainerWidth.value =
+    auditContainerRef.value.clientWidth - paddingLeft - paddingRight;
+
+  if (auditContainerWidth.value < 640) {
+    auditColumnCount.value = 1;
+  } else if (auditContainerWidth.value < 1024) {
+    auditColumnCount.value = 2;
+  } else {
+    auditColumnCount.value = 3;
+  }
+}
+
+/** 审计卡片高度：无详情时略矮，有详情时更高（瀑布流错落效果） */
+function auditCardHeight(item: unknown): number {
+  const audit = item as AuditItem;
+  return audit.detail ? 148 : 116;
+}
+
+/** 审计流水按天分组（供 VirtualWaterfall 分组模式渲染） */
+const auditGroups = computed(() => {
+  const map = new Map<string, AuditItem[]>();
+  for (const record of auditRecords.value) {
+    const key = record.createdAt.substring(0, 10);
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(record);
+  }
+  return Array.from(map.entries()).map(([key, records]) => ({
+    key,
+    label: dayjs(key).format("M月D日"),
+    items: records.map((r) => ({ ...r, width: 1, height: 1 })),
+  }));
+});
+
+/** 瀑布流插槽传入的 item 含原始审计字段，转为 AuditItem 使用 */
+function asAuditItem(item: unknown): AuditItem {
+  return item as AuditItem;
+}
+
+/** 审计详情序列化文本（供卡片显示与 title 提示） */
+function detailText(item: unknown): string {
+  return formatDetail(asAuditItem(item).detail as Record<string, unknown>);
+}
 
 function prefetchUsers() {
   const ids = Array.from(
@@ -156,7 +226,6 @@ function prefetchUsers() {
 async function loadAudit(reset = true) {
   if (auditLoading.value) return;
   auditLoading.value = true;
-  auditLoadingMore.value = reset ? false : true;
   auditError.value = "";
   try {
     const res = await photo.behavior.getBehaviorAudit({
@@ -179,7 +248,6 @@ async function loadAudit(reset = true) {
     auditError.value = "加载失败，请确认管理员权限后重试";
   } finally {
     auditLoading.value = false;
-    auditLoadingMore.value = false;
   }
 }
 
@@ -345,7 +413,13 @@ watch(activeTab, (tab) => {
 });
 
 onMounted(() => {
+  handleAuditResize();
+  window.addEventListener("resize", handleAuditResize);
   loadAudit(true);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("resize", handleAuditResize);
 });
 </script>
 
@@ -420,8 +494,12 @@ onMounted(() => {
         </div>
       </Card>
 
-      <div class="audit-list">
-        <Spinner v-if="auditLoading" size="lg" class="audit-list__loading" />
+      <div ref="auditContainerRef" class="audit-list">
+        <Spinner
+          v-if="auditLoading && auditRecords.length === 0"
+          size="lg"
+          class="audit-list__loading"
+        />
 
         <p v-else-if="auditError" class="audit-list__empty">{{ auditError }}</p>
 
@@ -430,49 +508,63 @@ onMounted(() => {
         </p>
 
         <template v-else>
-          <div v-for="item in auditRecords" :key="item.id" class="audit-item">
-            <div class="audit-item__main">
-              <span class="audit-item__action">{{
-                ACTION_LABEL[item.action]
-              }}</span>
-              <span class="audit-item__target">
-                {{ item.targetType ? TARGET_TYPE_LABEL[item.targetType] : "—" }}
-                <template v-if="item.targetId != null">
-                  #{{ item.targetId }}</template
+          <VirtualWaterfall
+            :groups="auditGroups"
+            :column-count="auditColumnCount"
+            :container-width="auditContainerWidth"
+            :gap="16"
+            :item-height="auditCardHeight"
+            :group-header-height="40"
+          >
+            <template #default="{ item }">
+              <div class="audit-card">
+                <div class="audit-card__head">
+                  <span class="audit-card__action">{{
+                    ACTION_LABEL[asAuditItem(item).action]
+                  }}</span>
+                  <span class="audit-card__target">
+                    {{
+                      asAuditItem(item).targetType
+                        ? TARGET_TYPE_LABEL[
+                            asAuditItem(item).targetType as BehaviorTargetType
+                          ]
+                        : "—"
+                    }}
+                    <template v-if="asAuditItem(item).targetId != null">
+                      #{{ asAuditItem(item).targetId }}</template
+                    >
+                  </span>
+                </div>
+                <div class="audit-card__meta">
+                  <span class="audit-card__user">{{
+                    getUserLabel(asAuditItem(item).userId)
+                  }}</span>
+                  <span v-if="asAuditItem(item).ip" class="audit-card__ip"
+                    >IP {{ asAuditItem(item).ip }}</span
+                  >
+                  <span class="audit-card__id"
+                    >#{{ asAuditItem(item).id }}</span
+                  >
+                </div>
+                <div class="audit-card__time">
+                  {{ formatTime(asAuditItem(item).createdAt) }}
+                </div>
+                <div
+                  v-if="asAuditItem(item).detail"
+                  class="audit-card__detail"
+                  :title="detailText(item)"
                 >
-              </span>
-              <span class="audit-item__time">{{
-                formatTime(item.createdAt)
-              }}</span>
-            </div>
-            <div class="audit-item__meta">
-              <span class="audit-item__user">{{
-                getUserLabel(item.userId)
-              }}</span>
-              <span v-if="item.ip" class="audit-item__ip"
-                >IP {{ item.ip }}</span
-              >
-              <span class="audit-item__id">#{{ item.id }}</span>
-            </div>
-            <div
-              v-if="item.detail"
-              class="audit-item__detail"
-              :title="formatDetail(item.detail)"
-            >
-              {{ formatDetail(item.detail) }}
-            </div>
-          </div>
+                  {{ detailText(item) }}
+                </div>
+              </div>
+            </template>
+          </VirtualWaterfall>
 
-          <div class="audit-list__more">
-            <Button
-              v-if="auditHasMore"
-              variant="outline"
-              :loading="auditLoadingMore"
-              @click="loadAudit(false)"
+          <div ref="auditSentinelRef" class="audit-list__more">
+            <Spinner v-if="auditLoading" size="sm" />
+            <span v-else-if="!auditHasMore" class="audit-list__end"
+              >已加载全部记录</span
             >
-              加载更多
-            </Button>
-            <span v-else class="audit-list__end">已加载全部记录</span>
           </div>
         </template>
       </div>
@@ -672,6 +764,11 @@ onMounted(() => {
   gap: var(--spacing-4);
 }
 
+/* 筛选卡片内 Select 下拉为绝对定位展开，需允许溢出显示 */
+.behavior-admin :deep(.card) {
+  overflow: visible;
+}
+
 .audit-filters,
 .stats-filters,
 .top-filters {
@@ -725,41 +822,37 @@ onMounted(() => {
   color: var(--color-text-tertiary);
 }
 
-.audit-item {
-  padding: var(--spacing-4);
+.audit-card {
+  height: 100%;
+  padding: var(--spacing-3) var(--spacing-4);
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-2);
+  overflow: hidden;
 }
 
-.audit-item__main {
+.audit-card__head {
   display: flex;
   align-items: center;
-  gap: var(--spacing-3);
+  gap: var(--spacing-2);
   flex-wrap: wrap;
 }
 
-.audit-item__action {
+.audit-card__action {
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
   color: var(--color-primary);
 }
 
-.audit-item__target {
-  font-size: var(--text-sm);
+.audit-card__target {
+  font-size: var(--text-xs);
   color: var(--color-text-secondary);
 }
 
-.audit-item__time {
-  margin-left: auto;
-  font-size: var(--text-xs);
-  color: var(--color-text-tertiary);
-}
-
-.audit-item__meta {
+.audit-card__meta {
   display: flex;
   align-items: center;
   gap: var(--spacing-3);
@@ -768,13 +861,19 @@ onMounted(() => {
   color: var(--color-text-tertiary);
 }
 
-.audit-item__id {
+.audit-card__id {
   margin-left: auto;
   font-family: var(--font-mono);
 }
 
-.audit-item__detail {
-  padding: var(--spacing-2) var(--spacing-3);
+.audit-card__time {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+.audit-card__detail {
+  margin-top: auto;
+  padding: var(--spacing-1) var(--spacing-2);
   background: var(--color-bg-hover);
   border-radius: var(--radius-md);
   font-size: var(--text-xs);

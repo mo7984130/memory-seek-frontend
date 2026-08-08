@@ -1,13 +1,23 @@
 <script setup lang="ts">
-import { ref, onMounted, onActivated, nextTick, watch } from "vue";
+import {
+  ref,
+  computed,
+  watch,
+  nextTick,
+  useTemplateRef,
+  onMounted,
+  onActivated,
+} from "vue";
 import { useRouter } from "vue-router";
-import { useDebounceFn, useIntersectionObserver } from "@vueuse/core";
+import { useDebounceFn, useResizeObserver } from "@vueuse/core";
 import { photo, validation } from "memory-seek-api";
 import type { Person } from "memory-seek-api";
 import { useListScrollRestore } from "@/composables/useListScrollRestore";
 import { consumeListDirty } from "@/composables/useListDirty";
+import VirtualWaterfall, {
+  type WaterfallItem,
+} from "@/components/photo/VirtualWaterfall.vue";
 import { FaceIcon, SearchIcon } from "@/components/base/Icon/icons";
-import Card from "@/components/data/Card/Card.vue";
 import Input from "@/components/form/Input/Input.vue";
 import Spinner from "@/components/base/Spinner/Spinner.vue";
 
@@ -53,26 +63,49 @@ const cursor = ref<string | null>(null);
 const hasMore = ref(true);
 const loading = ref(false);
 
-const sentinelRef = ref<HTMLElement | null>(null);
+// 瀑布流布局
+const gridRef = useTemplateRef<HTMLElement>("gridRef");
+const columnCount = ref(4);
+const containerWidth = ref(0);
+
+// 人物卡片最小列宽（px）：列数由容器宽度动态决定，而非固定档位。
+// 例如 1980px 宽度 → 约 8 列。
+const MIN_CARD_WIDTH = 220;
+const GRID_GAP = 16;
+
+function handleResize() {
+  if (!gridRef.value) return;
+  const style = getComputedStyle(gridRef.value);
+  const paddingLeft = parseInt(style.paddingLeft) || 0;
+  const paddingRight = parseInt(style.paddingRight) || 0;
+  containerWidth.value = gridRef.value.clientWidth - paddingLeft - paddingRight;
+
+  columnCount.value = Math.max(
+    1,
+    Math.floor((containerWidth.value + GRID_GAP) / (MIN_CARD_WIDTH + GRID_GAP)),
+  );
+}
 
 /**
  * 拉取一页人物；cursor 为空表示第一页
  * 有关键词时走搜索接口，否则走列表接口
  */
-async function fetchPage() {
-  if (loading.value || !hasMore.value) return;
+async function fetchPage(): Promise<Person[]> {
+  if (loading.value || !hasMore.value) return [];
   loading.value = true;
   try {
-  const kw = keyword.value.trim();
-  const res = kw
-    ? await photo.person.searchPersons(kw, { cursor: cursor.value })
-    : await photo.person.getPersons({ cursor: cursor.value });
+    const kw = keyword.value.trim();
+    const res = kw
+      ? await photo.person.searchPersons(kw, { cursor: cursor.value })
+      : await photo.person.getPersons({ cursor: cursor.value });
     const page = res.data;
     persons.value.push(...page.records);
     cursor.value = page.nextCursor;
     hasMore.value = page.hasMore;
+    return page.records;
   } catch (error) {
     console.error("[PersonsView] 加载人物列表失败:", error);
+    return [];
   } finally {
     loading.value = false;
   }
@@ -95,22 +128,41 @@ watch(keyword, () => {
   onKeywordChange();
 });
 
-// 触底加载（组件卸载时自动停止观察）
-useIntersectionObserver(sentinelRef, (entries) => {
-  const isIntersecting = entries[0]?.isIntersecting || false;
-  if (isIntersecting && !loading.value && hasMore.value) {
-    fetchPage();
-  }
+/**
+ * 瀑布流触底/首屏填充的加载回调：返回本次新增条数
+ */
+function loadMoreWaterfall(): Promise<number> {
+  return fetchPage().then((records) => records.length);
+}
+
+/**
+ * 人物卡片高度：1:1 封面 + 底部信息区
+ */
+function personCardHeight(_item: WaterfallItem, colWidth: number): number {
+  return colWidth + 64;
+}
+
+/**
+ * 瀑布流 item：以人物 id 为 key，其余字段透传供卡片渲染
+ */
+const waterfallItems = computed<WaterfallItem[]>(() =>
+  persons.value.map((p) => ({ ...p, id: p.id })),
+);
+
+// 容器尺寸变化（含首次挂载）时测量宽度。
+// grid 为条件渲染，挂载晚于 onMounted，用 ResizeObserver 保证测量时机可靠。
+useResizeObserver(gridRef, () => {
+  handleResize();
 });
 
 /**
  * 进入人物详情
  */
-function enterPerson(person: Person) {
+function enterPerson(item: WaterfallItem) {
   router.push({
-    path: `/persons/${person.id}`,
+    path: `/persons/${item.id}`,
     // faceCount 运行时为 number（.d.ts 声明为 bigint），显式转换以兼容 HistoryState 序列化
-    state: { person: { ...person, faceCount: Number(person.faceCount) } },
+    state: { person: { ...item, faceCount: Number(item.faceCount) } },
   });
 }
 
@@ -146,33 +198,38 @@ onActivated(async () => {
       <Spinner size="lg" />
     </div>
 
-    <!-- 人物网格 -->
-    <div v-else-if="persons.length > 0" class="persons-view__grid">
-      <Card
-        v-for="person in persons"
-        :key="person.id"
-        shadow="sm"
-        padding="none"
-        hoverable
-        class="person-card"
-        @click="enterPerson(person)"
+    <!-- 人物瀑布流 -->
+    <div v-else-if="persons.length > 0" class="persons-view__grid" ref="gridRef">
+      <VirtualWaterfall
+        :items="waterfallItems"
+        :column-count="columnCount"
+        :container-width="containerWidth"
+        :gap="16"
+        :item-height="personCardHeight"
+        :has-more="hasMore"
+        :loading="loading"
+        :load-more="loadMoreWaterfall"
       >
-        <div class="person-card__cover">
-          <img
-            v-if="person.coverToken"
-            :src="photo.getImgUrl(person.coverToken)"
-            class="person-card__cover-img"
-            alt=""
-          />
-          <FaceIcon v-else :size="40" class="person-card__cover-icon" />
-        </div>
-        <div class="person-card__info">
-          <div class="person-card__name">{{ person.name }}</div>
-          <div class="person-card__count">
-            {{ Number(person.faceCount) }} 张照片
+        <template #default="{ item }">
+          <div class="person-card" @click="enterPerson(item)">
+            <div class="person-card__cover">
+              <img
+                v-if="item.coverToken"
+                :src="photo.getImgUrl(item.coverToken)"
+                class="person-card__cover-img"
+                alt=""
+              />
+              <FaceIcon v-else :size="40" class="person-card__cover-icon" />
+            </div>
+            <div class="person-card__info">
+              <div class="person-card__name">{{ item.name }}</div>
+              <div class="person-card__count">
+                {{ Number(item.faceCount) }} 张照片
+              </div>
+            </div>
           </div>
-        </div>
-      </Card>
+        </template>
+      </VirtualWaterfall>
     </div>
 
     <!-- 空状态 -->
@@ -190,17 +247,6 @@ onActivated(async () => {
           识别照片中出现的人脸后会显示在这里
         </div>
       </template>
-    </div>
-
-    <!-- 触底加载指示器 -->
-    <div ref="sentinelRef" class="load-sentinel">
-      <Spinner v-if="loading" />
-      <span
-        v-else-if="!hasMore && persons.length > 0"
-        class="load-sentinel__text"
-      >
-        已经到底啦 ~
-      </span>
     </div>
 
     <!-- 右上角悬浮搜索按钮 + 搜索面板 -->
@@ -350,10 +396,35 @@ onActivated(async () => {
 }
 
 .persons-view__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: var(--spacing-5);
-  padding-left: var(--spacing-8);
+  position: relative;
+  width: 100%;
+}
+
+.person-card {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--card-radius);
+  background: var(--card-bg);
+  border: var(--card-border);
+  overflow: hidden;
+  cursor: pointer;
+  transition: var(--card-transition);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .person-card:hover {
+    box-shadow: var(--card-hover-shadow);
+    transform: var(--card-hover-transform);
+    border-color: rgba(0, 0, 0, 0.08);
+  }
+
+  .dark .person-card:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+}
+
+.person-card:active {
+  transform: var(--card-active-transform);
 }
 
 .person-card__cover {
@@ -419,47 +490,9 @@ onActivated(async () => {
   margin-top: var(--spacing-2);
 }
 
-.load-sentinel {
-  height: 60px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  color: var(--color-text-tertiary);
-}
-
-.load-sentinel__text {
-  font-size: var(--text-sm);
-  position: relative;
-}
-
-.load-sentinel__text::before,
-.load-sentinel__text::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  width: 40px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--color-border));
-}
-
-.load-sentinel__text::before {
-  right: calc(100% + 12px);
-}
-
-.load-sentinel__text::after {
-  left: calc(100% + 12px);
-  background: linear-gradient(90deg, var(--color-border), transparent);
-}
-
 @media (max-width: 768px) {
   .persons-view {
     padding: var(--spacing-4) var(--spacing-2);
-  }
-
-  .persons-view__grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-3);
-    padding-left: var(--spacing-2);
   }
 
   .persons-view__search-fab {

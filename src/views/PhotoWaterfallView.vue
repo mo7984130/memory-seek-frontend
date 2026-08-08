@@ -12,13 +12,11 @@ import type { Photo } from "memory-seek-api";
 import dayjs from "dayjs";
 import { useWaterfallPage } from "@/composables/useWaterfallPage";
 import { useListScrollRestore } from "@/composables/useListScrollRestore";
-import VirtualWaterfall from "@/components/photo/VirtualWaterfall.vue";
+import PhotoWaterfall from "@/components/photo/PhotoWaterfall.vue";
 import TimelineNav from "@/components/photo/TimelineNav.vue";
 import LastPositionButton from "@/components/photo/LastPositionButton.vue";
 import WaterfallBookmarkPanel from "@/components/photo/WaterfallBookmarkPanel.vue";
-import PhotoCard from "@/components/photo/PhotoCard.vue";
 import PhotoViewer from "@/components/photo/PhotoViewer.vue";
-import Spinner from "@/components/base/Spinner/Spinner.vue";
 import type { WaterfallBookmark } from "@/composables/useWaterfallBookmarks";
 import BackToTop from "@/components/actions/BackToTop/BackToTop.vue";
 
@@ -49,7 +47,7 @@ const {
   navigateToAnchor,
 } = page;
 
-const waterfallViewRef = ref<InstanceType<typeof VirtualWaterfall> | null>(
+const waterfallViewRef = ref<InstanceType<typeof PhotoWaterfall> | null>(
   null,
 );
 
@@ -121,6 +119,13 @@ async function handleLoadMore(): Promise<boolean> {
   return records.length > 0;
 }
 
+/** 瀑布流触底/首屏填充的加载回调：返回本次新增条数 */
+function loadMoreWaterfall(): Promise<number> {
+  return page
+    .fetchMore({ cursor: waterfall.cursor.value })
+    .then((records) => records.length);
+}
+
 function handleLikeChange(photoId: string, isLiked: boolean) {
   waterfall.updatePhotoLike(photoId, isLiked);
   if (selectedPhoto.value?.id === photoId) {
@@ -169,32 +174,22 @@ onBeforeUnmount(() => {
 <template>
   <div class="photo-waterfall-view" :ref="page.containerRef">
     <div class="waterfall-container">
-      <VirtualWaterfall
+      <PhotoWaterfall
         ref="waterfallViewRef"
         :groups="groups"
+        :photos="waterfall.allPhotos.value"
         :column-count="columnCount"
         :container-width="containerWidth"
         :gap="16"
+        :has-more="waterfall.hasMore.value"
+        :loading="loading"
+        :load-more="loadMoreWaterfall"
+        empty-text="还没有照片"
         @top-item-change="handleTopItemChange"
         @current-group-change="waterfall.currentGroup.value = $event"
-      >
-        <template #default="{ item }">
-          <PhotoCard
-            v-if="getPhotoById(item.id)"
-            :item="getPhotoById(item.id)!"
-            @click="handlePhotoClick"
-            @like="handleLike"
-          />
-        </template>
-      </VirtualWaterfall>
-
-      <!-- 加载指示器 -->
-      <div :ref="page.sentinelRef" class="load-sentinel">
-        <Spinner v-if="loading" />
-        <span v-else-if="!waterfall.hasMore.value" class="load-sentinel__text">
-          已经到底啦 ~
-        </span>
-      </div>
+        @photo-click="handlePhotoClick"
+        @like="handleLike"
+      />
     </div>
 
     <!-- 右侧时间线导航 -->

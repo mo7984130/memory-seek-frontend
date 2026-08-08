@@ -88,6 +88,19 @@ const deletingFace = ref(false);
 const renameName = ref("");
 const targetPersonId = ref("");
 
+// ---- 框选批量删除状态 ----
+const faceSelectActive = ref(false);
+const selecting = ref(false);
+const selectStartX = ref(0);
+const selectStartY = ref(0);
+const selectEndX = ref(0);
+const selectEndY = ref(0);
+const selectedFaceIds = ref<Set<string>>(new Set());
+const showBatchDeleteConfirm = ref(false);
+const deletingFacesBatch = ref(false);
+const overlayRef = ref<HTMLElement | null>(null);
+const wrapperRef = ref<HTMLElement | null>(null);
+
 // 归属目标人物（游标分页搜索）
 const {
   keyword: personKeyword,
@@ -158,6 +171,41 @@ const isCollected = computed(() => props.photo?.isCollected ?? false);
 const isOwner = computed(() => {
   if (!props.photo || !authStore.userId) return false;
   return props.photo.userId === authStore.userId;
+});
+
+/** 无归属人脸列表 */
+const unassignedFaces = computed(() =>
+  faces.value.filter((f) => !f.personId),
+);
+
+/** 是否存在无归属人脸（框选按钮显示条件） */
+const hasUnassignedFaces = computed(() => unassignedFaces.value.length > 0);
+
+/** 选中的人脸 */
+const selectedFaces = computed(() =>
+  faces.value.filter((f) => selectedFaceIds.value.has(f.id)),
+);
+
+/** 当前框选矩形的归一化坐标（规范化后的左上角/右下角） */
+const selectionRect = computed(() => {
+  if (!selecting.value) return null;
+  const x1 = Math.min(selectStartX.value, selectEndX.value);
+  const y1 = Math.min(selectStartY.value, selectEndY.value);
+  const x2 = Math.max(selectStartX.value, selectEndX.value);
+  const y2 = Math.max(selectStartY.value, selectEndY.value);
+  return { x1, y1, x2, y2 };
+});
+
+/** 框选矩形样式（百分比定位，与人脸框同坐标系） */
+const selectionRectStyle = computed(() => {
+  const r = selectionRect.value;
+  if (!r) return null;
+  return {
+    left: `${(r.x1 * 100).toFixed(3)}%`,
+    top: `${(r.y1 * 100).toFixed(3)}%`,
+    width: `${((r.x2 - r.x1) * 100).toFixed(3)}%`,
+    height: `${((r.y2 - r.y1) * 100).toFixed(3)}%`,
+  };
 });
 
 // ---- 上一张/下一张 ----
@@ -272,6 +320,9 @@ watch(
     showChangeBelongingDialog.value = false;
     showRenameDialog.value = false;
     showDeleteFaceConfirm.value = false;
+    // 退出框选模式
+    faceSelectActive.value = false;
+    resetFaceSelection();
     // 自动开启人脸框：加载该照片的人脸
     if (props.initialShowFaces && !facesLoaded.value) {
       loadFaces();
@@ -295,6 +346,7 @@ function resetView() {
 // ---- 拖拽控制（鼠标） ----
 function handleMouseDown(event: MouseEvent) {
   if (event.button !== 0) return; // 只响应左键
+  if (faceSelectActive.value) return;
   isDragging.value = true;
   dragStartX.value = event.clientX;
   dragStartY.value = event.clientY;
@@ -318,6 +370,7 @@ function handleMouseUp() {
 // ---- 拖拽控制（触摸） ----
 function handleTouchStart(event: TouchEvent) {
   if (event.touches.length !== 1) return; // 只响应单指触摸
+  if (faceSelectActive.value) return;
   const touch = event.touches[0]!;
   isDragging.value = true;
   dragStartX.value = touch.clientX;
@@ -377,6 +430,10 @@ function toggleFaces() {
   // 人脸框与评论互斥
   if (showFaces.value) {
     showComments.value = false;
+  } else {
+    // 关闭人脸框时退出框选模式
+    faceSelectActive.value = false;
+    resetFaceSelection();
   }
   // 首次打开时拉取人脸数据
   if (showFaces.value && !facesLoaded.value) {
@@ -427,6 +484,7 @@ function faceBoxStyle(face: Face) {
 
 // ---- 人脸操作 ----
 function handleFaceContextMenu(event: MouseEvent, face: Face) {
+  if (faceSelectActive.value) return;
   event.preventDefault();
   event.stopPropagation();
   activeFace.value = face;
@@ -437,6 +495,7 @@ function handleFaceContextMenu(event: MouseEvent, face: Face) {
 
 /** 点击人脸跳转到人物详情;当前人物(人物详情页内)只关闭查看器 */
 function handleFaceClick(face: Face) {
+  if (faceSelectActive.value) return;
   if (!face.personId) {
     toast.info("该人脸尚未分配人物");
     return;
@@ -549,6 +608,140 @@ async function submitDeleteFace() {
     toast.error("删除人脸失败");
   } finally {
     deletingFace.value = false;
+  }
+}
+
+// ---- 框选批量删除 ----
+
+/** 切换框选模式 */
+function toggleFaceSelect() {
+  faceSelectActive.value = !faceSelectActive.value;
+  if (!faceSelectActive.value) {
+    resetFaceSelection();
+  }
+}
+
+/** 清空框选状态 */
+function resetFaceSelection() {
+  selecting.value = false;
+  selectedFaceIds.value = new Set();
+  showBatchDeleteConfirm.value = false;
+}
+
+/** 归一化坐标：将 client 坐标映射到人脸框坐标系（0~1），考虑旋转/缩放/平移 */
+function toFaceNormalizedCoords(clientX: number, clientY: number) {
+  const wrapper = wrapperRef.value;
+  const overlay = overlayRef.value;
+  if (!wrapper || !overlay) return null;
+  const rect = wrapper.getBoundingClientRect();
+  if (!rect.width || !rect.height) return null;
+
+  const centerX = rect.left + rect.width / 2;
+  const centerY = rect.top + rect.height / 2;
+  const ratio = zoom.value / baseZoom.value;
+  const w = overlay.clientWidth;
+  const h = overlay.clientHeight;
+  if (!w || !h || !ratio) return null;
+
+  // 逆变换链（transform-origin 位于 overlay 中心，translate 在缩放前应用）：
+  // screen - center = S(ratio)·R(rot)·T(translateX/ratio, translateY/ratio)·T(-w/2,-h/2)·p
+  const tx = (clientX - centerX) / ratio;
+  const ty = (clientY - centerY) / ratio;
+  const rad = (-rotation.value * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const rx = tx * cos - ty * sin;
+  const ry = tx * sin + ty * cos;
+  const px = rx - translateX.value / ratio;
+  const py = ry - translateY.value / ratio;
+
+  return {
+    x: (px + w / 2) / w,
+    y: (py + h / 2) / h,
+  };
+}
+
+/** 开始框选 */
+function handleFaceSelectStart(event: PointerEvent) {
+  if (!faceSelectActive.value) return;
+  const point = toFaceNormalizedCoords(event.clientX, event.clientY);
+  if (!point) return;
+  event.preventDefault();
+  selecting.value = true;
+  selectStartX.value = point.x;
+  selectStartY.value = point.y;
+  selectEndX.value = point.x;
+  selectEndY.value = point.y;
+  selectedFaceIds.value = new Set();
+  overlayRef.value?.setPointerCapture(event.pointerId);
+}
+
+/** 框选移动：更新选区并实时高亮选中的人脸 */
+function handleFaceSelectMove(event: PointerEvent) {
+  if (!selecting.value) return;
+  const point = toFaceNormalizedCoords(event.clientX, event.clientY);
+  if (!point) return;
+  selectEndX.value = point.x;
+  selectEndY.value = point.y;
+  updateSelectedFaces();
+}
+
+/** 框选结束 */
+function handleFaceSelectEnd(event: PointerEvent) {
+  if (!selecting.value) return;
+  updateSelectedFaces();
+  selecting.value = false;
+  try {
+    overlayRef.value?.releasePointerCapture(event.pointerId);
+  } catch {
+    // 忽略释放失败（指针可能已丢失）
+  }
+}
+
+/** 根据当前选区更新选中的人脸（仅未归属人脸可被选中） */
+function updateSelectedFaces() {
+  const rect = selectionRect.value;
+  if (!rect) return;
+  const ids = new Set<string>();
+  for (const face of faces.value) {
+    if (face.personId) continue;
+    const cx = (face.bbox.x1 + face.bbox.x2) / 2;
+    const cy = (face.bbox.y1 + face.bbox.y2) / 2;
+    if (
+      cx >= rect.x1 &&
+      cx <= rect.x2 &&
+      cy >= rect.y1 &&
+      cy <= rect.y2
+    ) {
+      ids.add(face.id);
+    }
+  }
+  selectedFaceIds.value = ids;
+}
+
+/** 打开批量删除确认弹窗 */
+function openBatchDeleteConfirm() {
+  if (selectedFaces.value.length === 0) return;
+  showBatchDeleteConfirm.value = true;
+}
+
+/** 批量删除选中的人脸 */
+async function submitBatchDelete() {
+  if (selectedFaces.value.length === 0) return;
+  deletingFacesBatch.value = true;
+  try {
+    const ids = selectedFaces.value.map((f) => f.id);
+    const res = await photoApi.face.deleteFacesBatch(ids);
+    toast.success(`已删除 ${res.data.deletedFaceCount} 个人脸`);
+    showBatchDeleteConfirm.value = false;
+    resetFaceSelection();
+    await loadFaces();
+    emit("faces-updated");
+  } catch (error) {
+    console.error("批量删除人脸失败:", error);
+    toast.error("批量删除失败");
+  } finally {
+    deletingFacesBatch.value = false;
   }
 }
 
@@ -685,6 +878,11 @@ function handleKeydown(event: KeyboardEvent) {
   }
   switch (event.key) {
     case "Escape":
+      // 框选模式下优先退出框选
+      if (faceSelectActive.value) {
+        toggleFaceSelect();
+        return;
+      }
       close();
       break;
     case "ArrowLeft":
@@ -785,6 +983,9 @@ function resetState() {
   showRenameDialog.value = false;
   showDeleteFaceConfirm.value = false;
   showFaceLabels.value = true;
+  // 框选批量删除状态
+  faceSelectActive.value = false;
+  resetFaceSelection();
   // 自动开启人脸框：加载该照片的人脸
   if (props.initialShowFaces && props.photo) {
     loadFaces();
@@ -833,6 +1034,7 @@ onBeforeUnmount(() => {
       <!-- 图片（加载期间用 CSS 隐藏，避免残留上一张照片；img 需保持渲染以触发加载） -->
       <div
         v-if="imageUrl && !loadingMore"
+        ref="wrapperRef"
         class="photo-viewer__image-wrapper"
         :class="{
           'photo-viewer__image-wrapper--refreshing': refreshing,
@@ -865,12 +1067,20 @@ onBeforeUnmount(() => {
         <!-- 人脸框 overlay（与图片共用 transform，随缩放/旋转/拖拽同步） -->
         <div
           v-if="showFaces && faces.length > 0 && imageWidth > 0"
+          ref="overlayRef"
           class="photo-viewer__face-overlay"
+          :class="{
+            'photo-viewer__face-overlay--selecting': faceSelectActive,
+          }"
           :style="{
             transform: imageTransform,
             width: imageWidth + 'px',
             height: imageHeight + 'px',
           }"
+          @pointerdown="handleFaceSelectStart"
+          @pointermove="handleFaceSelectMove"
+          @pointerup="handleFaceSelectEnd"
+          @pointercancel="handleFaceSelectEnd"
         >
           <div
             v-for="face in faces"
@@ -878,6 +1088,8 @@ onBeforeUnmount(() => {
             class="photo-viewer__face-box"
             :class="{
               'photo-viewer__face-box--active': activeFace?.id === face.id,
+              'photo-viewer__face-box--selected':
+                selectedFaceIds.has(face.id),
             }"
             :style="faceBoxStyle(face)"
             @click="handleFaceClick(face)"
@@ -887,6 +1099,13 @@ onBeforeUnmount(() => {
               face.personName || "未分配"
             }}</span>
           </div>
+
+          <!-- 框选矩形 -->
+          <div
+            v-if="selectionRectStyle"
+            class="photo-viewer__selection-rect"
+            :style="selectionRectStyle"
+          ></div>
         </div>
       </div>
       <div
@@ -935,6 +1154,8 @@ onBeforeUnmount(() => {
         :is-owner="isOwner"
         :show-faces="showFaces"
         :show-face-labels="showFaceLabels"
+        :has-unassigned-faces="hasUnassignedFaces"
+        :face-select-active="faceSelectActive"
         @zoom-in="zoomIn"
         @zoom-out="zoomOut"
         @rotate="rotate"
@@ -947,7 +1168,33 @@ onBeforeUnmount(() => {
         @delete="showDeleteConfirm = true"
         @toggle-faces="toggleFaces"
         @toggle-face-labels="toggleFaceLabels"
+        @toggle-face-select="toggleFaceSelect"
       />
+
+      <!-- 框选结果操作条 -->
+      <div
+        v-if="faceSelectActive && selectedFaces.length > 0"
+        class="photo-viewer__select-bar"
+        @click.stop
+      >
+        <span class="photo-viewer__select-bar-count">
+          已选中 {{ selectedFaces.length }} 个未归属人脸
+        </span>
+        <button
+          type="button"
+          class="photo-viewer__select-bar-delete"
+          @click="openBatchDeleteConfirm"
+        >
+          批量删除
+        </button>
+        <button
+          type="button"
+          class="photo-viewer__select-bar-clear"
+          @click="resetFaceSelection"
+        >
+          清除
+        </button>
+      </div>
 
       <!-- 侧边评论抽屉 -->
       <PhotoComments
@@ -1151,6 +1398,38 @@ onBeforeUnmount(() => {
               @click="submitDeleteFace"
             >
               {{ deletingFace ? "删除中..." : "删除" }}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <!-- 批量删除人脸确认弹窗 -->
+      <Modal
+        v-model="showBatchDeleteConfirm"
+        size="sm"
+        title="批量删除人脸"
+        overlay-class="photo-viewer__modal-overlay"
+      >
+        <div class="delete-confirm">
+          <p class="delete-confirm__text">
+            确定要删除选中的 {{ selectedFaces.length }}
+            个人脸吗？此操作不可撤销，且仅未归属人物的人脸可删除。
+          </p>
+          <div class="delete-confirm__actions">
+            <button
+              class="delete-confirm__cancel"
+              type="button"
+              @click="showBatchDeleteConfirm = false"
+            >
+              取消
+            </button>
+            <button
+              class="delete-confirm__delete"
+              type="button"
+              :disabled="deletingFacesBatch"
+              @click="submitBatchDelete"
+            >
+              {{ deletingFacesBatch ? "删除中..." : "删除" }}
             </button>
           </div>
         </div>

@@ -66,62 +66,33 @@ function startCountdown() {
 
 /**
  * 发送邮箱验证码
+ * 校验由后端统一返回错误消息
  */
 async function handleSendCode() {
-  const emailError = validation.validateEmail(email.value);
-  if (emailError) {
-    toast.warning(emailError);
-    return;
-  }
-
   codeSending.value = true;
   try {
     await auth.sendEmailCode({ email: email.value });
     toast.success("验证码已发送");
     startCountdown();
   } catch (error) {
-    toast.error("发送验证码失败: " + error);
+    console.error("发送验证码失败:", error);
   } finally {
     codeSending.value = false;
   }
 }
 
 /**
- * 表单验证
- */
-function validateForm(): boolean {
-  const errors = [
-    validation.validateUsername(username.value),
-    validation.validateEmail(email.value),
-    validation.validatePassword(password.value),
-    validation.validateConfirmPassword(password.value, confirmPassword.value),
-    validation.validateNickname(nickname.value),
-    validation.validateEmailVerifyCode(emailCode.value),
-    validation.validateInviterCode(inviterCode.value),
-  ];
-
-  for (const error of errors) {
-    if (error) {
-      toast.warning(error);
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/**
  * 注册处理
+ * 校验由后端统一返回错误消息（含两次密码一致校验）
  */
 async function handleRegister() {
-  if (!validateForm()) return;
-
   loading.value = true;
   try {
     const response = await auth.register({
       username: username.value,
       email: email.value,
       password: password.value,
+      confirmPassword: confirmPassword.value,
       nickname: nickname.value,
       inviterCode: inviterCode.value,
       emailVerifyCode: emailCode.value,
@@ -132,7 +103,7 @@ async function handleRegister() {
       await router.push("/login");
     }
   } catch (error) {
-    toast.error("注册失败: " + error);
+    console.error("注册失败:", error);
   } finally {
     loading.value = false;
   }

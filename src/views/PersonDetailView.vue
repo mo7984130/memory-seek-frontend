@@ -183,12 +183,6 @@ function openRenameDialog() {
 }
 
 async function handleRename() {
-  const error = validation.validatePersonName(renameName.value);
-  if (error) {
-    toast.warning(error);
-    return;
-  }
-
   const name = renameName.value.trim();
   renaming.value = true;
   try {
@@ -199,7 +193,6 @@ async function handleRename() {
     markListDirty("persons");
   } catch (error) {
     console.error("重命名人物失败:", error);
-    toast.error("重命名失败");
   } finally {
     renaming.value = false;
   }
@@ -223,7 +216,6 @@ async function handleMerge() {
     router.push("/persons");
   } catch (error) {
     console.error("合并人物失败:", error);
-    toast.error("合并失败");
   } finally {
     merging.value = false;
   }
@@ -239,7 +231,6 @@ async function handleDelete() {
     router.push("/persons");
   } catch (error) {
     console.error("删除人物失败:", error);
-    toast.error("删除失败");
   } finally {
     deleting.value = false;
     showDeleteConfirm.value = false;

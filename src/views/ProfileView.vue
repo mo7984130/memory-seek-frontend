@@ -189,14 +189,9 @@ function openNicknameEdit() {
 
 /**
  * 保存昵称
+ * 校验由后端统一返回错误消息
  */
 async function handleSaveNickname() {
-  const error = validation.validateNewNickname(newNickname.value);
-  if (error) {
-    toast.warning(error);
-    return;
-  }
-
   const nickname = newNickname.value.trim();
 
   savingNickname.value = true;
@@ -226,32 +221,15 @@ function openPasswordChange() {
 
 /**
  * 保存密码
+ * 校验由后端统一返回错误消息（含两次密码一致校验）
  */
 async function handleSavePassword() {
-  const oldPasswordError = validation.validatePassword(oldPassword.value);
-  if (oldPasswordError) {
-    toast.warning("请输入当前密码");
-    return;
-  }
-  const newPasswordError = validation.validatePassword(newPassword.value);
-  if (newPasswordError) {
-    toast.warning(newPasswordError);
-    return;
-  }
-  const confirmError = validation.validateConfirmPassword(
-    newPassword.value,
-    confirmPassword.value,
-  );
-  if (confirmError) {
-    toast.warning(confirmError);
-    return;
-  }
-
   savingPassword.value = true;
   try {
     await user.changePassword({
       oldPassword: oldPassword.value,
       newPassword: newPassword.value,
+      confirmPassword: confirmPassword.value,
     });
     showPasswordModal.value = false;
     toast.success("密码修改成功");

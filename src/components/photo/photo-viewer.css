@@ -214,6 +214,15 @@
   z-index: var(--photo-viewer-z-face-overlay);
 }
 
+/* 框选模式下 overlay 捕获指针事件，拦截图片平移 */
+.photo-viewer__face-overlay--selecting {
+  pointer-events: auto;
+  cursor: crosshair;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 .photo-viewer__face-box {
   position: absolute;
   border: 1px solid rgba(255, 255, 255, 0.9);
@@ -235,6 +244,27 @@
 .photo-viewer__face-box--active {
   border-color: var(--color-primary);
   background: rgba(45, 212, 168, 0.15);
+}
+
+/* 框选模式：选中的人脸（未归属）高亮 */
+.photo-viewer__face-box--selected {
+  border-color: var(--color-danger, #ef4444);
+  border-width: 2px;
+  background: rgba(239, 68, 68, 0.25);
+  box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.4);
+}
+
+.photo-viewer__face-overlay--selecting .photo-viewer__face-box {
+  cursor: crosshair;
+}
+
+/* 框选矩形 */
+.photo-viewer__selection-rect {
+  position: absolute;
+  border: 1.5px dashed var(--color-danger, #ef4444);
+  background: rgba(239, 68, 68, 0.12);
+  pointer-events: none;
+  box-sizing: border-box;
 }
 
 .photo-viewer__face-label {
@@ -405,6 +435,64 @@
   color: var(--color-text-secondary);
   line-height: var(--leading-relaxed);
   margin: 0 0 var(--spacing-6);
+}
+
+/* 框选结果操作条 */
+.photo-viewer__select-bar {
+  position: absolute;
+  bottom: calc(var(--spacing-6) + 64px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-2) var(--spacing-4);
+  background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius-full);
+  color: white;
+  z-index: var(--photo-viewer-z-toolbar);
+  user-select: none;
+  animation: photo-viewer-fade-in 0.2s var(--ease-out);
+}
+
+.photo-viewer__select-bar-count {
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+.photo-viewer__select-bar-delete {
+  padding: var(--spacing-1) var(--spacing-4);
+  background: var(--color-danger);
+  color: white;
+  border: none;
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  cursor: pointer;
+  font-family: inherit;
+  transition: var(--btn-transition);
+}
+
+.photo-viewer__select-bar-delete:hover {
+  opacity: 0.9;
+}
+
+.photo-viewer__select-bar-clear {
+  padding: var(--spacing-1) var(--spacing-3);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  font-family: inherit;
+  transition: var(--btn-transition);
+}
+
+.photo-viewer__select-bar-clear:hover {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .delete-confirm__actions {

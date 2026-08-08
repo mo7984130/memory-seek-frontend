@@ -14,6 +14,7 @@ import {
   Trash2,
   FaceIcon,
   Tag,
+  SquareDashed,
 } from "@/components/base/Icon/icons";
 import "./photo-toolbar.css";
 
@@ -28,6 +29,10 @@ interface Props {
   isOwner?: boolean;
   showFaces?: boolean;
   showFaceLabels?: boolean;
+  /** 存在无归属人脸时显示框选按钮 */
+  hasUnassignedFaces?: boolean;
+  /** 是否处于框选模式 */
+  faceSelectActive?: boolean;
 }
 
 defineProps<Props>();
@@ -45,6 +50,7 @@ const emit = defineEmits<{
   delete: [];
   "toggle-faces": [];
   "toggle-face-labels": [];
+  "toggle-face-select": [];
 }>();
 
 function handleZoomIn() {
@@ -93,6 +99,10 @@ function handleToggleFaces() {
 
 function handleToggleFaceLabels() {
   emit("toggle-face-labels");
+}
+
+function handleToggleFaceSelect() {
+  emit("toggle-face-select");
 }
 </script>
 
@@ -205,6 +215,16 @@ function handleToggleFaceLabels() {
       title="显示/隐藏人物名称 (T)"
     >
       <Tag :size="20" />
+    </button>
+    <button
+      v-if="showFaces && hasUnassignedFaces"
+      class="photo-toolbar__btn"
+      :class="{ 'photo-toolbar__btn--active': faceSelectActive }"
+      type="button"
+      @click="handleToggleFaceSelect"
+      title="框选人脸，批量删除"
+    >
+      <SquareDashed :size="20" />
     </button>
     <template v-if="isOwner">
       <div class="photo-toolbar__divider" />

@@ -88,19 +88,9 @@ function enterCollection(collection: Collection) {
 
 /**
  * 创建收藏夹
+ * 校验由后端统一返回错误消息
  */
 async function handleCreate() {
-  const nameError = validation.validateCollectionName(newCollectionName.value);
-  if (nameError) {
-    toast.warning(nameError);
-    return;
-  }
-  const descError = validation.validateCollectionDesc(newCollectionDesc.value);
-  if (descError) {
-    toast.warning(descError);
-    return;
-  }
-
   const name = newCollectionName.value.trim();
 
   creating.value = true;

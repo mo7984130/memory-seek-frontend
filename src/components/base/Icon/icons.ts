@@ -54,6 +54,7 @@ import {
   Tag,
   ChevronLeft,
   ChevronRight,
+  SquareDashed,
 } from "@lucide/vue";
 
 export {
@@ -98,6 +99,7 @@ export {
   Tag,
   ChevronLeft,
   ChevronRight,
+  SquareDashed,
 };
 
 /* ============================================

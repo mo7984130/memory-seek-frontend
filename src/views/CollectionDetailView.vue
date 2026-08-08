@@ -150,19 +150,9 @@ function openEdit() {
 
 /**
  * 保存编辑
+ * 校验由后端统一返回错误消息
  */
 async function handleSaveEdit() {
-  const nameError = validation.validateCollectionName(editName.value);
-  if (nameError) {
-    toast.warning(nameError);
-    return;
-  }
-  const descError = validation.validateCollectionDesc(editDesc.value);
-  if (descError) {
-    toast.warning(descError);
-    return;
-  }
-
   saving.value = true;
   try {
     await photo.collection.updateCollection(collectionId, {

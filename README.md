@@ -1,6 +1,6 @@
 # Memory Seek - Frontend (寻忆)
 
-A photo sharing platform frontend built with Vue 3, TypeScript, and Vite.
+A visual sharing platform frontend built with Vue 3, TypeScript, and Vite.
 
 ## Tech Stack
 
@@ -30,7 +30,7 @@ src/
 │   ├── data/           # Data display components
 │   ├── feedback/       # Toast, modal, etc.
 │   ├── form/           # Form components
-│   └── photo/          # Photo-specific components
+│   └── visual/         # Visual-specific components
 ├── composables/        # Shared composition functions
 ├── layouts/            # App layout (drawer, top bar, shell)
 ├── router/             # Route definitions with guards
@@ -51,10 +51,10 @@ src/
 |-------|------|-------------|
 | `/login` | Login | User login |
 | `/register` | Register | User registration |
-| `/photos` | Photo Wall | Waterfall-style photo browsing |
-| `/likes` | Likes | Liked photos |
-| `/collections` | Collections | Photo collection management |
-| `/collections/:id` | Collection Detail | Photos in a specific collection |
+| `/visuals` | Visual Wall | Waterfall-style visual browsing |
+| `/likes` | Likes | Liked visuals |
+| `/collections` | Collections | Visual collection management |
+| `/collections/:id` | Collection Detail | Visuals in a specific collection |
 | `/profile` | Profile | User profile |
 
 ## Prerequisites

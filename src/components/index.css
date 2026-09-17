@@ -12,6 +12,6 @@
 @import "./feedback/Drawer/drawer.css";
 @import "./feedback/Toast/toast.css";
 @import "./feedback/Tooltip/tooltip.css";
-@import "./photo/photo-toolbar.css";
-@import "./photo/photo-comments.css";
-@import "./photo/photo-viewer.css";
+@import "./visual/visual-toolbar.css";
+@import "./visual/visual-comments.css";
+@import "./visual/visual-viewer.css";

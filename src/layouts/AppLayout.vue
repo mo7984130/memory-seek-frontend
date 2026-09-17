@@ -14,7 +14,7 @@ function openDrawer() {
 const route = useRoute();
 
 // 详情页参数变化时强制重挂载组件（否则同路由复用实例，切换人物/收藏夹时数据不刷新）
-const detailRouteNames = ["person-detail", "collection-detail"];
+const detailRouteNames = ["person-detail", "collection-detail", "visual-detail"];
 const routeKey = computed(() =>
   detailRouteNames.includes(String(route.name)) ? route.fullPath : undefined,
 );

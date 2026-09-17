@@ -2,12 +2,12 @@
 import { ref, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ArrowLeft, FaceIcon } from "@/components/base/Icon/icons";
-import { photo, validation } from "memory-seek-api";
-import type { Person, Photo } from "memory-seek-api";
+import { visual, validation } from "memory-seek-api";
+import type { Person, Visual } from "memory-seek-api";
 import { useWaterfallPage } from "@/composables/useWaterfallPage";
-import PhotoWaterfall from "@/components/photo/PhotoWaterfall.vue";
-import LastPositionButton from "@/components/photo/LastPositionButton.vue";
-import PhotoViewer from "@/components/photo/PhotoViewer.vue";
+import VisualWaterfall from "@/components/visual/VisualWaterfall.vue";
+import LastPositionButton from "@/components/visual/LastPositionButton.vue";
+import VisualViewer from "@/components/visual/VisualViewer.vue";
 import IconButton from "@/components/actions/IconButton/IconButton.vue";
 import Button from "@/components/actions/Button/Button.vue";
 import Modal from "@/components/feedback/Modal/Modal.vue";
@@ -26,12 +26,12 @@ const { goBack } = useGoBack("/persons");
 const personId = route.params.id as string;
 
 // 瀑布流页面（布局/加载/持久化/自动恢复，每个人物独立存储）
-// 人物照片界面不维护"最远浏览位置"自动书签
+// 人物影像界面不维护"最远浏览位置"自动书签
 const page = useWaterfallPage({
   storageKey: `person-${personId}`,
   enableAutoBookmark: false,
   fetch: async ({ cursor }) =>
-    (await photo.person.getPersonPhotos(personId, { cursor })).data,
+    (await visual.person.getPersonVisuals(personId, { cursor })).data,
 });
 
 const {
@@ -47,16 +47,16 @@ const {
   dispose,
 } = page;
 
-const waterfallViewRef = ref<InstanceType<typeof PhotoWaterfall> | null>(
+const waterfallViewRef = ref<InstanceType<typeof VisualWaterfall> | null>(
   null,
 );
 
 // 人物信息
 const person = ref<Person | null>(null);
 
-// 照片查看器状态
+// 影像查看器状态
 const viewerVisible = ref(false);
-const selectedPhoto = ref<Photo | null>(null);
+const selectedVisual = ref<Visual | null>(null);
 
 // 改名弹窗
 const showRenameDialog = ref(false);
@@ -87,7 +87,7 @@ const deleting = ref(false);
 /**
  * 加载人物信息：
  * 优先取列表页通过路由 state 传入的人物对象（免请求、即时渲染），
- * 兜底分页拉取人物列表按 id 查找（支持直接刷新/直达链接/从照片墙跳转）
+ * 兜底分页拉取人物列表按 id 查找（支持直接刷新/直达链接/从影像墙跳转）
  * @returns 是否找到该人物
  */
 async function loadPerson(): Promise<boolean> {
@@ -100,7 +100,7 @@ async function loadPerson(): Promise<boolean> {
   try {
     let cursor: string | null = null;
     for (;;) {
-      const res = await photo.person.getPersons({ cursor });
+      const res = await visual.person.getPersons({ cursor });
       const page = res.data;
       const found = page.records.find((p) => p.id === personId);
       if (found) {
@@ -118,20 +118,20 @@ async function loadPerson(): Promise<boolean> {
   }
 }
 
-function handlePhotoClick(photoItem: Photo) {
-  selectedPhoto.value = photoItem;
+function handleVisualClick(visualItem: Visual) {
+  selectedVisual.value = visualItem;
   viewerVisible.value = true;
 }
 
-/** 查看器切换照片：更新当前照片并让瀑布流滚动到对应位置 */
-function handleViewerNavigate(photoItem: Photo) {
-  selectedPhoto.value = photoItem;
+/** 查看器切换影像：更新当前影像并让瀑布流滚动到对应位置 */
+function handleViewerNavigate(visualItem: Visual) {
+  selectedVisual.value = visualItem;
   nextTick(() => {
-    waterfallViewRef.value?.scrollToItem(photoItem.id, "smooth");
+    waterfallViewRef.value?.scrollToItem(visualItem.id, "smooth");
   });
 }
 
-/** 查看器触底时加载下一页；返回是否加载到了新照片 */
+/** 查看器触底时加载下一页；返回是否加载到了新影像 */
 async function handleLoadMore(): Promise<boolean> {
   if (loading.value || !waterfall.hasMore.value) return false;
   const records = await fetchMore({ cursor: waterfall.cursor.value });
@@ -145,33 +145,33 @@ function loadMoreWaterfall(): Promise<number> {
   );
 }
 
-function handleLikeChange(photoId: string, isLiked: boolean) {
-  waterfall.updatePhotoLike(photoId, isLiked);
-  if (selectedPhoto.value?.id === photoId) {
-    selectedPhoto.value.isLiked = isLiked;
+function handleLikeChange(visualId: string, isLiked: boolean) {
+  waterfall.updateVisualLike(visualId, isLiked);
+  if (selectedVisual.value?.id === visualId) {
+    selectedVisual.value.isLiked = isLiked;
   }
 }
 
-function handlePhotoDelete(photoId: string) {
-  waterfall.removePhoto(photoId);
+function handleVisualDelete(visualId: string) {
+  waterfall.removeVisual(visualId);
 }
 
-async function handleLike(photoItem: Photo) {
-  const photoId = photoItem.id as string;
-  const wasLiked = photoItem.isLiked ?? false;
+async function handleLike(visualItem: Visual) {
+  const visualId = visualItem.id as string;
+  const wasLiked = visualItem.isLiked ?? false;
 
   // 乐观更新
-  waterfall.updatePhotoLike(photoId, !wasLiked);
+  waterfall.updateVisualLike(visualId, !wasLiked);
 
   try {
     if (wasLiked) {
-      await photo.like.unlikePhoto(photoId);
+      await visual.like.unlikeVisual(visualId);
     } else {
-      await photo.like.likePhoto(photoId);
+      await visual.like.likeVisual(visualId);
     }
   } catch (error) {
     // 回滚
-    waterfall.updatePhotoLike(photoId, wasLiked);
+    waterfall.updateVisualLike(visualId, wasLiked);
     console.error("[PersonDetailView] 点赞操作失败:", error);
   }
 }
@@ -187,7 +187,7 @@ async function handleRename() {
   const name = renameName.value.trim();
   renaming.value = true;
   try {
-    await photo.person.renamePerson(personId, name);
+    await visual.person.renamePerson(personId, name);
     if (person.value) person.value.name = name;
     showRenameDialog.value = false;
     toast.success("改名成功");
@@ -211,7 +211,7 @@ async function handleMerge() {
   if (!mergeTargetId.value) return;
   merging.value = true;
   try {
-    await photo.person.mergePerson(personId, mergeTargetId.value);
+    await visual.person.mergePerson(personId, mergeTargetId.value);
     toast.success("合并成功");
     markListDirty("persons");
     router.push("/persons");
@@ -226,7 +226,7 @@ async function handleMerge() {
 async function handleDelete() {
   deleting.value = true;
   try {
-    await photo.person.deletePerson(personId);
+    await visual.person.deletePerson(personId);
     toast.success("人物已删除");
     markListDirty("persons");
     router.push("/persons");
@@ -238,7 +238,7 @@ async function handleDelete() {
   }
 }
 
-/** 照片查看器内人脸操作后刷新人物信息；人物已不存在则返回列表 */
+/** 影像查看器内人脸操作后刷新人物信息；人物已不存在则返回列表 */
 async function handleFacesUpdated() {
   const found = await loadPerson();
   if (!found) {
@@ -268,7 +268,7 @@ onBeforeUnmount(() => {
       <div class="person-detail__avatar">
         <img
           v-if="person?.coverToken"
-          :src="photo.getImgUrl(person.coverToken)"
+          :src="visual.getVisualUrl(person.coverToken)"
           class="person-detail__avatar-img"
           alt=""
         />
@@ -277,7 +277,7 @@ onBeforeUnmount(() => {
       <div class="person-detail__info">
         <div class="person-detail__name">{{ person?.name ?? "加载中..." }}</div>
         <div class="person-detail__count" v-if="person">
-          {{ Number(person.faceCount) }} 张照片
+          {{ Number(person.faceCount) }} 张影像
         </div>
       </div>
       <div class="person-detail__actions">
@@ -308,21 +308,21 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- 照片瀑布流 -->
+    <!-- 影像瀑布流 -->
     <div class="waterfall-container">
-      <PhotoWaterfall
+      <VisualWaterfall
         ref="waterfallViewRef"
         :groups="groups"
-        :photos="waterfall.allPhotos.value"
+        :visuals="waterfall.allVisuals.value"
         :column-count="columnCount"
         :container-width="containerWidth"
         :gap="16"
         :has-more="waterfall.hasMore.value"
         :loading="loading"
         :load-more="loadMoreWaterfall"
-        empty-text="该人物还没有照片"
+        empty-text="该人物还没有影像"
         @top-item-change="handleTopItemChange"
-        @photo-click="handlePhotoClick"
+        @visual-click="handleVisualClick"
         @like="handleLike"
       />
     </div>
@@ -336,14 +336,14 @@ onBeforeUnmount(() => {
     <!-- 回到顶部 -->
     <BackToTop />
 
-    <!-- 照片查看器 -->
-    <PhotoViewer
+    <!-- 影像查看器 -->
+    <VisualViewer
       v-model="viewerVisible"
-      :photo="selectedPhoto"
-      :photos="waterfall.allPhotos.value"
+      :visual="selectedVisual"
+      :visuals="waterfall.allVisuals.value"
       :load-more="handleLoadMore"
       @like="handleLikeChange"
-      @delete="handlePhotoDelete"
+      @delete="handleVisualDelete"
       @faces-updated="handleFacesUpdated"
       @navigate="handleViewerNavigate"
     />
@@ -392,7 +392,7 @@ onBeforeUnmount(() => {
           >
             <span>{{ p.name }}</span>
             <span class="person-detail__merge-count"
-              >{{ Number(p.faceCount) }} 张照片</span
+              >{{ Number(p.faceCount) }} 张影像</span
             >
           </button>
           <div v-if="mergeLoading" class="person-detail__merge-empty">
@@ -429,7 +429,7 @@ onBeforeUnmount(() => {
         <p class="person-detail__delete-text">
           确定要删除「{{
             person?.name
-          }}」吗？该人物的人脸将变为未分配，照片不会被删除。
+          }}」吗？该人物的人脸将变为未分配，影像不会被删除。
         </p>
         <div class="person-detail__delete-actions">
           <Button

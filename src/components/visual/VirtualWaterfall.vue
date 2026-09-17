@@ -16,7 +16,7 @@ import Spinner from "@/components/base/Spinner/Spinner.vue";
  */
 export interface WaterfallItem {
   id: string | number;
-  /** 仅按宽高比计算高度时使用（照片兼容），其余场景可省略 */
+  /** 仅按宽高比计算高度时使用（影像兼容），其余场景可省略 */
   width?: number;
   height?: number;
   [key: string]: any;
@@ -41,10 +41,10 @@ const props = withDefaults(
     buffer?: number;
     groupHeaderHeight?: number; // 分组标题高度
     /**
-     * 自定义卡片高度（用于非照片型内容）：
+     * 自定义卡片高度（用于非影像型内容）：
      * - 数字：所有卡片统一高度
      * - 函数：按卡片返回高度（参数为卡片与列宽）
-     * - 不传：按图片宽高比计算（兼容照片）
+     * - 不传：按图片宽高比计算（兼容影像）
      */
     itemHeight?: number | ((item: WaterfallItem, colWidth: number) => number);
     // ======== 内置加载（触底加载 + 首屏填充） ========
@@ -81,7 +81,7 @@ const waterfallRef = ref<HTMLElement | null>(null);
 const sentinelRef = ref<HTMLElement | null>(null);
 
 /**
- * 定位后的项目（照片/卡片或分组标题）
+ * 定位后的项目（影像/卡片或分组标题）
  */
 interface PositionedItem {
   id: string | number;
@@ -112,7 +112,7 @@ function getDisplayHeight(item: WaterfallItem, colWidth: number): number {
 }
 
 /**
- * 计算每张照片的绝对定位坐标
+ * 计算每张影像的绝对定位坐标
  */
 const positionedItems = computed<PositionedItem[]>(() => {
   const _containerWidth = props.containerWidth;
@@ -142,7 +142,7 @@ const positionedItems = computed<PositionedItem[]>(() => {
       });
       heights.fill(headerTop + props.groupHeaderHeight + props.gap);
 
-      // 组内照片
+      // 组内影像
       for (const item of group.items) {
         const minHeight = Math.min(...heights);
         const minIndex = heights.indexOf(minHeight);
@@ -217,7 +217,7 @@ watch(visibleItems, (filtered) => {
   if (filtered.length === 0) return;
 
   // 优先取视口内（不含 buffer）最靠上的元素，
-  // 避免顶部照片滞后于视口上方 buffer 区域导致位置锚点不准
+  // 避免顶部影像滞后于视口上方 buffer 区域导致位置锚点不准
   const viewportStart = scrollY.value;
   const viewportEnd = scrollY.value + windowHeight.value;
   const inViewport = filtered.filter(
@@ -253,16 +253,16 @@ watch(visibleItems, (filtered) => {
   if (topItem.type === "item") {
     emit("top-item-change", topItem as unknown as WaterfallItem);
   } else {
-    // 视口顶部是分组标题时，取其下方视口内最近的照片作为"顶部照片"
-    const firstPhoto = inViewport
+    // 视口顶部是分组标题时，取其下方视口内最近的影像作为"顶部影像"
+    const firstVisual = inViewport
       .filter((p) => p.type === "item" && p.renderTop >= topItem.renderTop)
       .reduce(
         (prev, curr) =>
           prev && prev.renderTop <= curr.renderTop ? prev : curr,
         null as PositionedItem | null,
       );
-    if (firstPhoto) {
-      emit("top-item-change", firstPhoto as unknown as WaterfallItem);
+    if (firstVisual) {
+      emit("top-item-change", firstVisual as unknown as WaterfallItem);
     }
   }
 });
@@ -371,18 +371,18 @@ function scrollToGroup(groupKey: string) {
 }
 
 /**
- * 滚动到指定照片（用于恢复浏览位置）
- * @param behavior 滚动行为，默认 'auto'（立即定位）；查看器切换照片时传 'smooth' 同步位置
+ * 滚动到指定影像（用于恢复浏览位置）
+ * @param behavior 滚动行为，默认 'auto'（立即定位）；查看器切换影像时传 'smooth' 同步位置
  */
 function scrollToItem(
-  photoId: string | number,
+  visualId: string | number,
   behavior: ScrollBehavior = "auto",
 ) {
   const item = positionedItems.value.find(
-    (p) => p.type === "item" && p.id === photoId,
+    (p) => p.type === "item" && p.id === visualId,
   );
   if (!item) {
-    console.warn(`scrollToItem: 未找到照片 ${photoId}`);
+    console.warn(`scrollToItem: 未找到影像 ${visualId}`);
     return;
   }
 
@@ -440,7 +440,7 @@ onBeforeUnmount(() => {
           }}</span>
         </div>
       </slot>
-      <!-- 卡片（最小单位：任意卡片，如 PhotoCard / 人物卡片） -->
+      <!-- 卡片（最小单位：任意卡片，如 VisualCard / 人物卡片） -->
       <slot v-else :item="item" />
     </div>
   </div>

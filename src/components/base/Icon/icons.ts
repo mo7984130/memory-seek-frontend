@@ -116,8 +116,8 @@ export const FavoriteIcon = Bookmark;
 /** 评论 - 对话气泡图标 */
 export const CommentIcon = MessageCircle;
 
-/** 照片 - 图片图标 */
-export const PhotoIcon = ImageIcon;
+/** 影像 - 图片图标 */
+export const VisualIcon = ImageIcon;
 
 /** 人脸识别 - 人形图标 */
 export const FaceIcon = UserRound;

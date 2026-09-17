@@ -36,7 +36,7 @@ async function handleLogin() {
     const success = await authStore.login(account.value, password.value);
     if (success) {
       toast.success("登录成功");
-      await router.push("/photos");
+      await router.push("/visuals");
     }
   } catch (error) {
     console.error("登录失败:", error);

@@ -1,4 +1,4 @@
-<!-- src/components/photo/PhotoToolbar.vue -->
+<!-- src/components/visual/VisualToolbar.vue -->
 <script setup lang="ts">
 import {
   ZoomIn,
@@ -8,7 +8,7 @@ import {
   Heart,
   Bookmark,
   MessageCircle,
-  PhotoIcon,
+  VisualIcon,
   Download,
   LoadingIcon,
   Trash2,
@@ -16,7 +16,7 @@ import {
   Tag,
   SquareDashed,
 } from "@/components/base/Icon/icons";
-import "./photo-toolbar.css";
+import "./visual-toolbar.css";
 
 interface Props {
   zoom: number;
@@ -107,27 +107,27 @@ function handleToggleFaceSelect() {
 </script>
 
 <template>
-  <div class="photo-toolbar">
+  <div class="visual-toolbar">
     <button
-      class="photo-toolbar__btn"
+      class="visual-toolbar__btn"
       type="button"
       @click="handleZoomOut"
       title="缩小 (-)"
     >
       <ZoomOut :size="20" />
     </button>
-    <span class="photo-toolbar__zoom">{{ Math.round(zoom * 100) }}%</span>
+    <span class="visual-toolbar__zoom">{{ Math.round(zoom * 100) }}%</span>
     <button
-      class="photo-toolbar__btn"
+      class="visual-toolbar__btn"
       type="button"
       @click="handleZoomIn"
       title="放大 (+)"
     >
       <ZoomIn :size="20" />
     </button>
-    <div class="photo-toolbar__divider" />
+    <div class="visual-toolbar__divider" />
     <button
-      class="photo-toolbar__btn"
+      class="visual-toolbar__btn"
       type="button"
       @click="handleRotate"
       title="旋转 (R)"
@@ -135,17 +135,17 @@ function handleToggleFaceSelect() {
       <RotateCw :size="20" />
     </button>
     <button
-      class="photo-toolbar__btn"
+      class="visual-toolbar__btn"
       type="button"
       @click="handleReset"
       title="重置 (0)"
     >
       <Maximize2 :size="20" />
     </button>
-    <div class="photo-toolbar__divider" />
+    <div class="visual-toolbar__divider" />
     <button
-      class="photo-toolbar__btn"
-      :class="{ 'photo-toolbar__btn--active': isFavorited }"
+      class="visual-toolbar__btn"
+      :class="{ 'visual-toolbar__btn--active': isFavorited }"
       type="button"
       @click="handleToggleFavorite"
       title="喜欢 (L)"
@@ -153,8 +153,8 @@ function handleToggleFaceSelect() {
       <Heart :size="20" :fill="isFavorited ? 'var(--color-like)' : 'none'" />
     </button>
     <button
-      class="photo-toolbar__btn"
-      :class="{ 'photo-toolbar__btn--collected': isCollected }"
+      class="visual-toolbar__btn"
+      :class="{ 'visual-toolbar__btn--collected': isCollected }"
       type="button"
       @click="handleToggleCollect"
       title="收藏 (B)"
@@ -165,18 +165,18 @@ function handleToggleFaceSelect() {
       />
     </button>
     <button
-      class="photo-toolbar__btn"
+      class="visual-toolbar__btn"
       type="button"
       @click="handleToggleComments"
       title="评论 (C)"
     >
       <MessageCircle :size="20" />
     </button>
-    <div class="photo-toolbar__divider" />
+    <div class="visual-toolbar__divider" />
     <button
       v-if="hasOriginalToken"
-      class="photo-toolbar__btn"
-      :class="{ 'photo-toolbar__btn--active': showOriginal }"
+      class="visual-toolbar__btn"
+      :class="{ 'visual-toolbar__btn--active': showOriginal }"
       type="button"
       :disabled="loadingOriginal"
       @click="handleViewOriginal"
@@ -185,12 +185,12 @@ function handleToggleFaceSelect() {
       <LoadingIcon
         v-if="loadingOriginal"
         :size="20"
-        class="photo-toolbar__loading"
+        class="visual-toolbar__loading"
       />
-      <PhotoIcon v-else :size="20" />
+      <VisualIcon v-else :size="20" />
     </button>
     <button
-      class="photo-toolbar__btn"
+      class="visual-toolbar__btn"
       type="button"
       @click="handleDownload"
       title="下载 (D)"
@@ -198,8 +198,8 @@ function handleToggleFaceSelect() {
       <Download :size="20" />
     </button>
     <button
-      class="photo-toolbar__btn"
-      :class="{ 'photo-toolbar__btn--active': showFaces }"
+      class="visual-toolbar__btn"
+      :class="{ 'visual-toolbar__btn--active': showFaces }"
       type="button"
       @click="handleToggleFaces"
       title="人脸 (F)"
@@ -208,8 +208,8 @@ function handleToggleFaceSelect() {
     </button>
     <button
       v-if="showFaces"
-      class="photo-toolbar__btn"
-      :class="{ 'photo-toolbar__btn--active': showFaceLabels }"
+      class="visual-toolbar__btn"
+      :class="{ 'visual-toolbar__btn--active': showFaceLabels }"
       type="button"
       @click="handleToggleFaceLabels"
       title="显示/隐藏人物名称 (T)"
@@ -218,8 +218,8 @@ function handleToggleFaceSelect() {
     </button>
     <button
       v-if="showFaces && hasUnassignedFaces"
-      class="photo-toolbar__btn"
-      :class="{ 'photo-toolbar__btn--active': faceSelectActive }"
+      class="visual-toolbar__btn"
+      :class="{ 'visual-toolbar__btn--active': faceSelectActive }"
       type="button"
       @click="handleToggleFaceSelect"
       title="框选人脸，批量删除"
@@ -227,9 +227,9 @@ function handleToggleFaceSelect() {
       <SquareDashed :size="20" />
     </button>
     <template v-if="isOwner">
-      <div class="photo-toolbar__divider" />
+      <div class="visual-toolbar__divider" />
       <button
-        class="photo-toolbar__btn photo-toolbar__btn--danger"
+        class="visual-toolbar__btn visual-toolbar__btn--danger"
         type="button"
         @click="handleDelete"
         title="删除"

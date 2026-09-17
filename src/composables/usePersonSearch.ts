@@ -1,6 +1,6 @@
 import { ref, watch } from "vue";
 import { useDebounceFn } from "@vueuse/core";
-import { photo } from "memory-seek-api";
+import { visual } from "memory-seek-api";
 import type { Person } from "memory-seek-api";
 
 const LOAD_THRESHOLD = 80;
@@ -32,8 +32,8 @@ export function usePersonSearch(options: UsePersonSearchOptions = {}) {
     try {
       const kw = keyword.value.trim();
       const res = kw
-        ? await photo.person.searchPersons(kw, { cursor: cursor.value })
-        : await photo.person.getPersons({ cursor: cursor.value });
+        ? await visual.person.searchPersons(kw, { cursor: cursor.value })
+        : await visual.person.getPersons({ cursor: cursor.value });
       const page = res.data;
       const exclude = options.excludeId?.();
       const records = exclude

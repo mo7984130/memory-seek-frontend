@@ -3,7 +3,7 @@ import { ref, useTemplateRef, onMounted, onActivated } from "vue";
 import { useRouter } from "vue-router";
 import { useResizeObserver } from "@vueuse/core";
 import { Plus, FolderOpen } from "@/components/base/Icon/icons";
-import { photo, validation } from "memory-seek-api";
+import { visual, validation } from "memory-seek-api";
 import type { Collection } from "memory-seek-api";
 import { useListScrollRestore } from "@/composables/useListScrollRestore";
 import { consumeListDirty } from "@/composables/useListDirty";
@@ -31,7 +31,7 @@ const newCollectionName = ref("");
 const newCollectionDesc = ref("");
 const creating = ref(false);
 
-// 收藏夹网格列数/宽度：与照片瀑布流保持一致（同列数阈值 + gap 16）
+// 收藏夹网格列数/宽度：与影像瀑布流保持一致（同列数阈值 + gap 16）
 const gridRef = useTemplateRef<HTMLElement>("gridRef");
 const columnCount = ref(4);
 const containerWidth = ref(0);
@@ -99,7 +99,7 @@ function getGradient(index: number) {
 async function loadCollections() {
   loading.value = true;
   try {
-    const res = await photo.collection.getCollectionList();
+    const res = await visual.collection.getCollectionList();
     collections.value = res.data;
   } catch (error) {
     console.error("加载收藏夹失败:", error);
@@ -124,7 +124,7 @@ async function handleCreate() {
 
   creating.value = true;
   try {
-    const res = await photo.collection.createCollection({
+    const res = await visual.collection.createCollection({
       name,
       description: newCollectionDesc.value.trim() || undefined,
     });
@@ -144,7 +144,7 @@ onMounted(() => {
   loadCollections();
 });
 
-// 从详情页返回：详情页改过收藏夹（编辑/删除/删照片）时刷新列表，随后恢复浏览位置
+// 从详情页返回：详情页改过收藏夹（编辑/删除/删影像）时刷新列表，随后恢复浏览位置
 onActivated(async () => {
   if (consumeListDirty("collections")) {
     await loadCollections();
@@ -175,7 +175,7 @@ onActivated(async () => {
       <Spinner size="lg" />
     </div>
 
-    <!-- 收藏夹网格（列宽与照片瀑布流一致） -->
+    <!-- 收藏夹网格（列宽与影像瀑布流一致） -->
     <div
       v-else-if="collections.length > 0"
       ref="gridRef"
@@ -197,7 +197,7 @@ onActivated(async () => {
         >
           <img
             v-if="collection.coverToken"
-            :src="photo.getImgUrl(collection.coverToken)"
+            :src="visual.getVisualUrl(collection.coverToken)"
             class="collection-card__cover-img"
             alt=""
           />
@@ -206,7 +206,7 @@ onActivated(async () => {
         <div class="collection-card__info">
           <div class="collection-card__name">{{ collection.name }}</div>
           <div class="collection-card__count">
-            {{ collection.photoCount }} 张照片
+            {{ collection.visualCount }} 个影像
           </div>
         </div>
       </Card>

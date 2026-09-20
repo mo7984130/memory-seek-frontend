@@ -2,12 +2,12 @@
 import { ref, nextTick, onMounted, onBeforeUnmount } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ArrowLeft, Pencil, Trash2 } from "@/components/base/Icon/icons";
-import { photo, validation } from "memory-seek-api";
-import type { Photo, Collection } from "memory-seek-api";
+import { visual, validation } from "memory-seek-api";
+import type { Visual, Collection } from "memory-seek-api";
 import { useWaterfallPage } from "@/composables/useWaterfallPage";
-import PhotoWaterfall from "@/components/photo/PhotoWaterfall.vue";
-import LastPositionButton from "@/components/photo/LastPositionButton.vue";
-import PhotoViewer from "@/components/photo/PhotoViewer.vue";
+import VisualWaterfall from "@/components/visual/VisualWaterfall.vue";
+import LastPositionButton from "@/components/visual/LastPositionButton.vue";
+import VisualViewer from "@/components/visual/VisualViewer.vue";
 import IconButton from "@/components/actions/IconButton/IconButton.vue";
 import Button from "@/components/actions/Button/Button.vue";
 import Modal from "@/components/feedback/Modal/Modal.vue";
@@ -28,7 +28,8 @@ const collectionId = route.params.id as string;
 const page = useWaterfallPage({
   storageKey: `collection-${collectionId}`,
   fetch: async ({ cursor }) =>
-    (await photo.collection.getCollectionPhotos(collectionId, { cursor })).data,
+    (await visual.collection.getCollectionVisuals(collectionId, { cursor }))
+      .data,
 });
 
 const {
@@ -44,16 +45,16 @@ const {
   dispose,
 } = page;
 
-const waterfallViewRef = ref<InstanceType<typeof PhotoWaterfall> | null>(
+const waterfallViewRef = ref<InstanceType<typeof VisualWaterfall> | null>(
   null,
 );
 
 // 收藏夹信息
 const collection = ref<Collection | null>(null);
 
-// 照片查看器状态
+// 影像查看器状态
 const viewerVisible = ref(false);
-const selectedPhoto = ref<Photo | null>(null);
+const selectedVisual = ref<Visual | null>(null);
 
 // 编辑弹窗
 const showEditModal = ref(false);
@@ -70,27 +71,27 @@ const deleting = ref(false);
  */
 async function loadCollection() {
   try {
-    const res = await photo.collection.getCollectionList();
+    const res = await visual.collection.getCollectionList();
     collection.value = res.data.find((c) => c.id === collectionId) ?? null;
   } catch (error) {
     console.error("加载收藏夹信息失败:", error);
   }
 }
 
-function handlePhotoClick(photoItem: Photo) {
-  selectedPhoto.value = photoItem;
+function handleVisualClick(visualItem: Visual) {
+  selectedVisual.value = visualItem;
   viewerVisible.value = true;
 }
 
-/** 查看器切换照片：更新当前照片并让瀑布流滚动到对应位置 */
-function handleViewerNavigate(photoItem: Photo) {
-  selectedPhoto.value = photoItem;
+/** 查看器切换影像：更新当前影像并让瀑布流滚动到对应位置 */
+function handleViewerNavigate(visualItem: Visual) {
+  selectedVisual.value = visualItem;
   nextTick(() => {
-    waterfallViewRef.value?.scrollToItem(photoItem.id, "smooth");
+    waterfallViewRef.value?.scrollToItem(visualItem.id, "smooth");
   });
 }
 
-/** 查看器触底时加载下一页；返回是否加载到了新照片 */
+/** 查看器触底时加载下一页；返回是否加载到了新影像 */
 async function handleLoadMore(): Promise<boolean> {
   if (loading.value || !waterfall.hasMore.value) return false;
   const records = await fetchMore({ cursor: waterfall.cursor.value });
@@ -104,37 +105,40 @@ function loadMoreWaterfall(): Promise<number> {
   );
 }
 
-function handleLikeChange(photoId: string, isLiked: boolean) {
-  waterfall.updatePhotoLike(photoId, isLiked);
-  if (selectedPhoto.value?.id === photoId) {
-    selectedPhoto.value.isLiked = isLiked;
+function handleLikeChange(visualId: string, isLiked: boolean) {
+  waterfall.updateVisualLike(visualId, isLiked);
+  if (selectedVisual.value?.id === visualId) {
+    selectedVisual.value.isLiked = isLiked;
   }
 }
 
-function handlePhotoDelete(photoId: string) {
-  waterfall.removePhoto(photoId);
+function handleVisualDelete(visualId: string) {
+  waterfall.removeVisual(visualId);
   if (collection.value) {
-    collection.value.photoCount = Math.max(0, collection.value.photoCount - 1);
+    collection.value.visualCount = Math.max(
+      0,
+      collection.value.visualCount - 1,
+    );
   }
   markListDirty("collections");
 }
 
-async function handleLike(photoItem: Photo) {
-  const photoId = photoItem.id as string;
-  const wasLiked = photoItem.isLiked ?? false;
+async function handleLike(visualItem: Visual) {
+  const visualId = visualItem.id as string;
+  const wasLiked = visualItem.isLiked ?? false;
 
   // 乐观更新
-  waterfall.updatePhotoLike(photoId, !wasLiked);
+  waterfall.updateVisualLike(visualId, !wasLiked);
 
   try {
     if (wasLiked) {
-      await photo.like.unlikePhoto(photoId);
+      await visual.like.unlikeVisual(visualId);
     } else {
-      await photo.like.likePhoto(photoId);
+      await visual.like.likeVisual(visualId);
     }
   } catch (error) {
     // 回滚
-    waterfall.updatePhotoLike(photoId, wasLiked);
+    waterfall.updateVisualLike(visualId, wasLiked);
     console.error("[CollectionDetailView] 点赞操作失败:", error);
   }
 }
@@ -156,7 +160,7 @@ function openEdit() {
 async function handleSaveEdit() {
   saving.value = true;
   try {
-    await photo.collection.updateCollection(collectionId, {
+    await visual.collection.updateCollection(collectionId, {
       name: editName.value.trim(),
       description: editDesc.value.trim() || undefined,
     });
@@ -180,7 +184,7 @@ async function handleSaveEdit() {
 async function handleDelete() {
   deleting.value = true;
   try {
-    await photo.collection.deleteCollection(collectionId);
+    await visual.collection.deleteCollection(collectionId);
     toast.success("收藏夹已删除");
     markListDirty("collections");
     router.push("/collections");
@@ -214,7 +218,7 @@ onBeforeUnmount(() => {
           {{ collection?.name ?? "加载中..." }}
         </div>
         <div class="collection-detail__count" v-if="collection">
-          {{ collection.photoCount }} 张照片
+          {{ collection.visualCount }} 个影像
         </div>
       </div>
       <div class="collection-detail__actions">
@@ -230,21 +234,21 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- 照片瀑布流 -->
+    <!-- 影像瀑布流 -->
     <div class="waterfall-container">
-      <PhotoWaterfall
+      <VisualWaterfall
         ref="waterfallViewRef"
         :groups="groups"
-        :photos="waterfall.allPhotos.value"
+        :visuals="waterfall.allVisuals.value"
         :column-count="columnCount"
         :container-width="containerWidth"
         :gap="16"
         :has-more="waterfall.hasMore.value"
         :loading="loading"
         :load-more="loadMoreWaterfall"
-        empty-text="收藏夹里还没有照片"
+        empty-text="收藏夹里还没有影像"
         @top-item-change="handleTopItemChange"
-        @photo-click="handlePhotoClick"
+        @visual-click="handleVisualClick"
         @like="handleLike"
       />
     </div>
@@ -258,14 +262,14 @@ onBeforeUnmount(() => {
     <!-- 回到顶部 -->
     <BackToTop />
 
-    <!-- 照片查看器 -->
-    <PhotoViewer
+    <!-- 影像查看器 -->
+    <VisualViewer
       v-model="viewerVisible"
-      :photo="selectedPhoto"
-      :photos="waterfall.allPhotos.value"
+      :visual="selectedVisual"
+      :visuals="waterfall.allVisuals.value"
       :load-more="handleLoadMore"
       @like="handleLikeChange"
-      @delete="handlePhotoDelete"
+      @delete="handleVisualDelete"
       @navigate="handleViewerNavigate"
     />
 
@@ -297,7 +301,7 @@ onBeforeUnmount(() => {
     <Modal v-model="showDeleteConfirm" size="sm" title="删除收藏夹">
       <div class="delete-confirm">
         <p class="delete-confirm__text">
-          确定要删除「{{ collection?.name }}」吗？收藏夹内的照片不会被删除。
+          确定要删除「{{ collection?.name }}」吗？收藏夹内的影像不会被删除。
         </p>
         <div class="delete-confirm__actions">
           <Button

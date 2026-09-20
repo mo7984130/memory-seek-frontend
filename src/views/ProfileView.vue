@@ -10,7 +10,7 @@ import {
   Ticket,
   Shield,
 } from "@/components/base/Icon/icons";
-import { user, photo, validation } from "memory-seek-api";
+import { user, visual, validation } from "memory-seek-api";
 import type { UserInfo, InviterCode } from "memory-seek-api";
 import { useAuthStore } from "@/stores/auth";
 import Card from "@/components/data/Card/Card.vue";
@@ -51,7 +51,7 @@ const showLogoutConfirm = ref(false);
 
 const avatarUrl = computed(() => {
   const token = userInfo.value?.avatarToken;
-  return token ? photo.getImgUrl(token) : null;
+  return token ? visual.getVisualUrl(token) : null;
 });
 
 const avatarText = computed(() => {

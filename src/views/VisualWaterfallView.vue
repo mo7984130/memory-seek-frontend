@@ -7,28 +7,28 @@ import {
   onActivated,
   onBeforeUnmount,
 } from "vue";
-import { photo } from "memory-seek-api";
-import type { Photo } from "memory-seek-api";
+import { visual } from "memory-seek-api";
+import type { Visual } from "memory-seek-api";
 import dayjs from "dayjs";
 import { useWaterfallPage } from "@/composables/useWaterfallPage";
 import { useListScrollRestore } from "@/composables/useListScrollRestore";
-import PhotoWaterfall from "@/components/photo/PhotoWaterfall.vue";
-import TimelineNav from "@/components/photo/TimelineNav.vue";
-import LastPositionButton from "@/components/photo/LastPositionButton.vue";
-import WaterfallBookmarkPanel from "@/components/photo/WaterfallBookmarkPanel.vue";
-import PhotoViewer from "@/components/photo/PhotoViewer.vue";
+import VisualWaterfall from "@/components/visual/VisualWaterfall.vue";
+import TimelineNav from "@/components/visual/TimelineNav.vue";
+import LastPositionButton from "@/components/visual/LastPositionButton.vue";
+import WaterfallBookmarkPanel from "@/components/visual/WaterfallBookmarkPanel.vue";
+import VisualViewer from "@/components/visual/VisualViewer.vue";
 import type { WaterfallBookmark } from "@/composables/useWaterfallBookmarks";
 import BackToTop from "@/components/actions/BackToTop/BackToTop.vue";
 
 // 组件名（KeepAlive include 匹配）
-defineOptions({ name: "PhotoWaterfallView" });
+defineOptions({ name: "VisualWaterfallView" });
 
 // 瀑布流页面（布局/加载/持久化/自动恢复/时间线）
 const page = useWaterfallPage({
-  storageKey: "photos",
+  storageKey: "visuals",
   fetch: async ({ cursor, anchorTime }) =>
-    (await photo.getPhotos({ cursor, anchorTime })).data,
-  fetchTimeline: async () => (await photo.timeline.getMonthlyStats()).data,
+    (await visual.getVisuals({ cursor, anchorTime })).data,
+  fetchTimeline: async () => (await visual.timeline.getMonthlyStats()).data,
 });
 
 const {
@@ -47,19 +47,19 @@ const {
   navigateToAnchor,
 } = page;
 
-const waterfallViewRef = ref<InstanceType<typeof PhotoWaterfall> | null>(
+const waterfallViewRef = ref<InstanceType<typeof VisualWaterfall> | null>(
   null,
 );
 
 // 返回时恢复滚动位置（KeepAlive 缓存页）
 const { restoreScroll } = useListScrollRestore();
 
-// 照片查看器状态（临时 UI 状态，不持久化）
+// 影像查看器状态（临时 UI 状态，不持久化）
 const viewerVisible = ref(false);
-const selectedPhoto = ref<Photo | null>(null);
+const selectedVisual = ref<Visual | null>(null);
 
-function getPhotoById(id: string | number): Photo | undefined {
-  return waterfall.allPhotos.value.find((p) => p.id === id);
+function getVisualById(id: string | number): Visual | undefined {
+  return waterfall.allVisuals.value.find((p) => p.id === id);
 }
 
 function formatMonthLabel(key: string): string {
@@ -68,51 +68,51 @@ function formatMonthLabel(key: string): string {
 }
 
 /**
- * 当前视口顶部的照片（用于生成位置书签锚点）
+ * 当前视口顶部的影像（用于生成位置书签锚点）
  */
-const topPhoto = computed(() => {
+const topVisual = computed(() => {
   if (topItemId.value == null) return null;
-  return getPhotoById(topItemId.value) ?? null;
+  return getVisualById(topItemId.value) ?? null;
 });
 
 /**
- * 当前浏览位置的锚点信息（顶部照片所在月份）
+ * 当前浏览位置的锚点信息（顶部影像所在月份）
  */
 const currentAnchor = computed(() => {
-  const photo = topPhoto.value;
-  if (!photo?.createdAt) return null;
-  const monthKey = photo.createdAt.substring(0, 7);
+  const visual = topVisual.value;
+  if (!visual?.createdAt) return null;
+  const monthKey = visual.createdAt.substring(0, 7);
   return {
     label: formatMonthLabel(monthKey),
     monthKey,
-    // 精确到顶部照片的拍摄时间：同一月份不同时刻保存的书签，跳转位置不同
-    anchorTime: photo.createdAt,
-    // 顶部照片的精确拍摄时间，用于更详细的位置提示
-    detail: dayjs(photo.createdAt).format("YYYY年M月D日 HH:mm"),
+    // 精确到顶部影像的拍摄时间：同一月份不同时刻保存的书签，跳转位置不同
+    anchorTime: visual.createdAt,
+    // 顶部影像的精确拍摄时间，用于更详细的位置提示
+    detail: dayjs(visual.createdAt).format("YYYY年M月D日 HH:mm"),
   };
 });
 
 /**
- * 位置书签跳转：从书签记录的锚点重新加载照片流
+ * 位置书签跳转：从书签记录的锚点重新加载影像流
  */
 function handleBookmarkJump(bookmark: WaterfallBookmark) {
   navigateToAnchor(bookmark.anchorTime, bookmark.monthKey);
 }
 
-function handlePhotoClick(photoItem: Photo) {
-  selectedPhoto.value = photoItem;
+function handleVisualClick(visualItem: Visual) {
+  selectedVisual.value = visualItem;
   viewerVisible.value = true;
 }
 
-/** 查看器切换照片：更新当前照片并让瀑布流滚动到对应位置 */
-function handleViewerNavigate(photoItem: Photo) {
-  selectedPhoto.value = photoItem;
+/** 查看器切换影像：更新当前影像并让瀑布流滚动到对应位置 */
+function handleViewerNavigate(visualItem: Visual) {
+  selectedVisual.value = visualItem;
   nextTick(() => {
-    waterfallViewRef.value?.scrollToItem(photoItem.id, "smooth");
+    waterfallViewRef.value?.scrollToItem(visualItem.id, "smooth");
   });
 }
 
-/** 查看器触底时加载下一页；返回是否加载到了新照片 */
+/** 查看器触底时加载下一页；返回是否加载到了新影像 */
 async function handleLoadMore(): Promise<boolean> {
   if (loading.value || !waterfall.hasMore.value) return false;
   const records = await page.fetchMore({ cursor: waterfall.cursor.value });
@@ -126,34 +126,34 @@ function loadMoreWaterfall(): Promise<number> {
     .then((records) => records.length);
 }
 
-function handleLikeChange(photoId: string, isLiked: boolean) {
-  waterfall.updatePhotoLike(photoId, isLiked);
-  if (selectedPhoto.value?.id === photoId) {
-    selectedPhoto.value.isLiked = isLiked;
+function handleLikeChange(visualId: string, isLiked: boolean) {
+  waterfall.updateVisualLike(visualId, isLiked);
+  if (selectedVisual.value?.id === visualId) {
+    selectedVisual.value.isLiked = isLiked;
   }
 }
 
-function handleDelete(photoId: string) {
-  waterfall.removePhoto(photoId);
+function handleDelete(visualId: string) {
+  waterfall.removeVisual(visualId);
 }
 
-async function handleLike(photoItem: Photo) {
-  const photoId = photoItem.id as string;
-  const wasLiked = photoItem.isLiked ?? false;
+async function handleLike(visualItem: Visual) {
+  const visualId = visualItem.id as string;
+  const wasLiked = visualItem.isLiked ?? false;
 
   // 乐观更新
-  waterfall.updatePhotoLike(photoId, !wasLiked);
+  waterfall.updateVisualLike(visualId, !wasLiked);
 
   try {
     if (wasLiked) {
-      await photo.like.unlikePhoto(photoId);
+      await visual.like.unlikeVisual(visualId);
     } else {
-      await photo.like.likePhoto(photoId);
+      await visual.like.likeVisual(visualId);
     }
   } catch (error) {
     // 回滚
-    waterfall.updatePhotoLike(photoId, wasLiked);
-    console.error("[PhotoWaterfallView] 点赞操作失败:", error);
+    waterfall.updateVisualLike(visualId, wasLiked);
+    console.error("[VisualWaterfallView] 点赞操作失败:", error);
   }
 }
 
@@ -172,22 +172,22 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="photo-waterfall-view" :ref="page.containerRef">
+  <div class="visual-waterfall-view" :ref="page.containerRef">
     <div class="waterfall-container">
-      <PhotoWaterfall
+      <VisualWaterfall
         ref="waterfallViewRef"
         :groups="groups"
-        :photos="waterfall.allPhotos.value"
+        :visuals="waterfall.allVisuals.value"
         :column-count="columnCount"
         :container-width="containerWidth"
         :gap="16"
         :has-more="waterfall.hasMore.value"
         :loading="loading"
         :load-more="loadMoreWaterfall"
-        empty-text="还没有照片"
+        empty-text="还没有影像"
         @top-item-change="handleTopItemChange"
         @current-group-change="waterfall.currentGroup.value = $event"
-        @photo-click="handlePhotoClick"
+        @visual-click="handleVisualClick"
         @like="handleLike"
       />
     </div>
@@ -201,11 +201,11 @@ onBeforeUnmount(() => {
     />
 
     <!-- 回到上次浏览位置（按钮触发恢复） -->
-    <LastPositionButton storage-key="photos" @restore="restoreToLastPosition" />
+    <LastPositionButton storage-key="visuals" @restore="restoreToLastPosition" />
 
     <!-- 位置书签：保存当前浏览位置，点击后从该位置重新加载 -->
     <WaterfallBookmarkPanel
-      storage-key="photos"
+      storage-key="visuals"
       :current-anchor="currentAnchor"
       @jump="handleBookmarkJump"
     />
@@ -213,11 +213,11 @@ onBeforeUnmount(() => {
     <!-- 回到顶部 -->
     <BackToTop />
 
-    <!-- 照片查看器 -->
-    <PhotoViewer
+    <!-- 影像查看器 -->
+    <VisualViewer
       v-model="viewerVisible"
-      :photo="selectedPhoto"
-      :photos="waterfall.allPhotos.value"
+      :visual="selectedVisual"
+      :visuals="waterfall.allVisuals.value"
       :load-more="handleLoadMore"
       @like="handleLikeChange"
       @delete="handleDelete"
@@ -227,7 +227,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.photo-waterfall-view {
+.visual-waterfall-view {
   padding: var(--spacing-6) var(--spacing-4);
   min-height: 100vh;
 }
@@ -270,7 +270,7 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 768px) {
-  .photo-waterfall-view {
+  .visual-waterfall-view {
     padding: var(--spacing-4) var(--spacing-2);
   }
 }

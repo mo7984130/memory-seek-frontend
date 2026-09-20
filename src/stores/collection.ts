@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { photo } from "memory-seek-api";
+import { visual } from "memory-seek-api";
 import type { Collection } from "memory-seek-api";
 
 /**
@@ -17,7 +17,7 @@ export const useCollectionStore = defineStore("collection", () => {
   async function fetchCollections(): Promise<Collection[]> {
     loading.value = true;
     try {
-      const response = await photo.collection.getCollectionList();
+      const response = await visual.collection.getCollectionList();
       collections.value = response.data;
       return collections.value;
     } catch (error) {
@@ -29,32 +29,32 @@ export const useCollectionStore = defineStore("collection", () => {
   }
 
   /**
-   * 添加照片到收藏夹
+   * 添加影像到收藏夹
    */
-  async function addPhotosToCollection(
+  async function addVisualsToCollection(
     collectionId: string,
-    photoIds: string[],
+    visualIds: string[],
   ): Promise<void> {
-    await photo.collection.addPhotosToCollection(collectionId, photoIds);
-    // 更新本地缓存的照片数量
+    await visual.collection.addVisualsToCollection(collectionId, visualIds);
+    // 更新本地缓存的影像数量
     const collection = collections.value.find((c) => c.id === collectionId);
     if (collection) {
-      collection.photoCount += photoIds.length;
+      collection.visualCount += visualIds.length;
     }
   }
 
   /**
-   * 从收藏夹移除照片
+   * 从收藏夹移除影像
    */
-  async function removePhotoFromCollection(
+  async function removeVisualFromCollection(
     collectionId: string,
-    photoId: string,
+    visualId: string,
   ): Promise<void> {
-    await photo.collection.removePhotoFromCollection(collectionId, photoId);
-    // 更新本地缓存的照片数量
+    await visual.collection.removeVisualFromCollection(collectionId, visualId);
+    // 更新本地缓存的影像数量
     const collection = collections.value.find((c) => c.id === collectionId);
-    if (collection && collection.photoCount > 0) {
-      collection.photoCount -= 1;
+    if (collection && collection.visualCount > 0) {
+      collection.visualCount -= 1;
     }
   }
 
@@ -65,7 +65,7 @@ export const useCollectionStore = defineStore("collection", () => {
     name: string,
     description?: string,
   ): Promise<Collection> {
-    const response = await photo.collection.createCollection({
+    const response = await visual.collection.createCollection({
       name,
       description,
     });
@@ -78,7 +78,7 @@ export const useCollectionStore = defineStore("collection", () => {
    * 删除收藏夹
    */
   async function deleteCollection(collectionId: string): Promise<void> {
-    await photo.collection.deleteCollection(collectionId);
+    await visual.collection.deleteCollection(collectionId);
     collections.value = collections.value.filter((c) => c.id !== collectionId);
   }
 
@@ -89,7 +89,7 @@ export const useCollectionStore = defineStore("collection", () => {
     collectionId: string,
     param: { name?: string; description?: string },
   ): Promise<void> {
-    await photo.collection.updateCollection(collectionId, param);
+    await visual.collection.updateCollection(collectionId, param);
     const collection = collections.value.find((c) => c.id === collectionId);
     if (collection) {
       if (param.name !== undefined) collection.name = param.name;
@@ -109,8 +109,8 @@ export const useCollectionStore = defineStore("collection", () => {
     collections,
     loading,
     fetchCollections,
-    addPhotosToCollection,
-    removePhotoFromCollection,
+    addVisualsToCollection,
+    removeVisualFromCollection,
     createCollection,
     deleteCollection,
     updateCollection,

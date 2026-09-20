@@ -1,21 +1,21 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import type { Photo } from "memory-seek-api";
+import type { Visual } from "memory-seek-api";
 import VirtualWaterfall, {
   type WaterfallGroup,
   type WaterfallItem,
 } from "./VirtualWaterfall.vue";
-import PhotoCard from "./PhotoCard.vue";
+import VisualCard from "./VisualCard.vue";
 
 /**
- * 照片瀑布流封装：通用 VirtualWaterfall + PhotoCard + 宽高比高度。
- * 照片页面只需面向本组件，卡片渲染、分组、触底加载与首屏填充均已内置。
+ * 影像瀑布流封装：通用 VirtualWaterfall + VisualCard + 宽高比高度。
+ * 影像页面只需面向本组件，卡片渲染、分组、触底加载与首屏填充均已内置。
  */
 
 const props = withDefaults(
   defineProps<{
     groups?: WaterfallGroup[];
-    photos: Photo[];
+    visuals: Visual[];
     columnCount: number;
     containerWidth: number;
     gap?: number;
@@ -36,14 +36,14 @@ const props = withDefaults(
 const emit = defineEmits<{
   (e: "top-item-change", item: WaterfallItem): void;
   (e: "current-group-change", key: string): void;
-  (e: "photo-click", photo: Photo): void;
-  (e: "like", photo: Photo): void;
+  (e: "visual-click", visual: Visual): void;
+  (e: "like", visual: Visual): void;
 }>();
 
 const waterfallRef = ref<InstanceType<typeof VirtualWaterfall> | null>(null);
 
-function getPhotoById(id: string | number): Photo | undefined {
-  return props.photos.find((p) => p.id === id);
+function getVisualById(id: string | number): Visual | undefined {
+  return props.visuals.find((p) => p.id === id);
 }
 
 function scrollToGroup(groupKey: string) {
@@ -73,10 +73,10 @@ defineExpose({ scrollToGroup, scrollToItem });
     @current-group-change="emit('current-group-change', $event)"
   >
     <template #default="{ item }">
-      <PhotoCard
-        v-if="getPhotoById(item.id)"
-        :item="getPhotoById(item.id)!"
-        @click="emit('photo-click', $event)"
+      <VisualCard
+        v-if="getVisualById(item.id)"
+        :item="getVisualById(item.id)!"
+        @click="emit('visual-click', $event)"
         @like="emit('like', $event)"
       />
     </template>

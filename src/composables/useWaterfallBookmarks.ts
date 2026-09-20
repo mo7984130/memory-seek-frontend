@@ -3,12 +3,12 @@ import { ref, type Ref } from "vue";
 /**
  * 瀑布流"加载位置书签"
  *
- * 书签与加载参数（anchorTime）关联，不关联单张照片：
+ * 书签与加载参数（anchorTime）关联，不关联单张影像：
  * - 保存书签时记录当前浏览位置对应的加载锚点
- * - 点击书签后，页面从该书签的 anchorTime 重新加载照片流
+ * - 点击书签后，页面从该书签的 anchorTime 重新加载影像流
  *
  * 另有一个自动维护的"最远浏览位置"书签：
- * - 始终跟随用户浏览到的"最远位置"（即创建时间最早的顶部照片）自动更新
+ * - 始终跟随用户浏览到的"最远位置"（即创建时间最早的顶部影像）自动更新
  * - 可被用户删除（视为重置），继续浏览后从当前浏览位置重新生成
  *
  * - 持久化到 localStorage（按 storageKey 区分命名空间，互不干扰）
@@ -19,7 +19,7 @@ export interface WaterfallBookmark {
   id: string;
   /** 书签名称（默认按月份生成，可编辑） */
   label: string;
-  /** 加载锚点：getPhotos({ anchorTime }) */
+  /** 加载锚点：getVisuals({ anchorTime }) */
   anchorTime: string;
   /** 对应月份 key（"2026-06"），用于恢复时间线高亮 */
   monthKey: string;
@@ -27,7 +27,7 @@ export interface WaterfallBookmark {
   createdAt: number;
   /** 是否为自动维护的"最远浏览位置"书签 */
   auto?: boolean;
-  /** 自动书签已记录的最早照片时间戳（毫秒），仅 auto 书签使用 */
+  /** 自动书签已记录的最早影像时间戳（毫秒），仅 auto 书签使用 */
   furthestTime?: number;
 }
 
@@ -42,9 +42,9 @@ interface BookmarkState {
   removeBookmark: (id: string) => void;
   /**
    * 更新"最远浏览位置"自动书签（仅更新已存在的；被删除重置后不在此生成，
-   * 由加载照片后的 ensureAutoBookmark 重新生成）。
-   * - 仅在浏览到创建时间更早的照片（更远位置）时更新
-   * @param anchor 当前顶部照片对应的锚点信息
+   * 由加载影像后的 ensureAutoBookmark 重新生成）。
+   * - 仅在浏览到创建时间更早的影像（更远位置）时更新
+   * @param anchor 当前顶部影像对应的锚点信息
    */
   updateAutoBookmark: (anchor: {
     label: string;
@@ -53,14 +53,14 @@ interface BookmarkState {
   }) => void;
   /**
    * 确保自动书签存在：不存在（被删除重置或首次）时以传入锚点为起点生成。
-   * 供页面在加载照片成功后调用，避免删除后因滚动立即重新生成。
+   * 供页面在加载影像成功后调用，避免删除后因滚动立即重新生成。
    */
   ensureAutoBookmark: (anchor: {
     label: string;
     monthKey: string;
     anchorTime: string;
   }) => void;
-  /** 删除自动书签（重置，下次加载照片后重新生成） */
+  /** 删除自动书签（重置，下次加载影像后重新生成） */
   removeAutoBookmark: () => void;
 }
 
@@ -131,18 +131,18 @@ function createState(storageKey: string): BookmarkState {
     anchorTime: string;
   }) {
     const existing = bookmarks.value.find((b) => b.id === AUTO_BOOKMARK_ID);
-    // 被删除重置后不在此生成，等待下次加载照片（ensureAutoBookmark）重新生成
+    // 被删除重置后不在此生成，等待下次加载影像（ensureAutoBookmark）重新生成
     if (!existing) return;
 
     const now = Date.now();
     if (now - lastAutoUpdateTime < AUTO_UPDATE_THROTTLE) return;
     lastAutoUpdateTime = now;
 
-    // 顶部照片创建时间（毫秒）；解析失败则不更新
+    // 顶部影像创建时间（毫秒）；解析失败则不更新
     const nextTime = Date.parse(anchor.anchorTime);
     if (!Number.isFinite(nextTime)) return;
 
-    // 只有浏览到创建时间更早的照片（更远位置）时才更新
+    // 只有浏览到创建时间更早的影像（更远位置）时才更新
     if (nextTime >= (existing.furthestTime ?? Number.POSITIVE_INFINITY)) return;
     existing.label = anchor.label;
     existing.anchorTime = anchor.anchorTime;

@@ -98,7 +98,7 @@ function handleMonthClick(key: string) {
           'timeline-nav__month--disabled': navigating,
         }"
         @click="handleMonthClick(month.key)"
-        :title="`${year.year}年${month.label} (${month.count}张)`"
+        :title="`${year.year}年${month.label} (${month.count}个)`"
         :disabled="navigating"
       >
         {{ month.label }}

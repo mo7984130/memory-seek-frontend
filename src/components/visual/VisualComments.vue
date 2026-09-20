@@ -1,19 +1,19 @@
-<!-- src/components/photo/PhotoComments.vue -->
+<!-- src/components/visual/VisualComments.vue -->
 <script setup lang="ts">
 import { ref, watch, nextTick } from "vue";
-import { photo, validation } from "memory-seek-api";
+import { visual, validation } from "memory-seek-api";
 import type { Comment } from "memory-seek-api";
 import { useAuthStore } from "@/stores/auth";
 import { useUserStore } from "@/stores/user";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/zh-cn";
-import "./photo-comments.css";
+import "./visual-comments.css";
 
 dayjs.extend(relativeTime);
 
 interface Props {
-  photoId: string;
+  visualId: string;
   visible: boolean;
 }
 
@@ -39,7 +39,7 @@ const hasMore = ref(true);
  */
 function getAvatarUrl(userId: string): string | null {
   const token = userStore.getAvatarToken(userId);
-  return token ? photo.getImgUrl(token) : null;
+  return token ? visual.getVisualUrl(token) : null;
 }
 
 /**
@@ -49,7 +49,7 @@ async function loadComments() {
   if (loading.value) return;
   loading.value = true;
   try {
-    const response = await photo.comment.getCommentList(props.photoId, {
+    const response = await visual.comment.getCommentList(props.visualId, {
       cursor: cursor.value,
     });
     const { records, nextCursor, hasMore: more } = response.data;
@@ -77,7 +77,7 @@ async function handleSend() {
 
   sending.value = true;
   try {
-    const response = await photo.comment.publishComment(props.photoId, content);
+    const response = await visual.comment.publishComment(props.visualId, content);
     comments.value.unshift(response.data);
     newComment.value = "";
     // 滚动到顶部查看新评论
@@ -98,11 +98,11 @@ async function handleSend() {
 async function handleToggleLike(comment: Comment) {
   try {
     if (comment.isLiked) {
-      await photo.comment.unlikeComment(props.photoId, comment.id);
+      await visual.comment.unlikeComment(comment.id);
       comment.isLiked = false;
       comment.likeCount--;
     } else {
-      await photo.comment.likeComment(props.photoId, comment.id);
+      await visual.comment.likeComment(comment.id);
       comment.isLiked = true;
       comment.likeCount++;
     }
@@ -123,7 +123,7 @@ function isOwnComment(comment: Comment): boolean {
  */
 async function handleDeleteComment(comment: Comment) {
   try {
-    await photo.comment.deleteComment(props.photoId, comment.id);
+    await visual.comment.deleteComment(props.visualId, comment.id);
     comments.value = comments.value.filter((c) => c.id !== comment.id);
   } catch (error) {
     console.error("删除评论失败:", error);
@@ -156,9 +156,9 @@ watch(
   },
 );
 
-// 监听 photoId 变化，重置状态
+// 监听 visualId 变化，重置状态
 watch(
-  () => props.photoId,
+  () => props.visualId,
   () => {
     comments.value = [];
     cursor.value = undefined;
@@ -172,12 +172,12 @@ watch(
 </script>
 
 <template>
-  <div class="photo-comments" :class="{ 'photo-comments--visible': visible }">
+  <div class="visual-comments" :class="{ 'visual-comments--visible': visible }">
     <!-- 头部 -->
-    <div class="photo-comments__header">
-      <h3 class="photo-comments__title">评论</h3>
+    <div class="visual-comments__header">
+      <h3 class="visual-comments__title">评论</h3>
       <button
-        class="photo-comments__close"
+        class="visual-comments__close"
         type="button"
         @click="emit('close')"
       >
@@ -186,14 +186,14 @@ watch(
     </div>
 
     <!-- 评论列表 -->
-    <div ref="listRef" class="photo-comments__list">
+    <div ref="listRef" class="visual-comments__list">
       <div
         v-if="loading && comments.length === 0"
-        class="photo-comments__loading"
+        class="visual-comments__loading"
       >
         加载中...
       </div>
-      <div v-else-if="comments.length === 0" class="photo-comments__empty">
+      <div v-else-if="comments.length === 0" class="visual-comments__empty">
         暂无评论
       </div>
       <template v-else>
@@ -249,7 +249,7 @@ watch(
       <!-- 加载更多 -->
       <button
         v-if="hasMore && !loading && comments.length > 0"
-        class="photo-comments__more"
+        class="visual-comments__more"
         type="button"
         @click="loadComments"
       >
@@ -257,23 +257,23 @@ watch(
       </button>
       <div
         v-if="loading && comments.length > 0"
-        class="photo-comments__loading"
+        class="visual-comments__loading"
       >
         加载中...
       </div>
     </div>
 
     <!-- 发送评论 -->
-    <div class="photo-comments__input-area">
+    <div class="visual-comments__input-area">
       <textarea
         v-model="newComment"
-        class="photo-comments__input"
+        class="visual-comments__input"
         :placeholder="`写评论...（最多 ${validation.RULES.commentContent.max} 字）`"
         rows="1"
         @keydown="handleKeydown"
       />
       <button
-        class="photo-comments__send"
+        class="visual-comments__send"
         type="button"
         :disabled="!newComment.trim() || sending"
         @click="handleSend"

@@ -1,18 +1,18 @@
-/* src/components/photo/photo-viewer.css */
+/* src/components/visual/visual-viewer.css */
 
-/* 全屏照片查看器 */
-.photo-viewer {
+/* 全屏影像查看器 */
+.visual-viewer {
   /* 查看器内部浮层层级（仅在本元素的堆叠上下文内生效） */
-  --photo-viewer-z-loading: 10;
-  --photo-viewer-z-face-overlay: 20;
-  --photo-viewer-z-nav: 25;
-  --photo-viewer-z-toolbar: 30;
-  --photo-viewer-z-comments: 40;
-  --photo-viewer-z-face-menu: 50;
+  --visual-viewer-z-loading: 10;
+  --visual-viewer-z-face-overlay: 20;
+  --visual-viewer-z-nav: 25;
+  --visual-viewer-z-toolbar: 30;
+  --visual-viewer-z-comments: 40;
+  --visual-viewer-z-face-menu: 50;
 
   position: fixed;
   inset: 0;
-  z-index: var(--z-index-photo-viewer);
+  z-index: var(--z-index-visual-viewer);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -20,10 +20,10 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   outline: none;
-  animation: photo-viewer-fade-in 0.3s var(--ease-out);
+  animation: visual-viewer-fade-in 0.3s var(--ease-out);
 }
 
-@keyframes photo-viewer-fade-in {
+@keyframes visual-viewer-fade-in {
   from {
     opacity: 0;
     background: rgba(0, 0, 0, 0);
@@ -38,8 +38,35 @@
   }
 }
 
-/* 图片包裹层（撑满可用空间，pointer-events: none 让点击穿透到 .photo-viewer） */
-.photo-viewer__image-wrapper {
+/* 页面模式：左上角返回按钮 */
+.visual-viewer__back {
+  position: fixed;
+  top: var(--spacing-4);
+  left: var(--spacing-4);
+  z-index: var(--visual-viewer-z-toolbar);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px 8px 10px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: var(--text-sm);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color 0.2s var(--ease-out);
+  user-select: none;
+}
+
+.visual-viewer__back:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* 图片包裹层（撑满可用空间，pointer-events: none 让点击穿透到 .visual-viewer） */
+.visual-viewer__image-wrapper {
   width: 100%;
   height: 100%;
   display: flex;
@@ -52,7 +79,7 @@
 }
 
 /* 玻璃光扫过动画 */
-.photo-viewer__image-wrapper--refreshing::after {
+.visual-viewer__image-wrapper--refreshing::after {
   content: "";
   position: absolute;
   top: 0;
@@ -67,17 +94,17 @@
     rgba(255, 255, 255, 0.3) 55%,
     transparent 100%
   );
-  animation: photo-viewer-glass-sweep 0.8s ease-in-out forwards;
+  animation: visual-viewer-glass-sweep 0.8s ease-in-out forwards;
   pointer-events: none;
 }
 
-/* 照片加载期间隐藏（不残留上一张照片） */
-.photo-viewer__image-wrapper--hidden {
+/* 影像加载期间隐藏（不残留上一张影像） */
+.visual-viewer__image-wrapper--hidden {
   opacity: 0;
   visibility: hidden;
 }
 
-@keyframes photo-viewer-glass-sweep {
+@keyframes visual-viewer-glass-sweep {
   0% {
     left: -100%;
   }
@@ -86,7 +113,7 @@
   }
 }
 
-.photo-viewer__image {
+.visual-viewer__image {
   object-fit: contain;
   position: absolute;
   top: 50%;
@@ -97,10 +124,10 @@
   -webkit-user-drag: none;
   pointer-events: auto;
   cursor: grab;
-  animation: photo-viewer-zoom-in 0.3s var(--ease-out);
+  animation: visual-viewer-zoom-in 0.3s var(--ease-out);
 }
 
-@keyframes photo-viewer-zoom-in {
+@keyframes visual-viewer-zoom-in {
   from {
     transform: translate(-50%, -50%) scale(0.9);
     opacity: 0;
@@ -111,46 +138,46 @@
   }
 }
 
-.photo-viewer__image--dragging {
+.visual-viewer__image--dragging {
   cursor: grabbing;
   transition: none;
 }
 
 /* 加载提示 */
-.photo-viewer__loading {
+.visual-viewer__loading {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: var(--photo-viewer-z-loading);
+  z-index: var(--visual-viewer-z-loading);
 }
 
-.photo-viewer__loading-spinner {
+.visual-viewer__loading-spinner {
   width: 40px;
   height: 40px;
   border: 3px solid rgba(255, 255, 255, 0.2);
   border-top-color: white;
   border-radius: 50%;
-  animation: photo-viewer-spin 0.8s linear infinite;
+  animation: visual-viewer-spin 0.8s linear infinite;
 }
 
-@keyframes photo-viewer-spin {
+@keyframes visual-viewer-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
 /* 图片加载完成动画 */
-.photo-viewer__image--loaded {
-  animation: photo-viewer-image-loaded 0.4s var(--ease-out);
+.visual-viewer__image--loaded {
+  animation: visual-viewer-image-loaded 0.4s var(--ease-out);
 }
 
 /* 上一张/下一张导航按钮 */
-.photo-viewer__nav {
+.visual-viewer__nav {
   position: fixed;
   top: 50%;
   transform: translateY(-50%);
-  z-index: var(--photo-viewer-z-nav);
+  z-index: var(--visual-viewer-z-nav);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -170,32 +197,32 @@
   user-select: none;
 }
 
-.photo-viewer__nav:hover {
+.visual-viewer__nav:hover {
   background: rgba(0, 0, 0, 0.7);
 }
 
-.photo-viewer__nav:active {
+.visual-viewer__nav:active {
   transform: translateY(-50%) scale(0.92);
 }
 
-.photo-viewer__nav--prev {
+.visual-viewer__nav--prev {
   left: var(--spacing-4);
 }
 
-.photo-viewer__nav--next {
+.visual-viewer__nav--next {
   right: var(--spacing-4);
 }
 
-.photo-viewer__nav:disabled {
+.visual-viewer__nav:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
 
-.photo-viewer__nav-loading {
-  animation: photo-viewer-nav-spin 1s linear infinite;
+.visual-viewer__nav-loading {
+  animation: visual-viewer-nav-spin 1s linear infinite;
 }
 
-@keyframes photo-viewer-nav-spin {
+@keyframes visual-viewer-nav-spin {
   from {
     transform: rotate(0deg);
   }
@@ -205,17 +232,17 @@
 }
 
 /* 人脸框 overlay（与图片同尺寸同 transform） */
-.photo-viewer__face-overlay {
+.visual-viewer__face-overlay {
   position: absolute;
   top: 50%;
   left: 50%;
   pointer-events: none;
   transition: transform 0.2s var(--ease-out);
-  z-index: var(--photo-viewer-z-face-overlay);
+  z-index: var(--visual-viewer-z-face-overlay);
 }
 
 /* 框选模式下 overlay 捕获指针事件，拦截图片平移 */
-.photo-viewer__face-overlay--selecting {
+.visual-viewer__face-overlay--selecting {
   pointer-events: auto;
   cursor: crosshair;
   touch-action: none;
@@ -223,7 +250,7 @@
   -webkit-user-select: none;
 }
 
-.photo-viewer__face-box {
+.visual-viewer__face-box {
   position: absolute;
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 6px;
@@ -237,21 +264,21 @@
     box-shadow 0.2s var(--ease-out);
 }
 
-.photo-viewer__face-box:hover {
+.visual-viewer__face-box:hover {
   background: rgba(255, 255, 255, 0.12);
 }
 
-.photo-viewer__face-box--active {
+.visual-viewer__face-box--active {
   border-color: var(--color-primary);
   border-width: 2px;
   background: rgba(45, 212, 168, 0.15);
   box-shadow:
     0 0 0 1px rgba(45, 212, 168, 0.5),
     0 0 12px rgba(45, 212, 168, 0.45);
-  animation: photo-viewer-face-active-pulse 1.6s ease-in-out infinite;
+  animation: visual-viewer-face-active-pulse 1.6s ease-in-out infinite;
 }
 
-@keyframes photo-viewer-face-active-pulse {
+@keyframes visual-viewer-face-active-pulse {
   0%,
   100% {
     box-shadow:
@@ -266,19 +293,19 @@
 }
 
 /* 框选模式：选中的人脸（未归属）高亮 */
-.photo-viewer__face-box--selected {
+.visual-viewer__face-box--selected {
   border-color: var(--color-danger, #ef4444);
   border-width: 2px;
   background: rgba(239, 68, 68, 0.25);
   box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.4);
 }
 
-.photo-viewer__face-overlay--selecting .photo-viewer__face-box {
+.visual-viewer__face-overlay--selecting .visual-viewer__face-box {
   cursor: crosshair;
 }
 
 /* 框选矩形 */
-.photo-viewer__selection-rect {
+.visual-viewer__selection-rect {
   position: absolute;
   border: 1.5px dashed var(--color-danger, #ef4444);
   background: rgba(239, 68, 68, 0.12);
@@ -286,7 +313,7 @@
   box-sizing: border-box;
 }
 
-.photo-viewer__face-label {
+.visual-viewer__face-label {
   position: absolute;
   left: 0;
   bottom: 100%;
@@ -301,9 +328,9 @@
   pointer-events: none;
 }
 
-.photo-viewer__face-menu {
+.visual-viewer__face-menu {
   position: fixed;
-  z-index: var(--photo-viewer-z-face-menu);
+  z-index: var(--visual-viewer-z-face-menu);
   min-width: 132px;
   padding: 4px;
   background: var(--color-bg-card);
@@ -312,7 +339,7 @@
   box-shadow: var(--shadow-lg);
 }
 
-.photo-viewer__face-menu-item {
+.visual-viewer__face-menu-item {
   display: block;
   width: 100%;
   padding: 8px 12px;
@@ -326,25 +353,25 @@
   font-family: inherit;
 }
 
-.photo-viewer__face-menu-item:hover:not(:disabled) {
+.visual-viewer__face-menu-item:hover:not(:disabled) {
   background: var(--color-bg-hover);
 }
 
-.photo-viewer__face-menu-item:disabled {
+.visual-viewer__face-menu-item:disabled {
   color: var(--color-text-tertiary);
   cursor: not-allowed;
 }
 
-.photo-viewer__face-menu-item--danger {
+.visual-viewer__face-menu-item--danger {
   color: var(--color-danger, #ef4444);
 }
 
-.photo-viewer__face-menu-item--danger:hover:not(:disabled) {
+.visual-viewer__face-menu-item--danger:hover:not(:disabled) {
   background: rgba(239, 68, 68, 0.1);
   color: var(--color-danger, #ef4444);
 }
 
-.photo-viewer__face-menu-item--danger:disabled {
+.visual-viewer__face-menu-item--danger:disabled {
   color: var(--color-text-tertiary);
 }
 
@@ -437,7 +464,7 @@
   color: var(--color-text-tertiary);
 }
 
-@keyframes photo-viewer-image-loaded {
+@keyframes visual-viewer-image-loaded {
   from {
     opacity: 0;
     transform: translate(-50%, -50%) scale(0.95);
@@ -448,14 +475,14 @@
   }
 }
 
-.photo-viewer__empty {
+.visual-viewer__empty {
   color: rgba(255, 255, 255, 0.5);
   font-size: var(--text-lg);
 }
 
 /* 查看器内打开的弹窗（Modal Teleport 到 body，需高于查看器本身） */
-.photo-viewer__modal-overlay {
-  z-index: var(--z-index-photo-viewer-modal-backdrop);
+.visual-viewer__modal-overlay {
+  z-index: var(--z-index-visual-viewer-modal-backdrop);
 }
 
 /* 删除确认弹窗 */
@@ -467,7 +494,7 @@
 }
 
 /* 框选结果操作条 */
-.photo-viewer__select-bar {
+.visual-viewer__select-bar {
   position: absolute;
   bottom: calc(var(--spacing-6) + 64px);
   left: 50%;
@@ -481,17 +508,17 @@
   backdrop-filter: blur(12px);
   border-radius: var(--radius-full);
   color: white;
-  z-index: var(--photo-viewer-z-toolbar);
+  z-index: var(--visual-viewer-z-toolbar);
   user-select: none;
-  animation: photo-viewer-fade-in 0.2s var(--ease-out);
+  animation: visual-viewer-fade-in 0.2s var(--ease-out);
 }
 
-.photo-viewer__select-bar-count {
+.visual-viewer__select-bar-count {
   font-size: var(--text-sm);
   white-space: nowrap;
 }
 
-.photo-viewer__select-bar-delete {
+.visual-viewer__select-bar-delete {
   padding: var(--spacing-1) var(--spacing-4);
   background: var(--color-danger);
   color: white;
@@ -504,11 +531,11 @@
   transition: var(--btn-transition);
 }
 
-.photo-viewer__select-bar-delete:hover {
+.visual-viewer__select-bar-delete:hover {
   opacity: 0.9;
 }
 
-.photo-viewer__select-bar-clear {
+.visual-viewer__select-bar-clear {
   padding: var(--spacing-1) var(--spacing-3);
   background: transparent;
   color: rgba(255, 255, 255, 0.8);
@@ -520,12 +547,12 @@
   transition: var(--btn-transition);
 }
 
-.photo-viewer__select-bar-clear:hover {
+.visual-viewer__select-bar-clear:hover {
   background: rgba(255, 255, 255, 0.15);
 }
 
 /* 未分配人脸处理进度条 */
-.photo-viewer__unassigned-bar {
+.visual-viewer__unassigned-bar {
   position: absolute;
   top: calc(var(--spacing-6) + 72px);
   left: 50%;
@@ -539,19 +566,19 @@
   backdrop-filter: blur(12px);
   border-radius: var(--radius-full);
   color: white;
-  z-index: var(--photo-viewer-z-toolbar);
+  z-index: var(--visual-viewer-z-toolbar);
   user-select: none;
   white-space: nowrap;
-  animation: photo-viewer-fade-in 0.2s var(--ease-out);
+  animation: visual-viewer-fade-in 0.2s var(--ease-out);
 }
 
-.photo-viewer__unassigned-bar-count {
+.visual-viewer__unassigned-bar-count {
   font-size: var(--text-sm);
   font-weight: var(--font-semibold);
   color: var(--color-primary-light);
 }
 
-.photo-viewer__unassigned-bar-keys {
+.visual-viewer__unassigned-bar-keys {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -559,7 +586,7 @@
   color: rgba(255, 255, 255, 0.75);
 }
 
-.photo-viewer__unassigned-bar-keys kbd {
+.visual-viewer__unassigned-bar-keys kbd {
   padding: 1px 6px;
   font-size: var(--text-xs);
   font-family: inherit;
@@ -570,7 +597,7 @@
 }
 
 @media (max-width: 768px) {
-  .photo-viewer__unassigned-bar {
+  .visual-viewer__unassigned-bar {
     top: calc(var(--spacing-4) + 64px);
     gap: var(--spacing-2);
   }

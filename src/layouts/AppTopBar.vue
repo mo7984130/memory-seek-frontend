@@ -2,7 +2,7 @@
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import { Menu, Sun, Moon } from "@/components/base/Icon/icons";
-import { photo } from "memory-seek-api";
+import { visual } from "memory-seek-api";
 import { useThemeStore } from "@/stores/theme";
 import { useAuthStore } from "@/stores/auth";
 import IconButton from "@/components/actions/IconButton/IconButton.vue";
@@ -22,7 +22,7 @@ const pageTitle = computed(() => {
 
 const avatarUrl = computed(() => {
   const token = authStore.user?.avatarToken;
-  return token ? photo.getImgUrl(token) : null;
+  return token ? visual.getVisualUrl(token) : null;
 });
 
 const avatarText = computed(() => {

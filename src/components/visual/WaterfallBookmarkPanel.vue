@@ -1,6 +1,6 @@
 <!-- 瀑布流"加载位置书签"面板 - 可复用组件
-     书签与加载参数（anchorTime）关联：保存当前浏览位置，点击书签从该位置重新加载照片流
-     使用方式：页面提供 currentAnchor（当前顶部照片的锚点信息）并监听 jump 事件执行跳转 -->
+     书签与加载参数（anchorTime）关联：保存当前浏览位置，点击书签从该位置重新加载影像流
+     使用方式：页面提供 currentAnchor（当前顶部影像的锚点信息）并监听 jump 事件执行跳转 -->
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { Bookmark, History, Plus, X } from "@/components/base/Icon/icons";
@@ -13,7 +13,7 @@ import Input from "@/components/form/Input/Input.vue";
 import dayjs from "dayjs";
 
 /**
- * 当前浏览位置的锚点信息（由页面根据视口顶部照片计算）
+ * 当前浏览位置的锚点信息（由页面根据视口顶部影像计算）
  */
 interface BookmarkAnchor {
   /** 位置标签，如 "2026年6月" */
@@ -28,7 +28,7 @@ interface BookmarkAnchor {
 
 const props = withDefaults(
   defineProps<{
-    /** 与页面瀑布流一致的存储键名（photos / likes / ...） */
+    /** 与页面瀑布流一致的存储键名（visuals / likes / ...） */
     storageKey: string;
     /** 当前浏览位置的锚点信息；暂无浏览位置时为 null */
     currentAnchor?: BookmarkAnchor | null;
@@ -200,7 +200,7 @@ function formatMonth(monthKey: string): string {
           <strong>{{
             currentAnchor ? (currentAnchor.detail ?? currentAnchor.label) : ""
           }}</strong>
-          开始加载照片
+          开始加载影像
         </p>
         <Input
           v-model="bookmarkName"

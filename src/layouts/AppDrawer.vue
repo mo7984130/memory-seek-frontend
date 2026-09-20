@@ -29,7 +29,7 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { path: "/photos", label: "照片墙", icon: ImageIcon },
+  { path: "/visuals", label: "影像墙", icon: ImageIcon },
   { path: "/persons", label: "人物", icon: FaceIcon },
   { path: "/likes", label: "我喜欢", icon: LikeIcon },
   { path: "/collections", label: "收藏夹", icon: FavoriteIcon },

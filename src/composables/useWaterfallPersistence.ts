@@ -1,11 +1,11 @@
 import { ref, type Ref } from "vue";
-import type { Photo, MonthStat } from "memory-seek-api";
+import type { Visual, MonthStat } from "memory-seek-api";
 
 /**
  * 瀑布流状态持久化 Composable
  *
  * 功能：
- * - 保持已加载的照片列表（内存，SPA 路由往返不重新请求）
+ * - 保持已加载的影像列表（内存，SPA 路由往返不重新请求）
  * - 保存浏览位置：**cursor**（所在页的拉取游标）+ 可选 anchorTime（时间线锚点）
  *   - 由页面上的“回到上次浏览位置”按钮触发恢复：用 cursor 重新拉取该页，落到页首
  * - 保持时间线状态
@@ -17,7 +17,7 @@ import type { Photo, MonthStat } from "memory-seek-api";
 export interface WaterfallSavedPosition {
   /** 拉取“视口顶部所在页”所用的 cursor；null 表示从头加载 */
   cursor: string | null;
-  /** 仅照片墙：位置落在时间线跳转列表第 0 页时记录锚点，恢复时重新按 anchorTime 拉取 */
+  /** 仅影像墙：位置落在时间线跳转列表第 0 页时记录锚点，恢复时重新按 anchorTime 拉取 */
   anchorTime?: string;
 }
 
@@ -25,14 +25,14 @@ export interface WaterfallSavedPosition {
 const stateMap = new Map<
   string,
   {
-    allPhotos: Ref<Photo[]>;
+    allVisuals: Ref<Visual[]>;
     cursor: Ref<string | undefined>;
     hasMore: Ref<boolean>;
     monthStats: Ref<MonthStat[]>;
     currentGroup: Ref<string>;
-    /** photoId -> 拉取该照片所在页所用的 cursor（第 0 页为 undefined） */
+    /** visualId -> 拉取该影像所在页所用的 cursor（第 0 页为 undefined） */
     pageCursorMap: Map<string, string | undefined>;
-    /** 时间线跳转列表的锚点时间（照片墙） */
+    /** 时间线跳转列表的锚点时间（影像墙） */
     currentAnchorTime?: string;
   }
 >();
@@ -40,7 +40,7 @@ const stateMap = new Map<
 function getOrCreateState(storageKey: string) {
   if (!stateMap.has(storageKey)) {
     stateMap.set(storageKey, {
-      allPhotos: ref<Photo[]>([]),
+      allVisuals: ref<Visual[]>([]),
       cursor: ref<string | undefined>(undefined),
       hasMore: ref(true),
       monthStats: ref<MonthStat[]>([]),
@@ -63,7 +63,7 @@ export function useWaterfallPersistence(storageKey: string) {
 
   // 捕获节流状态（按 composable 实例隔离）
   let lastCaptureTime = 0;
-  let lastTopPhotoId = "";
+  let lastTopVisualId = "";
   // 用户主动操作（滚动/时间线跳转/恢复）后才允许捕获位置。
   // 初始加载也会触发 top-item-change，若不设门槛会把深位置覆盖成“第 0 页”
   let hasUserActive = false;
@@ -80,66 +80,66 @@ export function useWaterfallPersistence(storageKey: string) {
   // ======== Actions ========
 
   /**
-   * 追加照片列表
+   * 追加影像列表
    */
-  function appendPhotos(
-    photos: Photo[],
+  function appendVisuals(
+    visuals: Visual[],
     nextCursor?: string,
     more: boolean = true,
   ) {
-    // 记录每张照片所在页的拉取游标（append 前的 cursor 即本次拉取所用）
+    // 记录每张影像所在页的拉取游标（append 前的 cursor 即本次拉取所用）
     const fetchCursor = state.cursor.value;
-    for (const photo of photos) {
-      state.pageCursorMap.set(String(photo.id), fetchCursor);
+    for (const visual of visuals) {
+      state.pageCursorMap.set(String(visual.id), fetchCursor);
     }
 
-    state.allPhotos.value.push(...photos);
+    state.allVisuals.value.push(...visuals);
     state.cursor.value = nextCursor;
     state.hasMore.value = more;
   }
 
   /**
-   * 替换照片列表（用于时间线跳转 / 按钮恢复）
+   * 替换影像列表（用于时间线跳转 / 按钮恢复）
    *
    * @param anchorTime 时间线锚点：新列表第 0 页由 anchorTime 拉取而非 cursor
    * @param page0Cursor 新列表第 0 页的拉取游标（cursor 恢复时传入；anchorTime 拉取时留空）
    */
-  function replacePhotos(
-    photos: Photo[],
+  function replaceVisuals(
+    visuals: Visual[],
     nextCursor?: string,
     more: boolean = true,
     anchorTime?: string,
     page0Cursor?: string,
   ) {
     state.pageCursorMap.clear();
-    for (const photo of photos) {
-      state.pageCursorMap.set(String(photo.id), page0Cursor);
+    for (const visual of visuals) {
+      state.pageCursorMap.set(String(visual.id), page0Cursor);
     }
     state.currentAnchorTime = anchorTime;
 
-    state.allPhotos.value = photos;
+    state.allVisuals.value = visuals;
     state.cursor.value = nextCursor;
     state.hasMore.value = more;
   }
 
   /**
-   * 更新照片点赞状态
+   * 更新影像点赞状态
    */
-  function updatePhotoLike(photoId: string, isLiked: boolean) {
-    const target = state.allPhotos.value.find((p) => p.id === photoId);
+  function updateVisualLike(visualId: string, isLiked: boolean) {
+    const target = state.allVisuals.value.find((p) => p.id === visualId);
     if (target) {
       target.isLiked = isLiked;
     }
   }
 
   /**
-   * 删除照片
+   * 删除影像
    */
-  function removePhoto(photoId: string) {
-    state.allPhotos.value = state.allPhotos.value.filter(
-      (p) => p.id !== photoId,
+  function removeVisual(visualId: string) {
+    state.allVisuals.value = state.allVisuals.value.filter(
+      (p) => p.id !== visualId,
     );
-    state.pageCursorMap.delete(String(photoId));
+    state.pageCursorMap.delete(String(visualId));
   }
 
   // ======== 浏览位置（cursor） ========
@@ -148,9 +148,9 @@ export function useWaterfallPersistence(storageKey: string) {
    * 把最近一次捕获的位置写入 sessionStorage
    */
   function writePosition() {
-    if (!lastTopPhotoId || !state.pageCursorMap.has(lastTopPhotoId)) return;
+    if (!lastTopVisualId || !state.pageCursorMap.has(lastTopVisualId)) return;
 
-    const cursor = state.pageCursorMap.get(lastTopPhotoId) ?? null;
+    const cursor = state.pageCursorMap.get(lastTopVisualId) ?? null;
     const position: WaterfallSavedPosition = { cursor };
     if (cursor == null && state.currentAnchorTime) {
       position.anchorTime = state.currentAnchorTime;
@@ -161,10 +161,10 @@ export function useWaterfallPersistence(storageKey: string) {
   /**
    * 捕获当前位置：由 VirtualWaterfall 的 top-item-change 驱动（节流）
    */
-  function capturePosition(topPhotoId: string | number) {
+  function capturePosition(topVisualId: string | number) {
     if (!hasUserActive) return;
 
-    lastTopPhotoId = String(topPhotoId);
+    lastTopVisualId = String(topVisualId);
     const now = Date.now();
     if (now - lastCaptureTime < 300) return;
     lastCaptureTime = now;
@@ -189,20 +189,20 @@ export function useWaterfallPersistence(storageKey: string) {
   }
 
   /**
-   * 找到保存 cursor 所在页的页首照片 id（用于会话内恢复定位）。
+   * 找到保存 cursor 所在页的页首影像 id（用于会话内恢复定位）。
    * cursor 为 null 时返回列表第一张；当前列表不包含该 cursor 时返回 null
    */
-  function getPageStartPhotoId(
+  function getPageStartVisualId(
     cursor: string | null | undefined,
   ): string | null {
     if (cursor == null) {
-      const first = state.allPhotos.value[0];
+      const first = state.allVisuals.value[0];
       return first ? String(first.id) : null;
     }
-    const photo = state.allPhotos.value.find(
+    const visual = state.allVisuals.value.find(
       (p) => state.pageCursorMap.get(String(p.id)) === cursor,
     );
-    return photo ? String(photo.id) : null;
+    return visual ? String(visual.id) : null;
   }
 
   /**
@@ -230,7 +230,7 @@ export function useWaterfallPersistence(storageKey: string) {
     window.addEventListener("scroll", handleScrollActive, { passive: true });
     // 清理旧版像素位置键
     sessionStorage.removeItem(SCROLL_KEY);
-    return state.allPhotos.value.length > 0;
+    return state.allVisuals.value.length > 0;
   }
 
   /**
@@ -246,7 +246,7 @@ export function useWaterfallPersistence(storageKey: string) {
    * 重置状态
    */
   function resetState() {
-    state.allPhotos.value = [];
+    state.allVisuals.value = [];
     state.cursor.value = undefined;
     state.hasMore.value = true;
     state.monthStats.value = [];
@@ -260,23 +260,23 @@ export function useWaterfallPersistence(storageKey: string) {
 
   return {
     // 状态（从全局状态返回）
-    allPhotos: state.allPhotos,
+    allVisuals: state.allVisuals,
     cursor: state.cursor,
     hasMore: state.hasMore,
     monthStats: state.monthStats,
     currentGroup: state.currentGroup,
 
     // Actions
-    appendPhotos,
-    replacePhotos,
-    updatePhotoLike,
-    removePhoto,
+    appendVisuals,
+    replaceVisuals,
+    updateVisualLike,
+    removeVisual,
 
     // 浏览位置（cursor）
     capturePosition,
     markUserActive,
     getSavedPosition,
-    getPageStartPhotoId,
+    getPageStartVisualId,
     getCurrentAnchorTime,
 
     // 生命周期

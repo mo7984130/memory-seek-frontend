@@ -67,7 +67,7 @@ defineExpose({
       <Spinner v-if="loading" />
       <slot
         name="empty"
-        v-else-if="!loading && waterfall.allPhotos.value.length === 0"
+        v-else-if="!loading && waterfall.allVisuals.value.length === 0"
       />
       <span v-else-if="!hasMore" class="waterfall-view__end">已经到底啦 ~</span>
     </div>

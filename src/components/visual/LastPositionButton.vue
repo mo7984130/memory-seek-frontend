@@ -5,7 +5,7 @@ import { useWaterfallPersistence } from "@/composables/useWaterfallPersistence";
 import { History } from "@/components/base/Icon/icons";
 
 const props = defineProps<{
-  /** 与对应页面一致的存储键名（photos / likes / collection-<id>） */
+  /** 与对应页面一致的存储键名（visuals / likes / collection-<id>） */
   storageKey: string;
 }>();
 

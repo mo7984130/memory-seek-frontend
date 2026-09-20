@@ -5,7 +5,7 @@ import { AuthStorage } from "memory-seek-api";
  * 被 KeepAlive 缓存的列表路由 name（滚动位置由页面自行恢复）
  */
 export const KEEP_ALIVE_ROUTE_NAMES = [
-  "photos",
+  "visuals",
   "persons",
   "unassigned-faces",
   "likes",
@@ -16,7 +16,7 @@ export const KEEP_ALIVE_ROUTE_NAMES = [
  * 被 KeepAlive 缓存的列表组件名（AppLayout 中 include 匹配用）
  */
 export const KEEP_ALIVE_COMPONENT_NAMES = [
-  "PhotoWaterfallView",
+  "VisualWaterfallView",
   "PersonsView",
   "UnassignedFacesView",
   "LikesView",
@@ -64,13 +64,19 @@ const router = createRouter({
       children: [
         {
           path: "",
-          redirect: "/photos",
+          redirect: "/visuals",
         },
         {
-          path: "photos",
-          name: "photos",
-          component: () => import("@/views/PhotoWaterfallView.vue"),
-          meta: { title: "照片墙" },
+          path: "visuals",
+          name: "visuals",
+          component: () => import("@/views/VisualWaterfallView.vue"),
+          meta: { title: "影像墙" },
+        },
+        {
+          path: "visual/:id",
+          name: "visual-detail",
+          component: () => import("@/views/VisualDetailView.vue"),
+          meta: { title: "影像详情" },
         },
         {
           path: "persons",
@@ -134,7 +140,7 @@ const router = createRouter({
 /**
  * 路由守卫
  * - 未登录时访问需要认证的页面，重定向到登录页
- * - 已登录时访问需要游客的页面（如登录页），重定向到照片墙
+ * - 已登录时访问需要游客的页面（如登录页），重定向到影像墙
  */
 router.beforeEach((to) => {
   // 设置页面标题
@@ -152,12 +158,12 @@ router.beforeEach((to) => {
   // 需要管理员的页面（后端管理员用户 ID 硬编码为 1）
   const requiresAdmin = to.matched.some((r) => r.meta.requiresAdmin);
   if (requiresAdmin && AuthStorage.getUserId() !== "1") {
-    return "/photos";
+    return "/visuals";
   }
 
   // 需要游客的页面（已登录时不能访问）
   if (to.meta.requiresGuest && isAuthenticated) {
-    return "/photos";
+    return "/visuals";
   }
 });
 

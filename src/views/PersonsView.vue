@@ -10,13 +10,13 @@ import {
 } from "vue";
 import { useRouter } from "vue-router";
 import { useDebounceFn, useResizeObserver } from "@vueuse/core";
-import { photo, validation } from "memory-seek-api";
+import { visual, validation } from "memory-seek-api";
 import type { Person } from "memory-seek-api";
 import { useListScrollRestore } from "@/composables/useListScrollRestore";
 import { consumeListDirty } from "@/composables/useListDirty";
 import VirtualWaterfall, {
   type WaterfallItem,
-} from "@/components/photo/VirtualWaterfall.vue";
+} from "@/components/visual/VirtualWaterfall.vue";
 import { FaceIcon, SearchIcon } from "@/components/base/Icon/icons";
 import Input from "@/components/form/Input/Input.vue";
 import Spinner from "@/components/base/Spinner/Spinner.vue";
@@ -96,8 +96,8 @@ async function fetchPage(): Promise<Person[]> {
   try {
     const kw = keyword.value.trim();
     const res = kw
-      ? await photo.person.searchPersons(kw, { cursor: cursor.value })
-      : await photo.person.getPersons({ cursor: cursor.value });
+      ? await visual.person.searchPersons(kw, { cursor: cursor.value })
+      : await visual.person.getPersons({ cursor: cursor.value });
     const page = res.data;
     persons.value.push(...page.records);
     cursor.value = page.nextCursor;
@@ -215,7 +215,7 @@ onActivated(async () => {
             <div class="person-card__cover">
               <img
                 v-if="item.coverToken"
-                :src="photo.getImgUrl(item.coverToken)"
+                :src="visual.getVisualUrl(item.coverToken)"
                 class="person-card__cover-img"
                 alt=""
               />
@@ -224,7 +224,7 @@ onActivated(async () => {
             <div class="person-card__info">
               <div class="person-card__name">{{ item.name }}</div>
               <div class="person-card__count">
-                {{ Number(item.faceCount) }} 张照片
+                {{ Number(item.faceCount) }} 张影像
               </div>
             </div>
           </div>
@@ -244,7 +244,7 @@ onActivated(async () => {
       <template v-else>
         <div class="persons-view__empty-text">暂无人物</div>
         <div class="persons-view__empty-hint">
-          识别照片中出现的人脸后会显示在这里
+          识别影像中出现的人脸后会显示在这里
         </div>
       </template>
     </div>

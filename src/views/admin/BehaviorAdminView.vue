@@ -9,7 +9,7 @@ import {
 } from "vue";
 import dayjs from "dayjs";
 import { useIntersectionObserver } from "@vueuse/core";
-import { photo } from "memory-seek-api";
+import { audit } from "memory-seek-api";
 import { ArrowLeft } from "@/components/base/Icon/icons";
 import IconButton from "@/components/actions/IconButton/IconButton.vue";
 import Button from "@/components/actions/Button/Button.vue";
@@ -18,15 +18,16 @@ import Select from "@/components/form/Select/Select.vue";
 import Input from "@/components/form/Input/Input.vue";
 import Card from "@/components/data/Card/Card.vue";
 import BackToTop from "@/components/actions/BackToTop/BackToTop.vue";
-import VirtualWaterfall from "@/components/photo/VirtualWaterfall.vue";
+import VirtualWaterfall from "@/components/visual/VirtualWaterfall.vue";
 import { useGoBack } from "@/composables/useGoBack";
 import { useUserStore } from "@/stores/user";
 
 defineOptions({ name: "BehaviorAdminView" });
 
-// Behavior 相关类型未从 memory-seek-api 导出，本地定义与后端一致
+// 审计事件 / 目标类型为开放字符串（API 不再导出封闭枚举），下拉选项与后端事件命名保持一致
+// 类型仅供筛选下拉与卡片标签使用
 type BehaviorTargetType =
-  | "photo"
+  | "visual"
   | "face"
   | "person"
   | "comment"
@@ -34,7 +35,7 @@ type BehaviorTargetType =
 type UserBehaviorAction =
   | "view"
   | "upload"
-  | "delete_photos"
+  | "delete_visuals"
   | "like"
   | "unlike"
   | "comment_publish"
@@ -56,12 +57,11 @@ type BehaviorGranularity = "day" | "week" | "month";
 
 interface AuditItem {
   id: string;
-  userId: string;
-  action: UserBehaviorAction;
-  targetType: BehaviorTargetType | null;
+  actorId: string | null;
+  eventType: string;
+  targetType: string | null;
   targetId: number | null;
   detail: Record<string, unknown> | null;
-  ip: string | null;
   createdAt: string;
 }
 
@@ -80,16 +80,16 @@ const userStore = useUserStore();
 
 // ---------------- 常量选项 ----------------
 const ACTION_OPTIONS: { label: string; value: UserBehaviorAction }[] = [
-  { label: "浏览照片", value: "view" },
-  { label: "上传照片", value: "upload" },
-  { label: "批量删除照片", value: "delete_photos" },
-  { label: "点赞照片", value: "like" },
+  { label: "浏览影像", value: "view" },
+  { label: "上传影像", value: "upload" },
+  { label: "批量删除影像", value: "delete_visuals" },
+  { label: "点赞影像", value: "like" },
   { label: "取消点赞", value: "unlike" },
   { label: "发布评论", value: "comment_publish" },
   { label: "删除评论", value: "comment_delete" },
   { label: "点赞评论", value: "comment_like" },
   { label: "取消点赞评论", value: "comment_unlike" },
-  { label: "收藏照片", value: "collect" },
+  { label: "收藏影像", value: "collect" },
   { label: "取消收藏", value: "uncollect" },
   { label: "修改人脸归属", value: "face_change_belonging" },
   { label: "取消人脸归属", value: "face_unassign" },
@@ -103,7 +103,7 @@ const ACTION_OPTIONS: { label: string; value: UserBehaviorAction }[] = [
 ];
 
 const TARGET_TYPE_OPTIONS: { label: string; value: BehaviorTargetType }[] = [
-  { label: "照片", value: "photo" },
+  { label: "影像", value: "visual" },
   { label: "人脸", value: "face" },
   { label: "人物", value: "person" },
   { label: "评论", value: "comment" },
@@ -218,8 +218,8 @@ function detailText(item: unknown): string {
 
 function prefetchUsers() {
   const ids = Array.from(
-    new Set(auditRecords.value.map((r) => r.userId).filter(Boolean)),
-  );
+    new Set(auditRecords.value.map((r) => r.actorId).filter(Boolean)),
+  ) as string[];
   if (ids.length > 0) userStore.fetchUsers(ids);
 }
 
@@ -228,11 +228,11 @@ async function loadAudit(reset = true) {
   auditLoading.value = true;
   auditError.value = "";
   try {
-    const res = await photo.behavior.getBehaviorAudit({
-      action: auditFilters.action,
+    const res = await audit.getAuditItems({
+      eventType: auditFilters.action,
       targetType: auditFilters.targetType,
       targetId: auditFilters.targetId ? Number(auditFilters.targetId) : null,
-      userId: auditFilters.userId.trim() || null,
+      actorId: auditFilters.userId.trim() || null,
       cursor: reset ? null : auditCursor.value,
       size: AUDIT_PAGE_SIZE,
     });
@@ -302,8 +302,8 @@ async function loadStats() {
   statsLoading.value = true;
   statsError.value = "";
   try {
-    const res = await photo.behavior.getBehaviorStats({
-      action: statsFilters.action,
+    const res = await audit.getAuditStats({
+      eventType: statsFilters.action,
       targetType: statsFilters.targetType,
       start: null,
       end: null,
@@ -355,7 +355,7 @@ const topFilters = reactive<{
   limit: string;
 }>({
   action: "view",
-  targetType: "photo",
+  targetType: "visual",
   limit: "10",
 });
 
@@ -369,8 +369,8 @@ async function loadTop() {
   topError.value = "";
   try {
     const limit = Math.max(1, Math.min(50, Number(topFilters.limit) || 10));
-    const res = await photo.behavior.getBehaviorTop({
-      action: topFilters.action,
+    const res = await audit.getAuditTop({
+      eventType: topFilters.action,
       targetType: topFilters.targetType,
       limit,
     });
@@ -389,13 +389,13 @@ function onTopActionChange(value: string | number | undefined) {
 }
 
 function onTopTargetTypeChange(value: string | number | undefined) {
-  topFilters.targetType = (value as BehaviorTargetType | undefined) ?? "photo";
+  topFilters.targetType = (value as BehaviorTargetType | undefined) ?? "visual";
   loadTop();
 }
 
 function resetTopFilters() {
   topFilters.action = "view";
-  topFilters.targetType = "photo";
+  topFilters.targetType = "visual";
   topFilters.limit = "10";
   loadTop();
 }
@@ -520,14 +520,16 @@ onBeforeUnmount(() => {
               <div class="audit-card">
                 <div class="audit-card__head">
                   <span class="audit-card__action">{{
-                    ACTION_LABEL[asAuditItem(item).action]
+                    ACTION_LABEL[
+                      asAuditItem(item).eventType as UserBehaviorAction
+                    ] ?? asAuditItem(item).eventType
                   }}</span>
                   <span class="audit-card__target">
                     {{
                       asAuditItem(item).targetType
                         ? TARGET_TYPE_LABEL[
                             asAuditItem(item).targetType as BehaviorTargetType
-                          ]
+                          ] ?? asAuditItem(item).targetType
                         : "—"
                     }}
                     <template v-if="asAuditItem(item).targetId != null">
@@ -537,11 +539,8 @@ onBeforeUnmount(() => {
                 </div>
                 <div class="audit-card__meta">
                   <span class="audit-card__user">{{
-                    getUserLabel(asAuditItem(item).userId)
+                    getUserLabel(asAuditItem(item).actorId ?? "")
                   }}</span>
-                  <span v-if="asAuditItem(item).ip" class="audit-card__ip"
-                    >IP {{ asAuditItem(item).ip }}</span
-                  >
                   <span class="audit-card__id"
                     >#{{ asAuditItem(item).id }}</span
                   >

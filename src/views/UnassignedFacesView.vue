@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted, onActivated, onBeforeUnmount } from "vue";
-import { photo } from "memory-seek-api";
-import type { Photo } from "memory-seek-api";
+import { visual } from "memory-seek-api";
+import type { Visual } from "memory-seek-api";
 import { useWaterfallPage } from "@/composables/useWaterfallPage";
 import { useListScrollRestore } from "@/composables/useListScrollRestore";
-import PhotoWaterfall from "@/components/photo/PhotoWaterfall.vue";
-import LastPositionButton from "@/components/photo/LastPositionButton.vue";
-import PhotoViewer from "@/components/photo/PhotoViewer.vue";
+import VisualWaterfall from "@/components/visual/VisualWaterfall.vue";
+import LastPositionButton from "@/components/visual/LastPositionButton.vue";
+import VisualViewer from "@/components/visual/VisualViewer.vue";
 import BackToTop from "@/components/actions/BackToTop/BackToTop.vue";
 import IconButton from "@/components/actions/IconButton/IconButton.vue";
 import { FaceIcon, CloseIcon } from "@/components/base/Icon/icons";
@@ -21,7 +21,7 @@ const showGuide = ref(true);
 const page = useWaterfallPage({
   storageKey: "unassigned",
   fetch: async ({ cursor }) =>
-    (await photo.face.getUnassignedFacePhotos({ cursor })).data,
+    (await visual.face.getUnassignedFaceVisuals({ cursor })).data,
 });
 
 const {
@@ -37,31 +37,31 @@ const {
   dispose,
 } = page;
 
-const waterfallViewRef = ref<InstanceType<typeof PhotoWaterfall> | null>(
+const waterfallViewRef = ref<InstanceType<typeof VisualWaterfall> | null>(
   null,
 );
 
 // 返回时恢复滚动位置（KeepAlive 缓存页）
 const { restoreScroll } = useListScrollRestore();
 
-// 照片查看器状态
+// 影像查看器状态
 const viewerVisible = ref(false);
-const selectedPhoto = ref<Photo | null>(null);
+const selectedVisual = ref<Visual | null>(null);
 
-function handlePhotoClick(photoItem: Photo) {
-  selectedPhoto.value = photoItem;
+function handleVisualClick(visualItem: Visual) {
+  selectedVisual.value = visualItem;
   viewerVisible.value = true;
 }
 
-/** 查看器切换照片：更新当前照片并让瀑布流滚动到对应位置 */
-function handleViewerNavigate(photoItem: Photo) {
-  selectedPhoto.value = photoItem;
+/** 查看器切换影像：更新当前影像并让瀑布流滚动到对应位置 */
+function handleViewerNavigate(visualItem: Visual) {
+  selectedVisual.value = visualItem;
   nextTick(() => {
-    waterfallViewRef.value?.scrollToItem(photoItem.id, "smooth");
+    waterfallViewRef.value?.scrollToItem(visualItem.id, "smooth");
   });
 }
 
-/** 查看器触底时加载下一页；返回是否加载到了新照片 */
+/** 查看器触底时加载下一页；返回是否加载到了新影像 */
 async function handleLoadMore(): Promise<boolean> {
   if (loading.value || !waterfall.hasMore.value) return false;
   const records = await fetchMore({ cursor: waterfall.cursor.value });
@@ -75,21 +75,21 @@ function loadMoreWaterfall(): Promise<number> {
   );
 }
 
-function handleLikeChange(photoId: string, isLiked: boolean) {
-  if (selectedPhoto.value?.id === photoId) {
-    selectedPhoto.value.isLiked = isLiked;
+function handleLikeChange(visualId: string, isLiked: boolean) {
+  if (selectedVisual.value?.id === visualId) {
+    selectedVisual.value.isLiked = isLiked;
   }
 }
 
-function handleDelete(photoId: string) {
-  waterfall.removePhoto(photoId);
+function handleDelete(visualId: string) {
+  waterfall.removeVisual(visualId);
 }
 
-async function handleLike(photoItem: Photo) {
-  const photoId = photoItem.id as string;
+async function handleLike(visualItem: Visual) {
+  const visualId = visualItem.id as string;
   try {
-    await photo.like.unlikePhoto(photoId);
-    waterfall.removePhoto(photoId);
+    await visual.like.unlikeVisual(visualId);
+    waterfall.removeVisual(visualId);
   } catch (error) {
     console.error("[UnassignedFacesView] 取消点赞失败:", error);
   }
@@ -114,9 +114,9 @@ onBeforeUnmount(() => {
     <div class="unassigned-view__header">
       <span
         class="unassigned-view__count"
-        v-if="waterfall.allPhotos.value.length > 0"
+        v-if="waterfall.allVisuals.value.length > 0"
       >
-        {{ waterfall.allPhotos.value.length }} 张照片
+        {{ waterfall.allVisuals.value.length }} 张影像
       </span>
     </div>
 
@@ -127,17 +127,17 @@ onBeforeUnmount(() => {
       <div class="unassigned-view__guide-body">
         <div class="unassigned-view__guide-title">未分配人脸</div>
         <div class="unassigned-view__guide-desc">
-          这里收录了已识别出人脸、但尚未分配人物的照片。
+          这里收录了已识别出人脸、但尚未分配人物的影像。
         </div>
         <ol class="unassigned-view__guide-steps">
-          <li>点击照片进入查看器，会自动高亮第一个未分配人脸</li>
+          <li>点击影像进入查看器，会自动高亮第一个未分配人脸</li>
           <li>
             <kbd>↑</kbd>/<kbd>↓</kbd> 切换人脸，
             <kbd>Enter</kbd> 选择归属，<kbd>D</kbd> 删除
           </li>
-          <li>处理完一个自动进入下一个，本张处理完自动跳到下一张</li>
+          <li>处理完一个自动进入下一个，当前影像处理完自动跳到下一个</li>
           <li>不认识的未分配人脸，可直接删除</li>
-          <li>处理完所有未分配人脸后，照片仍会保留在本页，刷新后不再显示</li>
+          <li>处理完所有未分配人脸后，影像仍会保留在本页，刷新后不再显示</li>
         </ol>
       </div>
       <IconButton
@@ -151,19 +151,19 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="waterfall-container">
-      <PhotoWaterfall
+      <VisualWaterfall
         ref="waterfallViewRef"
         :groups="groups"
-        :photos="waterfall.allPhotos.value"
+        :visuals="waterfall.allVisuals.value"
         :column-count="columnCount"
         :container-width="containerWidth"
         :gap="16"
         :has-more="waterfall.hasMore.value"
         :loading="loading"
         :load-more="loadMoreWaterfall"
-        empty-text="没有未分配人脸的照片"
+        empty-text="没有未分配人脸的影像"
         @top-item-change="handleTopItemChange"
-        @photo-click="handlePhotoClick"
+        @visual-click="handleVisualClick"
         @like="handleLike"
       />
     </div>
@@ -177,10 +177,10 @@ onBeforeUnmount(() => {
     <!-- 回到顶部 -->
     <BackToTop />
 
-    <PhotoViewer
+    <VisualViewer
       v-model="viewerVisible"
-      :photo="selectedPhoto"
-      :photos="waterfall.allPhotos.value"
+      :visual="selectedVisual"
+      :visuals="waterfall.allVisuals.value"
       :load-more="handleLoadMore"
       initial-show-faces
       unassigned-workflow

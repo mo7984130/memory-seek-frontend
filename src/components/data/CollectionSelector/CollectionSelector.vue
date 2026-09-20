@@ -1,7 +1,7 @@
 <!-- src/components/data/CollectionSelector/CollectionSelector.vue -->
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from "vue";
-import { photo as photoApi, validation } from "memory-seek-api";
+import { visual as visualApi, validation } from "memory-seek-api";
 import type { Collection, CollectionBrief } from "memory-seek-api";
 import { useCollectionStore } from "@/stores/collection";
 import Modal from "@/components/feedback/Modal/Modal.vue";
@@ -21,7 +21,7 @@ import "./collection-selector.css";
 
 interface Props {
   modelValue: boolean;
-  photoId?: string;
+  visualId?: string;
   overlayClass?: string;
 }
 
@@ -37,7 +37,7 @@ const createInputRef = ref<InstanceType<typeof Input> | null>(null);
 
 // 状态
 const loading = ref(false);
-const photoCollections = ref<CollectionBrief[]>([]);
+const visualCollections = ref<CollectionBrief[]>([]);
 const showCreateForm = ref(false);
 const newCollectionName = ref("");
 const editingId = ref<string | null>(null);
@@ -50,10 +50,10 @@ const activeMenuId = ref<string | null>(null);
 const collections = computed(() => collectionStore.collections);
 
 /**
- * 照片所属的收藏夹 ID 集合
+ * 影像所属的收藏夹 ID 集合
  */
-const photoCollectionIds = computed(() => {
-  return new Set(photoCollections.value.map((c) => c.id));
+const visualCollectionIds = computed(() => {
+  return new Set(visualCollections.value.map((c) => c.id));
 });
 
 /**
@@ -71,41 +71,41 @@ async function loadCollections() {
 }
 
 /**
- * 加载照片所属的收藏夹
+ * 加载影像所属的收藏夹
  */
-async function loadPhotoCollections() {
-  if (!props.photoId) return;
+async function loadVisualCollections() {
+  if (!props.visualId) return;
   try {
-    const res = await photoApi.collection.getCollectionsByPhoto(props.photoId);
-    photoCollections.value = res.data;
+    const res = await visualApi.collection.getCollectionsByVisual(props.visualId);
+    visualCollections.value = res.data;
   } catch (error) {
-    console.error("加载照片收藏夹失败:", error);
+    console.error("加载影像收藏夹失败:", error);
   }
 }
 
 /**
- * 切换照片在收藏夹中的状态
+ * 切换影像在收藏夹中的状态
  */
 async function toggleCollection(collectionId: string) {
-  if (!props.photoId) return;
+  if (!props.visualId) return;
 
-  const isCollected = photoCollectionIds.value.has(collectionId);
+  const isCollected = visualCollectionIds.value.has(collectionId);
   try {
     if (isCollected) {
-      await collectionStore.removePhotoFromCollection(
+      await collectionStore.removeVisualFromCollection(
         collectionId,
-        props.photoId,
+        props.visualId,
       );
-      photoCollections.value = photoCollections.value.filter(
+      visualCollections.value = visualCollections.value.filter(
         (c) => c.id !== collectionId,
       );
     } else {
-      await collectionStore.addPhotosToCollection(collectionId, [
-        props.photoId,
+      await collectionStore.addVisualsToCollection(collectionId, [
+        props.visualId,
       ]);
       const collection = collections.value.find((c) => c.id === collectionId);
       if (collection) {
-        photoCollections.value.push({
+        visualCollections.value.push({
           id: collection.id,
           name: collection.name,
         });
@@ -129,12 +129,12 @@ async function createCollection() {
     newCollectionName.value = "";
     showCreateForm.value = false;
 
-    // 如果有照片，自动添加到新收藏夹
-    if (props.photoId) {
-      await collectionStore.addPhotosToCollection(newCollection.id, [
-        props.photoId,
+    // 如果有影像，自动添加到新收藏夹
+    if (props.visualId) {
+      await collectionStore.addVisualsToCollection(newCollection.id, [
+        props.visualId,
       ]);
-      photoCollections.value.push({
+      visualCollections.value.push({
         id: newCollection.id,
         name: newCollection.name,
       });
@@ -194,7 +194,7 @@ function cancelCreate() {
 async function deleteCollectionItem(collectionId: string) {
   try {
     await collectionStore.deleteCollection(collectionId);
-    photoCollections.value = photoCollections.value.filter(
+    visualCollections.value = visualCollections.value.filter(
       (c) => c.id !== collectionId,
     );
     activeMenuId.value = null;
@@ -222,8 +222,8 @@ watch(
       newCollectionName.value = "";
       editingId.value = null;
       await loadCollections();
-      if (props.photoId) {
-        await loadPhotoCollections();
+      if (props.visualId) {
+        await loadVisualCollections();
       }
     }
   },
@@ -284,14 +284,14 @@ watch(showCreateForm, async (show) => {
             v-for="collection in collections"
             :key="collection.id"
             class="collection-selector__item"
-            @click="photoId && toggleCollection(collection.id)"
+            @click="visualId && toggleCollection(collection.id)"
           >
             <div class="collection-selector__item-info">
               <div
                 class="collection-selector__item-icon"
                 :class="{
                   'collection-selector__item-icon--active':
-                    photoCollectionIds.has(collection.id),
+                    visualCollectionIds.has(collection.id),
                 }"
               >
                 <FavoriteIcon :size="18" />
@@ -318,7 +318,7 @@ watch(showCreateForm, async (show) => {
                     {{ collection.description }}
                   </div>
                   <div class="collection-selector__item-count">
-                    {{ collection.photoCount }} 张照片
+                    {{ collection.visualCount }} 个影像
                   </div>
                 </template>
               </div>
@@ -326,7 +326,7 @@ watch(showCreateForm, async (show) => {
             <div class="collection-selector__item-action" @click.stop>
               <!-- 已收藏标记 -->
               <div
-                v-if="photoId && photoCollectionIds.has(collection.id)"
+                v-if="visualId && visualCollectionIds.has(collection.id)"
                 class="collection-selector__check"
               >
                 <Check :size="14" />

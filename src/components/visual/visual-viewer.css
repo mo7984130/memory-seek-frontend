@@ -143,6 +143,11 @@
   transition: none;
 }
 
+/* 视频：使用原生控件，鼠标指针保持默认 */
+.visual-viewer__video {
+  cursor: default;
+}
+
 /* 加载提示 */
 .visual-viewer__loading {
   position: absolute;
@@ -150,6 +155,17 @@
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: var(--visual-viewer-z-loading);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-3);
+}
+
+.visual-viewer__loading-text {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: var(--text-sm);
+  white-space: nowrap;
 }
 
 .visual-viewer__loading-spinner {

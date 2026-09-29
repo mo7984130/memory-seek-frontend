@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import { LikeIcon, VisualIcon } from "@/components/base/Icon/icons";
-import { visual, type Visual } from "memory-seek-api";
+import { computed, ref, watch } from "vue";
+import { LikeIcon, PlayIcon, VisualIcon } from "@/components/base/Icon/icons";
+import type { Visual } from "memory-seek-api";
+import { useVisualSrc } from "@/composables/useVisualSrc";
 import dayjs from "dayjs";
 
 const props = defineProps<{
@@ -13,14 +14,72 @@ const emit = defineEmits<{
   (e: "like", item: Visual): void;
 }>();
 
+const videoEl = ref<HTMLVideoElement | null>(null);
+/** 是否悬停在卡片上（用于就绪后自动开始播放） */
+const hovering = ref(false);
+/** 是否正在悬停播放（用于隐藏播放按钮） */
+const playing = ref(false);
+
 /**
- * 缩略图 URL
+ * 缩略图地址与就绪状态
+ *
+ * 直接渲染 token URL；视频缩略片在转码完成前返回 202（空 body），
+ * 媒体元素加载失败时由 useVisualSrc 探测分类并按 Retry-After 重试。
  */
-const thumbnailUrl = computed(() => {
-  if (props.item.thumbnailToken)
-    return visual.getVisualUrl(props.item.thumbnailToken);
-  return null;
+const { src, status, isVideo, handleLoaded, handleError } = useVisualSrc({
+  token: () => props.item.thumbnailToken,
+  type: () => (props.item.kind === "Video" ? "video" : "image"),
+  waitForTranscode: () => props.item.kind === "Video",
 });
+
+/** 占位层是否显示（无媒体 / 转码中 / 失败；视频加载首帧前也显示） */
+const showPlaceholder = computed(() => {
+  if (!src.value) return true;
+  if (status.value === "transcoding" || status.value === "error") return true;
+  return isVideo.value && status.value === "loading";
+});
+
+/** 占位层是否显示加载动画（加载中 / 转码中） */
+const isPending = computed(
+  () => status.value === "loading" || status.value === "transcoding",
+);
+
+/** 视频地址：附加起始时间片段，确保未播放时也能渲染出首帧而非黑屏 */
+const videoSrc = computed(() => (src.value ? `${src.value}#t=0.001` : null));
+
+/** 悬停播放，移出暂停并回到首帧（PC 与移动端一致，移动端无 hover 则显示首帧） */
+function startPlayback() {
+  const el = videoEl.value;
+  if (!el) return;
+  el.play()
+    .then(() => {
+      playing.value = true;
+    })
+    .catch(() => {});
+}
+
+function handleMouseEnter() {
+  hovering.value = true;
+  startPlayback();
+}
+
+function handleMouseLeave() {
+  hovering.value = false;
+  playing.value = false;
+  const el = videoEl.value;
+  if (!el) return;
+  el.pause();
+  el.currentTime = 0;
+}
+
+// 悬停期间视频就绪（转码完成）后自动开始播放
+watch(
+  () => src.value,
+  () => {
+    if (hovering.value && src.value) startPlayback();
+  },
+  { flush: "post" },
+);
 
 /**
  * 是否已点赞
@@ -51,19 +110,47 @@ function handleLike(event: Event) {
 </script>
 
 <template>
-  <div class="visual-card" @click="handleClick">
-    <!-- 图片容器 -->
+  <div
+    class="visual-card"
+    @click="handleClick"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
+  >
+    <!-- 图片 / 视频容器 -->
     <div class="visual-card__image-wrapper">
+      <video
+        v-if="isVideo && videoSrc"
+        ref="videoEl"
+        :src="videoSrc"
+        class="visual-card__image"
+        muted
+        loop
+        playsinline
+        preload="metadata"
+        @loadedmetadata="handleLoaded"
+        @error="handleError"
+      />
       <img
-        v-if="thumbnailUrl"
-        :src="thumbnailUrl"
+        v-else-if="src"
+        :src="src"
         :alt="item.name"
         class="visual-card__image"
         loading="lazy"
+        @load="handleLoaded"
+        @error="handleError"
       />
-      <div v-else class="visual-card__placeholder">
-        <VisualIcon :size="32" />
+      <div v-if="showPlaceholder" class="visual-card__placeholder">
+        <div v-if="isPending" class="visual-card__spinner" />
+        <VisualIcon v-else :size="32" />
       </div>
+
+      <!-- 视频播放标记 -->
+      <span
+        v-if="isVideo && status === 'ready' && !playing"
+        class="visual-card__play"
+      >
+        <PlayIcon :size="18" fill="currentColor" />
+      </span>
 
       <!-- 渐变遮罩 -->
       <div class="visual-card__overlay" />
@@ -151,13 +238,54 @@ function handleLike(event: Event) {
 }
 
 .visual-card__placeholder {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--color-bg-secondary);
   color: var(--color-text-tertiary);
+}
+
+.visual-card__spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(0, 0, 0, 0.08);
+  border-top-color: var(--color-text-tertiary);
+  border-radius: 50%;
+  animation: visual-card-spin 0.8s linear infinite;
+}
+
+.dark .visual-card__spinner {
+  border-color: rgba(255, 255, 255, 0.15);
+  border-top-color: var(--color-text-tertiary);
+}
+
+@keyframes visual-card-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 视频播放标记 */
+.visual-card__play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background: rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 1;
 }
 
 /* 渐变遮罩 */

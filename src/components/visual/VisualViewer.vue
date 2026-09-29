@@ -19,6 +19,7 @@ import Input from "@/components/form/Input/Input.vue";
 import Button from "@/components/actions/Button/Button.vue";
 import { usePersonSearch } from "@/composables/usePersonSearch";
 import { useGoBack } from "@/composables/useGoBack";
+import { useVisualSrc, type VisualMediaType } from "@/composables/useVisualSrc";
 import "./visual-viewer.css";
 
 interface Props {
@@ -135,10 +136,7 @@ const dragStartY = ref(0);
 const dragStartTranslateX = ref(0);
 const dragStartTranslateY = ref(0);
 
-// 原图缓存（仅当前会话有效）
-const originalUrl = ref<string | null>(null);
-
-// 图片加载状态
+// 影像加载状态
 const imageLoading = ref(true);
 
 // 缩放常量（相对于 baseZoom 的倍数）
@@ -151,23 +149,54 @@ const ZOOM_RATIO_STEP = 0.25;
 /** 是否有原图 token */
 const hasOriginalToken = computed(() => !!props.visual?.originalToken);
 
-/** 当前显示的图片 URL */
-const imageUrl = computed(() => {
+/** 当前影像类型（图片 / 视频） */
+const mediaType = computed<VisualMediaType>(() =>
+  props.visual?.kind === "Video" ? "video" : "image",
+);
+
+/** 当前展示的 token：原图/原片 或 预览（预览缺失时回退缩略） */
+const mediaToken = computed(() => {
   if (!props.visual) return null;
+  if (showOriginal.value) return props.visual.originalToken;
+  return props.visual.previewToken || props.visual.thumbnailToken;
+});
 
-  // 显示原图：用缓存或 token URL
-  if (showOriginal.value) {
-    return (
-      originalUrl.value ||
-      (props.visual.originalToken
-        ? visualApi.getVisualUrl(props.visual.originalToken)
-        : null)
-    );
-  }
+/**
+ * 当前媒体源（图片 / 视频）与就绪状态。
+ * 视频预览片是异步衍生物，转码中返回 202（空 body），由 useVisualSrc 探测重试；
+ * 图片与视频原片可直接访问。
+ */
+const {
+  src: mediaSrc,
+  status: mediaStatus,
+  isVideo: isVideoMedia,
+  handleLoaded: handleMediaLoaded,
+  handleError: handleMediaError,
+} = useVisualSrc({
+  token: () => mediaToken.value,
+  type: () => mediaType.value,
+  waitForTranscode: () => mediaType.value === "video" && !showOriginal.value,
+});
 
-  // 显示预览图：直接用 token URL
-  const token = props.visual.previewToken || props.visual.thumbnailToken;
-  return token ? visualApi.getVisualUrl(token) : null;
+/** 遮罩式加载提示是否显示（含探测 / 转码阶段） */
+const showLoadingOverlay = computed(
+  () =>
+    imageLoading.value ||
+    loadingMore.value ||
+    mediaStatus.value === "loading" ||
+    mediaStatus.value === "transcoding",
+);
+
+/** 无媒体可渲染（加载失败或无可用 token） */
+const showEmptyState = computed(
+  () =>
+    !loadingMore.value &&
+    (mediaStatus.value === "error" || mediaStatus.value === "idle"),
+);
+
+// 无媒体或已判定失败时，不再显示加载遮罩
+watch(mediaStatus, (state) => {
+  if (state === "idle" || state === "error") imageLoading.value = false;
 });
 
 /** 图片 transform 样式（zoom 相对于 baseZoom 的比值） */
@@ -319,11 +348,8 @@ function zoomOut() {
   zoom.value = Math.max(zoom.value - step, baseZoom.value * ZOOM_RATIO_MIN);
 }
 
-// ---- 图片加载后计算适配尺寸 ----
-function handleImageLoad(event: Event) {
-  const img = event.target as HTMLImageElement;
-  const naturalW = img.naturalWidth;
-  const naturalH = img.naturalHeight;
+// ---- 媒体加载后计算适配尺寸 ----
+function applyNaturalSize(naturalW: number, naturalH: number) {
   if (!naturalW || !naturalH) return;
 
   // 可用区域（减去工具栏和边距空间）
@@ -338,9 +364,23 @@ function handleImageLoad(event: Event) {
   baseZoom.value = scale;
   zoom.value = scale;
   rotation.value = 0;
+}
 
-  // 图片加载完成
+// ---- 图片加载后计算适配尺寸 ----
+function handleImageLoad(event: Event) {
+  const img = event.target as HTMLImageElement;
+  applyNaturalSize(img.naturalWidth, img.naturalHeight);
   imageLoading.value = false;
+  handleMediaLoaded();
+}
+
+// ---- 视频元数据加载后计算适配尺寸 ----
+function handleVideoLoad(event: Event) {
+  const video = event.target as HTMLVideoElement;
+  applyNaturalSize(video.videoWidth, video.videoHeight);
+  imageLoading.value = false;
+  loadingOriginal.value = false;
+  handleMediaLoaded();
 }
 
 // ---- 监听 visual 变化，重置加载状态 ----
@@ -892,11 +932,11 @@ watch(contextMenuVisible, (visible) => {
   }
 });
 
-// ---- 查看原图 ----
+// ---- 查看原图 / 原片 ----
 function viewOriginal() {
   if (!props.visual?.originalToken) return;
 
-  // 如果已经显示原图，切换回预览图
+  // 如果已经显示原图/原片，切换回预览
   if (showOriginal.value) {
     triggerRefreshAnimation(() => {
       showOriginal.value = false;
@@ -904,20 +944,20 @@ function viewOriginal() {
     return;
   }
 
-  // 如果原图已缓存，直接切换
-  if (originalUrl.value) {
+  // 视频原片：恒为 200，无需预载，直接切换由 useVisualSrc 加载
+  if (mediaType.value === "video") {
+    imageLoading.value = true;
     triggerRefreshAnimation(() => {
       showOriginal.value = true;
     });
     return;
   }
 
-  // 否则加载原图
+  // 图片原图：先预载到浏览器缓存再切换，避免白屏
   loadingOriginal.value = true;
   const url = visualApi.getVisualUrl(props.visual.originalToken);
   const img = new Image();
   img.onload = () => {
-    originalUrl.value = url;
     loadingOriginal.value = false;
     triggerRefreshAnimation(() => {
       showOriginal.value = true;
@@ -1161,7 +1201,6 @@ function resetState() {
   showOriginal.value = false;
   loadingOriginal.value = false;
   refreshing.value = false;
-  originalUrl.value = null;
   showDeleteConfirm.value = false;
   deleting.value = false;
   isDragging.value = false;
@@ -1249,14 +1288,20 @@ onBeforeUnmount(() => {
         <ChevronLeft :size="24" />
         <span>返回</span>
       </button>
-      <!-- 加载提示（切换影像 / 触底加载下一页时隐藏当前影像并显示） -->
-      <div v-if="imageLoading || loadingMore" class="visual-viewer__loading">
+      <!-- 加载提示（切换影像 / 触底加载下一页 / 视频转码中） -->
+      <div v-if="showLoadingOverlay" class="visual-viewer__loading">
         <div class="visual-viewer__loading-spinner"></div>
+        <p
+          v-if="mediaStatus === 'transcoding'"
+          class="visual-viewer__loading-text"
+        >
+          视频转码中，请稍候…
+        </p>
       </div>
 
-      <!-- 图片（加载期间用 CSS 隐藏，避免残留上一张影像；img 需保持渲染以触发加载） -->
+      <!-- 媒体（加载期间用 CSS 隐藏，避免残留上一张影像；img/video 需保持渲染以触发加载） -->
       <div
-        v-if="imageUrl && !loadingMore"
+        v-if="mediaSrc && mediaStatus !== 'error' && !loadingMore"
         ref="wrapperRef"
         class="visual-viewer__image-wrapper"
         :class="{
@@ -1264,9 +1309,32 @@ onBeforeUnmount(() => {
           'visual-viewer__image-wrapper--hidden': imageLoading,
         }"
       >
+        <video
+          v-if="isVideoMedia"
+          :key="mediaSrc"
+          :src="mediaSrc"
+          class="visual-viewer__image visual-viewer__video"
+          :class="{
+            'visual-viewer__image--loaded': !imageLoading,
+          }"
+          :style="{
+            transform: imageTransform,
+            width: imageWidth ? imageWidth + 'px' : undefined,
+            height: imageHeight ? imageHeight + 'px' : undefined,
+          }"
+          controls
+          autoplay
+          loop
+          muted
+          playsinline
+          @loadedmetadata="handleVideoLoad"
+          @error="handleMediaError"
+          @wheel.prevent="handleWheel"
+        />
         <img
+          v-else
           :key="showOriginal ? 'original' : 'preview'"
-          :src="imageUrl"
+          :src="mediaSrc"
           :alt="visual?.name"
           class="visual-viewer__image"
           :class="{
@@ -1280,6 +1348,7 @@ onBeforeUnmount(() => {
           }"
           draggable="false"
           @load="handleImageLoad"
+          @error="handleMediaError"
           @wheel.prevent="handleWheel"
           @mousedown="handleMouseDown"
           @touchstart="handleTouchStart"
@@ -1331,11 +1400,8 @@ onBeforeUnmount(() => {
           ></div>
         </div>
       </div>
-      <div
-        v-else-if="!imageLoading && !loadingMore"
-        class="visual-viewer__empty"
-      >
-        图片加载失败
+      <div v-else-if="showEmptyState" class="visual-viewer__empty">
+        {{ mediaStatus === "error" ? "影像加载失败" : "暂无可显示的影像" }}
       </div>
 
       <!-- 上一张/下一张 -->

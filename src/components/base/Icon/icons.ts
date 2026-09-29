@@ -55,6 +55,7 @@ import {
   ChevronLeft,
   ChevronRight,
   SquareDashed,
+  Play,
 } from "@lucide/vue";
 
 export {
@@ -100,6 +101,7 @@ export {
   ChevronLeft,
   ChevronRight,
   SquareDashed,
+  Play,
 };
 
 /* ============================================
@@ -121,3 +123,6 @@ export const VisualIcon = ImageIcon;
 
 /** 人脸识别 - 人形图标 */
 export const FaceIcon = UserRound;
+
+/** 视频播放 - 播放三角图标 */
+export const PlayIcon = Play;
